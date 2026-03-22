@@ -72,6 +72,7 @@ export interface AnimationController {
   restart: () => void;
   destroy: () => void;
   isPlaying: () => boolean;
+  recordVideo: (onProgress: (p: number) => void) => Promise<Blob>;
 }
 
 export function createBarRaceAnimation(
@@ -305,5 +306,106 @@ export function createBarRaceAnimation(
       cancelAnimationFrame(animFrame);
     },
     isPlaying: () => playing,
+    async recordVideo(onRecordProgress: (p: number) => void): Promise<Blob> {
+      // Reset state for recording
+      playing = false;
+      cancelAnimationFrame(animFrame);
+      elapsed = 0;
+      startTime = 0;
+      showHook = true;
+      bars.forEach((b) => {
+        b.value = 0;
+        b.width = 0;
+        b.y = topPadding + labels.indexOf(b.label) * (barHeight + barGap);
+      });
+
+      const fps = 30;
+      const totalFrames = Math.round((totalMs / 1000) * fps);
+      const frameDuration = 1000 / fps;
+
+      // Try webm with VP9, fallback to VP8
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+        ? 'video/webm;codecs=vp9'
+        : 'video/webm;codecs=vp8';
+
+      const stream = canvas.captureStream(0);
+      const recorder = new MediaRecorder(stream, {
+        mimeType,
+        videoBitsPerSecond: 5_000_000,
+      });
+
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      return new Promise<Blob>((resolve, reject) => {
+        recorder.onerror = () => reject(new Error('Recording failed'));
+        recorder.onstop = () => {
+          resolve(new Blob(chunks, { type: mimeType }));
+        };
+
+        recorder.start();
+
+        let frame = 0;
+        const renderNextFrame = () => {
+          if (frame > totalFrames) {
+            recorder.stop();
+            return;
+          }
+
+          const progress = Math.min(frame / totalFrames, 1);
+
+          // Simulate elapsed time for lerp-based animation
+          // Run multiple lerp iterations per frame for smooth catch-up
+          const targetElapsed = progress * totalMs;
+          elapsed = targetElapsed;
+          
+          // Update bar targets based on progress
+          const dataProgress = Math.max(0, (progress - 0.12) / 0.85);
+          const yearRange = years[years.length - 1] - years[0];
+          const currentYear = years[0] + yearRange * Math.min(dataProgress, 1);
+          
+          const barData = labels.map((label) => ({
+            label,
+            value: interpolateValue(valueMap[label] || {}, years, currentYear),
+          }));
+          barData.sort((a, b) => b.value - a.value);
+          const visible = barData.slice(0, maxBars);
+          const maxVal = Math.max(...visible.map((b) => b.value), 1);
+          const barAreaWidth = canvas.width - sidePadding - rightPadding - 100;
+
+          visible.forEach((bd, i) => {
+            const bar = bars.find((b) => b.label === bd.label)!;
+            bar.targetValue = bd.value;
+            bar.targetY = topPadding + i * (barHeight + barGap);
+            bar.targetWidth = (bd.value / maxVal) * barAreaWidth;
+          });
+
+          // Multiple lerp steps for recording smoothness
+          const lerpSpeed = settings.smoothAnimation ? 0.12 : 0.3;
+          for (let s = 0; s < 3; s++) {
+            bars.forEach((bar) => {
+              bar.value = lerp(bar.value, bar.targetValue, lerpSpeed);
+              bar.y = lerp(bar.y, bar.targetY, lerpSpeed);
+              bar.width = lerp(bar.width, bar.targetWidth, lerpSpeed);
+            });
+          }
+
+          render(progress);
+
+          // Request a frame from the stream
+          const track = stream.getVideoTracks()[0] as any;
+          if (track?.requestFrame) track.requestFrame();
+
+          onRecordProgress(progress);
+          frame++;
+
+          setTimeout(renderNextFrame, frameDuration / 10); // Render faster than realtime
+        };
+
+        renderNextFrame();
+      });
+    },
   };
 }
