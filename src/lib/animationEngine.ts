@@ -72,6 +72,7 @@ export interface AnimationController {
   restart: () => void;
   destroy: () => void;
   isPlaying: () => boolean;
+  recordVideo: (onProgress: (p: number) => void) => Promise<Blob>;
 }
 
 export function createBarRaceAnimation(
