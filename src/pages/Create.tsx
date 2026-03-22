@@ -514,6 +514,9 @@ const Create = () => {
         )}
       </div>
 
+      {/* Hidden canvas for export rendering */}
+      <canvas ref={exportCanvasRef} className="hidden" />
+
       {/* Bottom Nav */}
       {step < 4 && (
         <div className="fixed bottom-0 left-0 right-0 p-5 bg-background/80 backdrop-blur-xl border-t border-border max-w-lg mx-auto">
