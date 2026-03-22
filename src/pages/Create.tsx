@@ -467,18 +467,38 @@ const Create = () => {
               </div>
             )}
 
-            {exported && (
+            {exported && videoBlob && (
               <div className="space-y-4 opacity-0 animate-scale-in">
                 <div className="w-16 h-16 rounded-full bg-success/15 flex items-center justify-center mx-auto">
                   <span className="text-3xl">✅</span>
                 </div>
                 <p className="font-semibold text-foreground">Ready!</p>
-                <p className="text-sm text-muted-foreground">Project saved. Video export is simulated.</p>
+                <p className="text-sm text-muted-foreground">Your video has been rendered ({(videoBlob.size / 1024 / 1024).toFixed(1)} MB)</p>
                 <div className="flex gap-3">
-                  <button className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold active:scale-95 transition-transform">
+                  <button
+                    onClick={() => {
+                      const url = URL.createObjectURL(videoBlob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `${settings.title || "data-video"}.webm`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold active:scale-95 transition-transform"
+                  >
                     <Download className="w-4 h-4" /> Download
                   </button>
-                  <button className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-secondary text-foreground font-semibold active:scale-95 transition-transform">
+                  <button
+                    onClick={async () => {
+                      if (navigator.share) {
+                        const file = new File([videoBlob], `${settings.title || "data-video"}.webm`, { type: videoBlob.type });
+                        try {
+                          await navigator.share({ files: [file], title: settings.title || "Data to Video" });
+                        } catch {}
+                      }
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-secondary text-foreground font-semibold active:scale-95 transition-transform"
+                  >
                     <Share2 className="w-4 h-4" /> Share
                   </button>
                 </div>
