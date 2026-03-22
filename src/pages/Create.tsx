@@ -37,9 +37,11 @@ const Create = () => {
   const [progress, setProgress] = useState(0);
 
   // Export
+  const exportCanvasRef = useRef<HTMLCanvasElement>(null);
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [exported, setExported] = useState(false);
+  const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
 
   // Load template or edit
   useEffect(() => {
@@ -121,21 +123,36 @@ const Create = () => {
     saveProject(project);
   }, [projectId, videoType, data, settings]);
 
-  const handleExport = () => {
+  const handleExport = async () => {
     handleSave();
     setExporting(true);
     setExportProgress(0);
-    const interval = setInterval(() => {
-      setExportProgress((p) => {
-        if (p >= 100) {
-          clearInterval(interval);
-          setExporting(false);
-          setExported(true);
-          return 100;
-        }
-        return p + 2;
+    setVideoBlob(null);
+
+    try {
+      // Create an offscreen canvas at 1080x1920 for high-quality export
+      const exportCanvas = exportCanvasRef.current!;
+      exportCanvas.width = 1080;
+      exportCanvas.height = 1920;
+
+      const controller = createBarRaceAnimation(
+        exportCanvas, data, settings,
+        () => {},
+        () => {}
+      );
+
+      const blob = await controller.recordVideo((p) => {
+        setExportProgress(Math.round(p * 100));
       });
-    }, 60);
+
+      controller.destroy();
+      setVideoBlob(blob);
+      setExported(true);
+    } catch (err) {
+      console.error("Export failed:", err);
+    } finally {
+      setExporting(false);
+    }
   };
 
   const addRow = () => setData([...data, { label: "", value: 0, year: 2020 }]);
