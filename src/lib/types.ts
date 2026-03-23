@@ -4,8 +4,6 @@ export type ThemeType = "dark" | "light" | "neon";
 
 export type SpeedType = "slow" | "medium" | "fast";
 
-export type DurationType = 5 | 10 | 15 | 30;
-
 export interface DataRow {
   label: string;
   value: number;
@@ -20,7 +18,6 @@ export interface MultiYearData {
 
 export interface ProjectSettings {
   title: string;
-  duration: DurationType;
   theme: ThemeType;
   speed: SpeedType;
   showLabels: boolean;
@@ -34,6 +31,7 @@ export interface Project {
   type: VideoType;
   data: DataRow[];
   settings: ProjectSettings;
+  labelImages: Record<string, string>; // label -> base64 data URL
   createdAt: string;
   updatedAt: string;
 }
@@ -50,7 +48,6 @@ export interface Template {
 
 export const DEFAULT_SETTINGS: ProjectSettings = {
   title: "",
-  duration: 15,
   theme: "dark",
   speed: "medium",
   showLabels: true,

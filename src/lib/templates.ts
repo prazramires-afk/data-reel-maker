@@ -11,7 +11,6 @@ export const TEMPLATES: Template[] = [
     data: GDP_SAMPLE,
     settings: {
       title: "Top Economies by GDP",
-      duration: 15,
       theme: "dark",
       speed: "medium",
       showLabels: true,
@@ -28,7 +27,6 @@ export const TEMPLATES: Template[] = [
     data: POPULATION_SAMPLE,
     settings: {
       title: "World Population Growth",
-      duration: 15,
       theme: "light",
       speed: "slow",
       showLabels: true,
@@ -45,7 +43,6 @@ export const TEMPLATES: Template[] = [
     data: FOOTBALL_SAMPLE,
     settings: {
       title: "All-Time Goal Scorers",
-      duration: 10,
       theme: "neon",
       speed: "fast",
       showLabels: true,
@@ -62,7 +59,6 @@ export const TEMPLATES: Template[] = [
     data: GDP_SAMPLE,
     settings: {
       title: "Economic Powerhouses",
-      duration: 30,
       theme: "dark",
       speed: "slow",
       showLabels: true,
