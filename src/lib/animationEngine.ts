@@ -95,7 +95,6 @@ export function createBarRaceAnimation(
   const maxBars = Math.min(labels.length, 10);
   const barHeight = 36;
   const barGap = 10;
-  const topPadding = 80;
   const sidePadding = 20;
   const rightPadding = 20;
   const bottomPadding = 40;
