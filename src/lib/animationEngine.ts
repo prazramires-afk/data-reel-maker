@@ -117,12 +117,13 @@ export function createBarRaceAnimation(
     ? `${settings.title}… #1 will shock you 😳`
     : "Top rankings… #1 will shock you 😳";
 
+  const initTop = getTopPadding(canvas.height);
   const bars: BarState[] = labels.map((label, i) => ({
     label,
     value: 0,
     targetValue: 0,
-    y: topPadding + i * (barHeight + barGap),
-    targetY: topPadding + i * (barHeight + barGap),
+    y: initTop + i * (barHeight + barGap),
+    targetY: initTop + i * (barHeight + barGap),
     color: colorMap[label],
     width: 0,
     targetWidth: 0,
@@ -175,10 +176,11 @@ export function createBarRaceAnimation(
     const barAreaWidth = w - sidePadding - rightPadding - 100;
 
     // Update targets
+    const topPad = getTopPadding(h);
     visible.forEach((bd, i) => {
       const bar = bars.find((b) => b.label === bd.label)!;
       bar.targetValue = bd.value;
-      bar.targetY = topPadding + i * (barHeight + barGap);
+      bar.targetY = topPad + i * (barHeight + barGap);
       bar.targetWidth = (bd.value / maxVal) * barAreaWidth;
     });
 
@@ -301,10 +303,11 @@ export function createBarRaceAnimation(
       elapsed = 0;
       startTime = 0;
       showHook = true;
+      const resetTop = getTopPadding(canvas.height);
       bars.forEach((b) => {
         b.value = 0;
         b.width = 0;
-        b.y = topPadding + labels.indexOf(b.label) * (barHeight + barGap);
+        b.y = resetTop + labels.indexOf(b.label) * (barHeight + barGap);
       });
       render(0);
     },
@@ -320,10 +323,11 @@ export function createBarRaceAnimation(
       elapsed = 0;
       startTime = 0;
       showHook = true;
+      const recTop = getTopPadding(canvas.height);
       bars.forEach((b) => {
         b.value = 0;
         b.width = 0;
-        b.y = topPadding + labels.indexOf(b.label) * (barHeight + barGap);
+        b.y = recTop + labels.indexOf(b.label) * (barHeight + barGap);
       });
 
       const fps = 30;
@@ -382,10 +386,11 @@ export function createBarRaceAnimation(
           const maxVal = Math.max(...visible.map((b) => b.value), 1);
           const barAreaWidth = canvas.width - sidePadding - rightPadding - 100;
 
+          const recTopPad = getTopPadding(canvas.height);
           visible.forEach((bd, i) => {
             const bar = bars.find((b) => b.label === bd.label)!;
             bar.targetValue = bd.value;
-            bar.targetY = topPadding + i * (barHeight + barGap);
+            bar.targetY = recTopPad + i * (barHeight + barGap);
             bar.targetWidth = (bd.value / maxVal) * barAreaWidth;
           });
 
