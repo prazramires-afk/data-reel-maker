@@ -99,6 +99,14 @@ export function createBarRaceAnimation(
   const rightPadding = 20;
   const bottomPadding = 40;
 
+  // Compute topPadding dynamically so chart is vertically centered
+  function getTopPadding(canvasHeight: number) {
+    const totalBarsHeight = maxBars * barHeight + (maxBars - 1) * barGap;
+    const titleSpace = 60; // space for title above bars
+    const contentHeight = titleSpace + totalBarsHeight;
+    return Math.max(80, (canvasHeight - contentHeight) / 2);
+  }
+
   let playing = false;
   let startTime = 0;
   let elapsed = 0;
