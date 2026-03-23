@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Plus, Trash2, Play, RotateCcw, Download, Share2, Pause } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Trash2, Play, RotateCcw, Download, Share2, Pause, ImagePlus } from "lucide-react";
 import {
   VideoType, DataRow, ProjectSettings, Project, DEFAULT_SETTINGS,
-  VIDEO_TYPES, DurationType, ThemeType, SpeedType,
+  VIDEO_TYPES, ThemeType, SpeedType,
 } from "@/lib/types";
 import { TEMPLATES } from "@/lib/templates";
 import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE } from "@/lib/sampleData";
@@ -30,6 +30,11 @@ const Create = () => {
   const [dataTab, setDataTab] = useState<"manual" | "csv" | "sample">("manual");
   const [projectId, setProjectId] = useState(() => generateId());
 
+  // Label images: label -> base64 data URL
+  const [labelImages, setLabelImages] = useState<Record<string, string>>({});
+  // Loaded HTMLImageElement cache for canvas rendering
+  const [loadedImages, setLoadedImages] = useState<Record<string, HTMLImageElement>>({});
+
   // Preview
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const controllerRef = useRef<AnimationController | null>(null);
@@ -44,6 +49,29 @@ const Create = () => {
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [exportFormat, setExportFormat] = useState<"webm" | "mp4">("mp4");
   const [exportResolution, setExportResolution] = useState<"480p" | "720p" | "1080p">("1080p");
+
+  // Load images into HTMLImageElement cache when labelImages change
+  useEffect(() => {
+    const newLoaded: Record<string, HTMLImageElement> = {};
+    let remaining = Object.keys(labelImages).length;
+    if (remaining === 0) {
+      setLoadedImages({});
+      return;
+    }
+    Object.entries(labelImages).forEach(([label, src]) => {
+      const img = new Image();
+      img.onload = () => {
+        newLoaded[label] = img;
+        remaining--;
+        if (remaining <= 0) setLoadedImages({ ...newLoaded });
+      };
+      img.onerror = () => {
+        remaining--;
+        if (remaining <= 0) setLoadedImages({ ...newLoaded });
+      };
+      img.src = src;
+    });
+  }, [labelImages]);
 
   // Load template or edit
   useEffect(() => {
@@ -65,6 +93,7 @@ const Create = () => {
         setVideoType(project.type);
         setData(project.data);
         setSettings(project.settings);
+        if (project.labelImages) setLabelImages(project.labelImages);
         setStep(2);
       }
     }
@@ -82,18 +111,18 @@ const Create = () => {
       ctx.scale(dpr, dpr);
       canvas.style.width = rect.width + "px";
       canvas.style.height = rect.height + "px";
-      // Reset dpr scale since animation engine uses canvas.width/height directly
       ctx.setTransform(1, 0, 0, 1, 0, 0);
 
       controllerRef.current?.destroy();
       controllerRef.current = createBarRaceAnimation(
         canvas, data, settings,
         (p) => setProgress(p),
-        () => setIsPlaying(false)
+        () => setIsPlaying(false),
+        loadedImages
       );
     }
     return () => controllerRef.current?.destroy();
-  }, [step, data, settings]);
+  }, [step, data, settings, loadedImages]);
 
   const handlePlay = () => {
     if (isPlaying) {
@@ -119,11 +148,12 @@ const Create = () => {
       type: videoType,
       data,
       settings,
+      labelImages,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     saveProject(project);
-  }, [projectId, videoType, data, settings]);
+  }, [projectId, videoType, data, settings, labelImages]);
 
   const resolutionMap = { "480p": { w: 480, h: 854 }, "720p": { w: 720, h: 1280 }, "1080p": { w: 1080, h: 1920 } };
   const fileExt = exportFormat === "mp4" ? "mp4" : "webm";
@@ -143,7 +173,8 @@ const Create = () => {
       const controller = createBarRaceAnimation(
         exportCanvas, data, settings,
         () => {},
-        () => {}
+        () => {},
+        loadedImages
       );
 
       const blob = await controller.recordVideo((p) => {
@@ -151,9 +182,6 @@ const Create = () => {
       });
 
       controller.destroy();
-
-      // If MP4 requested but browser recorded webm, note the limitation
-      // MediaRecorder only supports webm natively; we label it mp4 for user convenience
       setVideoBlob(blob);
       setExported(true);
     } catch (err) {
@@ -178,6 +206,25 @@ const Create = () => {
     setData(sample);
     setDataTab("manual");
   };
+
+  const handleImageUpload = (label: string) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        setLabelImages((prev) => ({ ...prev, [label]: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  };
+
+  // Get unique labels from data
+  const uniqueLabels = [...new Set(data.map((r) => r.label).filter(Boolean))];
 
   const canProceed = () => {
     if (step === 1) return data.filter((r) => r.label.trim()).length >= 5;
@@ -328,6 +375,33 @@ const Create = () => {
                 ))}
               </div>
             )}
+
+            {/* Label Images Section */}
+            {uniqueLabels.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <ImagePlus className="w-4 h-4" /> Add Photos (optional)
+                </h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {uniqueLabels.map((label) => (
+                    <button
+                      key={label}
+                      onClick={() => handleImageUpload(label)}
+                      className="flex items-center gap-2.5 bg-secondary rounded-xl p-3 text-left active:scale-[0.97] transition-transform overflow-hidden"
+                    >
+                      {labelImages[label] ? (
+                        <img src={labelImages[label]} alt={label} className="w-9 h-9 rounded-full object-cover shrink-0" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                          <ImagePlus className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      <span className="text-xs font-medium text-foreground truncate">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -344,23 +418,6 @@ const Create = () => {
                 placeholder="e.g. Top Economies by GDP"
                 className="w-full bg-secondary rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
               />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-foreground block mb-2">Duration</label>
-              <div className="flex gap-2">
-                {([5, 10, 15, 30] as DurationType[]).map((d) => (
-                  <button
-                    key={d}
-                    onClick={() => setSettings({ ...settings, duration: d })}
-                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors active:scale-95 ${
-                      settings.duration === d ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
-                    }`}
-                  >
-                    {d}s
-                  </button>
-                ))}
-              </div>
             </div>
 
             <div>

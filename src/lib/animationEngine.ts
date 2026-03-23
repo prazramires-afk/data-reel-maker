@@ -80,7 +80,8 @@ export function createBarRaceAnimation(
   data: DataRow[],
   settings: ProjectSettings,
   onProgress?: (progress: number) => void,
-  onComplete?: () => void
+  onComplete?: () => void,
+  labelImages?: Record<string, HTMLImageElement>
 ): AnimationController {
   const ctx = canvas.getContext("2d")!;
   const { years, labels, valueMap } = processData(data);
@@ -88,9 +89,9 @@ export function createBarRaceAnimation(
   const colorMap: Record<string, string> = {};
   labels.forEach((l, i) => (colorMap[l] = BAR_COLORS[i % BAR_COLORS.length]));
 
-  const durationMs = settings.duration * 1000;
+  const baseDuration = 15; // fixed 15s base
   const speedMultiplier = settings.speed === "slow" ? 0.7 : settings.speed === "fast" ? 1.5 : 1;
-  const totalMs = durationMs / speedMultiplier;
+  const totalMs = (baseDuration / speedMultiplier) * 1000;
 
   const maxBars = Math.min(labels.length, 10);
   const barHeight = 36;
@@ -225,12 +226,27 @@ export function createBarRaceAnimation(
 
       const x = sidePadding;
       const roundRadius = 6;
+      const imgSize = barHeight - 4;
 
       // Bar
       ctx.fillStyle = bar.color;
       ctx.beginPath();
       ctx.roundRect(x, bar.y, Math.max(bar.width, 2), barHeight, [0, roundRadius, roundRadius, 0]);
       ctx.fill();
+
+      // Label image (at the start of the bar, left side)
+      const img = labelImages?.[bar.label];
+      if (img && img.complete && img.naturalWidth > 0) {
+        const imgX = x + 4;
+        const imgY = bar.y + 2;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(imgX + imgSize / 2, imgY + imgSize / 2, imgSize / 2, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(img, imgX, imgY, imgSize, imgSize);
+        ctx.restore();
+      }
 
       // Label
       if (settings.showLabels) {
