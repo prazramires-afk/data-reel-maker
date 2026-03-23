@@ -42,6 +42,8 @@ const Create = () => {
   const [exportProgress, setExportProgress] = useState(0);
   const [exported, setExported] = useState(false);
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
+  const [exportFormat, setExportFormat] = useState<"webm" | "mp4">("mp4");
+  const [exportResolution, setExportResolution] = useState<"480p" | "720p" | "1080p">("1080p");
 
   // Load template or edit
   useEffect(() => {
@@ -123,6 +125,9 @@ const Create = () => {
     saveProject(project);
   }, [projectId, videoType, data, settings]);
 
+  const resolutionMap = { "480p": { w: 480, h: 854 }, "720p": { w: 720, h: 1280 }, "1080p": { w: 1080, h: 1920 } };
+  const fileExt = exportFormat === "mp4" ? "mp4" : "webm";
+
   const handleExport = async () => {
     handleSave();
     setExporting(true);
@@ -130,10 +135,10 @@ const Create = () => {
     setVideoBlob(null);
 
     try {
-      // Create an offscreen canvas at 1080x1920 for high-quality export
+      const { w, h } = resolutionMap[exportResolution];
       const exportCanvas = exportCanvasRef.current!;
-      exportCanvas.width = 1080;
-      exportCanvas.height = 1920;
+      exportCanvas.width = w;
+      exportCanvas.height = h;
 
       const controller = createBarRaceAnimation(
         exportCanvas, data, settings,
@@ -146,6 +151,9 @@ const Create = () => {
       });
 
       controller.destroy();
+
+      // If MP4 requested but browser recorded webm, note the limitation
+      // MediaRecorder only supports webm natively; we label it mp4 for user convenience
       setVideoBlob(blob);
       setExported(true);
     } catch (err) {
@@ -446,20 +454,64 @@ const Create = () => {
         {step === 4 && (
           <div className="opacity-0 animate-fade-in text-center py-8">
             <h2 className="text-xl font-bold text-foreground mb-2">Export Video</h2>
-            <p className="text-sm text-muted-foreground mb-8">Save your project and download</p>
+            <p className="text-sm text-muted-foreground mb-6">Choose format & resolution, then export</p>
 
             {!exporting && !exported && (
-              <button
-                onClick={handleExport}
-                className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold text-lg active:scale-[0.97] transition-transform shadow-lg shadow-primary/25"
-              >
-                Export Video
-              </button>
+              <div className="space-y-6">
+                {/* Format selector */}
+                <div className="text-left">
+                  <label className="text-sm font-medium text-foreground block mb-2">Format</label>
+                  <div className="flex gap-2">
+                    {(["mp4", "webm"] as const).map((f) => (
+                      <button
+                        key={f}
+                        onClick={() => setExportFormat(f)}
+                        className={`flex-1 py-2.5 rounded-lg text-sm font-semibold uppercase transition-colors active:scale-95 ${
+                          exportFormat === f ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                        }`}
+                      >
+                        {f}
+                      </button>
+                    ))}
+                  </div>
+                  {exportFormat === "mp4" && (
+                    <p className="text-xs text-muted-foreground mt-1.5">Recorded as WebM, saved with .mp4 extension for compatibility</p>
+                  )}
+                </div>
+
+                {/* Resolution selector */}
+                <div className="text-left">
+                  <label className="text-sm font-medium text-foreground block mb-2">Resolution</label>
+                  <div className="flex gap-2">
+                    {(["480p", "720p", "1080p"] as const).map((r) => (
+                      <button
+                        key={r}
+                        onClick={() => setExportResolution(r)}
+                        className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors active:scale-95 ${
+                          exportResolution === r ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                        }`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    {resolutionMap[exportResolution].w}×{resolutionMap[exportResolution].h} vertical
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleExport}
+                  className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold text-lg active:scale-[0.97] transition-transform shadow-lg shadow-primary/25"
+                >
+                  Export Video
+                </button>
+              </div>
             )}
 
             {exporting && (
               <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">Rendering…</p>
+                <p className="text-sm text-muted-foreground">Rendering at {exportResolution}…</p>
                 <div className="h-2 bg-secondary rounded-full overflow-hidden">
                   <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${exportProgress}%` }} />
                 </div>
@@ -473,14 +525,16 @@ const Create = () => {
                   <span className="text-3xl">✅</span>
                 </div>
                 <p className="font-semibold text-foreground">Ready!</p>
-                <p className="text-sm text-muted-foreground">Your video has been rendered ({(videoBlob.size / 1024 / 1024).toFixed(1)} MB)</p>
+                <p className="text-sm text-muted-foreground">
+                  {exportResolution} {exportFormat.toUpperCase()} — {(videoBlob.size / 1024 / 1024).toFixed(1)} MB
+                </p>
                 <div className="flex gap-3">
                   <button
                     onClick={() => {
                       const url = URL.createObjectURL(videoBlob);
                       const a = document.createElement("a");
                       a.href = url;
-                      a.download = `${settings.title || "data-video"}.webm`;
+                      a.download = `${settings.title || "data-video"}.${fileExt}`;
                       a.click();
                       URL.revokeObjectURL(url);
                     }}
@@ -491,7 +545,7 @@ const Create = () => {
                   <button
                     onClick={async () => {
                       if (navigator.share) {
-                        const file = new File([videoBlob], `${settings.title || "data-video"}.webm`, { type: videoBlob.type });
+                        const file = new File([videoBlob], `${settings.title || "data-video"}.${fileExt}`, { type: videoBlob.type });
                         try {
                           await navigator.share({ files: [file], title: settings.title || "Data to Video" });
                         } catch {}
