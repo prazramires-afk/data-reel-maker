@@ -95,10 +95,17 @@ export function createBarRaceAnimation(
   const maxBars = Math.min(labels.length, 10);
   const barHeight = 36;
   const barGap = 10;
-  const topPadding = 80;
   const sidePadding = 20;
   const rightPadding = 20;
   const bottomPadding = 40;
+
+  // Compute topPadding dynamically so chart is vertically centered
+  function getTopPadding(canvasHeight: number) {
+    const totalBarsHeight = maxBars * barHeight + (maxBars - 1) * barGap;
+    const titleSpace = 60; // space for title above bars
+    const contentHeight = titleSpace + totalBarsHeight;
+    return Math.max(80, (canvasHeight - contentHeight) / 2);
+  }
 
   let playing = false;
   let startTime = 0;
@@ -110,12 +117,13 @@ export function createBarRaceAnimation(
     ? `${settings.title}… #1 will shock you 😳`
     : "Top rankings… #1 will shock you 😳";
 
+  const initTop = getTopPadding(canvas.height);
   const bars: BarState[] = labels.map((label, i) => ({
     label,
     value: 0,
     targetValue: 0,
-    y: topPadding + i * (barHeight + barGap),
-    targetY: topPadding + i * (barHeight + barGap),
+    y: initTop + i * (barHeight + barGap),
+    targetY: initTop + i * (barHeight + barGap),
     color: colorMap[label],
     width: 0,
     targetWidth: 0,
@@ -168,10 +176,11 @@ export function createBarRaceAnimation(
     const barAreaWidth = w - sidePadding - rightPadding - 100;
 
     // Update targets
+    const topPad = getTopPadding(h);
     visible.forEach((bd, i) => {
       const bar = bars.find((b) => b.label === bd.label)!;
       bar.targetValue = bd.value;
-      bar.targetY = topPadding + i * (barHeight + barGap);
+      bar.targetY = topPad + i * (barHeight + barGap);
       bar.targetWidth = (bd.value / maxVal) * barAreaWidth;
     });
 
@@ -192,13 +201,14 @@ export function createBarRaceAnimation(
     ctx.fillText(Math.round(currentYear).toString(), w - 12, h - 8);
     ctx.globalAlpha = 1;
 
-    // Title
+    // Title — positioned above the bars area
+    const titleY = topPad - 50;
     if (settings.title) {
       ctx.fillStyle = theme.text;
       ctx.font = `bold ${Math.round(w * 0.05)}px system-ui, sans-serif`;
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
-      ctx.fillText(settings.title, sidePadding, 16);
+      ctx.fillText(settings.title, sidePadding, titleY);
     }
 
     // Year indicator small
@@ -206,7 +216,7 @@ export function createBarRaceAnimation(
     ctx.font = `600 ${Math.round(w * 0.035)}px system-ui, sans-serif`;
     ctx.textAlign = "right";
     ctx.textBaseline = "top";
-    ctx.fillText(Math.round(currentYear).toString(), w - rightPadding, 20);
+    ctx.fillText(Math.round(currentYear).toString(), w - rightPadding, titleY);
 
     // Bars
     const visibleLabels = new Set(visible.map((v) => v.label));
@@ -294,10 +304,11 @@ export function createBarRaceAnimation(
       elapsed = 0;
       startTime = 0;
       showHook = true;
+      const resetTop = getTopPadding(canvas.height);
       bars.forEach((b) => {
         b.value = 0;
         b.width = 0;
-        b.y = topPadding + labels.indexOf(b.label) * (barHeight + barGap);
+        b.y = resetTop + labels.indexOf(b.label) * (barHeight + barGap);
       });
       render(0);
     },
@@ -313,10 +324,11 @@ export function createBarRaceAnimation(
       elapsed = 0;
       startTime = 0;
       showHook = true;
+      const recTop = getTopPadding(canvas.height);
       bars.forEach((b) => {
         b.value = 0;
         b.width = 0;
-        b.y = topPadding + labels.indexOf(b.label) * (barHeight + barGap);
+        b.y = recTop + labels.indexOf(b.label) * (barHeight + barGap);
       });
 
       const fps = 30;
@@ -375,16 +387,17 @@ export function createBarRaceAnimation(
           const maxVal = Math.max(...visible.map((b) => b.value), 1);
           const barAreaWidth = canvas.width - sidePadding - rightPadding - 100;
 
+          const recTopPad = getTopPadding(canvas.height);
           visible.forEach((bd, i) => {
             const bar = bars.find((b) => b.label === bd.label)!;
             bar.targetValue = bd.value;
-            bar.targetY = topPadding + i * (barHeight + barGap);
+            bar.targetY = recTopPad + i * (barHeight + barGap);
             bar.targetWidth = (bd.value / maxVal) * barAreaWidth;
           });
 
-          // Multiple lerp steps for recording smoothness
+          // More lerp steps for recording so bars fully converge each frame
           const lerpSpeed = settings.smoothAnimation ? 0.12 : 0.3;
-          for (let s = 0; s < 3; s++) {
+          for (let s = 0; s < 12; s++) {
             bars.forEach((bar) => {
               bar.value = lerp(bar.value, bar.targetValue, lerpSpeed);
               bar.y = lerp(bar.y, bar.targetY, lerpSpeed);
