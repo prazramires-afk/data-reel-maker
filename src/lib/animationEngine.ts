@@ -201,13 +201,14 @@ export function createBarRaceAnimation(
     ctx.fillText(Math.round(currentYear).toString(), w - 12, h - 8);
     ctx.globalAlpha = 1;
 
-    // Title
+    // Title — positioned above the bars area
+    const titleY = topPad - 50;
     if (settings.title) {
       ctx.fillStyle = theme.text;
       ctx.font = `bold ${Math.round(w * 0.05)}px system-ui, sans-serif`;
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
-      ctx.fillText(settings.title, sidePadding, 16);
+      ctx.fillText(settings.title, sidePadding, titleY);
     }
 
     // Year indicator small
@@ -215,7 +216,7 @@ export function createBarRaceAnimation(
     ctx.font = `600 ${Math.round(w * 0.035)}px system-ui, sans-serif`;
     ctx.textAlign = "right";
     ctx.textBaseline = "top";
-    ctx.fillText(Math.round(currentYear).toString(), w - rightPadding, 20);
+    ctx.fillText(Math.round(currentYear).toString(), w - rightPadding, titleY);
 
     // Bars
     const visibleLabels = new Set(visible.map((v) => v.label));
@@ -394,9 +395,9 @@ export function createBarRaceAnimation(
             bar.targetWidth = (bd.value / maxVal) * barAreaWidth;
           });
 
-          // Multiple lerp steps for recording smoothness
+          // More lerp steps for recording so bars fully converge each frame
           const lerpSpeed = settings.smoothAnimation ? 0.12 : 0.3;
-          for (let s = 0; s < 3; s++) {
+          for (let s = 0; s < 12; s++) {
             bars.forEach((bar) => {
               bar.value = lerp(bar.value, bar.targetValue, lerpSpeed);
               bar.y = lerp(bar.y, bar.targetY, lerpSpeed);
