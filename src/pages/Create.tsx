@@ -10,6 +10,9 @@ import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE } from "@/lib/sampleData
 import { parseCSV } from "@/lib/parseCSV";
 import { saveProject, getProjects, generateId } from "@/lib/storage";
 import { createBarRaceAnimation, AnimationController } from "@/lib/animationEngine";
+import { createTimelineAnimation } from "@/lib/timelineAnimation";
+import { createTop10Animation } from "@/lib/top10Animation";
+import { createComparisonAnimation } from "@/lib/comparisonAnimation";
 
 const STEPS = ["Type", "Data", "Style", "Preview", "Export"];
 
