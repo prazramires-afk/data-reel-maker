@@ -418,11 +418,11 @@ const Create = () => {
             )}
 
             {/* Label Images Section */}
-            {uniqueLabels.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <ImagePlus className="w-4 h-4" /> Add Photos (optional)
-                </h3>
+            <div className="mt-6">
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <ImagePlus className="w-4 h-4" /> Add Photos (optional)
+              </h3>
+              {uniqueLabels.length > 0 ? (
                 <div className="grid grid-cols-2 gap-2">
                   {uniqueLabels.map((label) => (
                     <button
@@ -441,8 +441,12 @@ const Create = () => {
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-xs text-muted-foreground bg-secondary rounded-xl p-4">
+                  Fill in label names above to add photos for each item.
+                </p>
+              )}
+            </div>
           </div>
         )}
 
