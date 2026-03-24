@@ -57,9 +57,9 @@ export const DEFAULT_SETTINGS: ProjectSettings = {
 
 export const VIDEO_TYPES: { type: VideoType; label: string; description: string; available: boolean }[] = [
   { type: "bar_race", label: "Bar Chart Race", description: "Animated bars racing over time", available: true },
-  { type: "timeline", label: "Timeline Story", description: "Events unfolding through time", available: false },
-  { type: "top10", label: "Top 10 Countdown", description: "Countdown revealing the best", available: false },
-  { type: "comparison", label: "Comparison Battle", description: "Head-to-head face-offs", available: false },
+  { type: "timeline", label: "Timeline Story", description: "Events unfolding through time", available: true },
+  { type: "top10", label: "Top 10 Countdown", description: "Countdown revealing the best", available: true },
+  { type: "comparison", label: "Comparison Battle", description: "Head-to-head face-offs", available: true },
 ];
 
 export const BAR_COLORS = [

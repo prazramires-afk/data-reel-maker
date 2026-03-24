@@ -10,6 +10,9 @@ import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE } from "@/lib/sampleData
 import { parseCSV } from "@/lib/parseCSV";
 import { saveProject, getProjects, generateId } from "@/lib/storage";
 import { createBarRaceAnimation, AnimationController } from "@/lib/animationEngine";
+import { createTimelineAnimation } from "@/lib/timelineAnimation";
+import { createTop10Animation } from "@/lib/top10Animation";
+import { createComparisonAnimation } from "@/lib/comparisonAnimation";
 
 const STEPS = ["Type", "Data", "Style", "Preview", "Export"];
 
@@ -152,7 +155,11 @@ const Create = () => {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
 
       controllerRef.current?.destroy();
-      controllerRef.current = createBarRaceAnimation(
+      const createAnimation = videoType === "timeline" ? createTimelineAnimation
+        : videoType === "top10" ? createTop10Animation
+        : videoType === "comparison" ? createComparisonAnimation
+        : createBarRaceAnimation;
+      controllerRef.current = createAnimation(
         canvas, data, settings,
         (p) => setProgress(p),
         () => setIsPlaying(false),
@@ -160,7 +167,7 @@ const Create = () => {
       );
     }
     return () => controllerRef.current?.destroy();
-  }, [step, data, settings, loadedImages]);
+  }, [step, data, settings, loadedImages, videoType]);
 
   const handlePlay = () => {
     if (isPlaying) {
@@ -208,7 +215,11 @@ const Create = () => {
       exportCanvas.width = w;
       exportCanvas.height = h;
 
-      const controller = createBarRaceAnimation(
+      const createAnimation = videoType === "timeline" ? createTimelineAnimation
+        : videoType === "top10" ? createTop10Animation
+        : videoType === "comparison" ? createComparisonAnimation
+        : createBarRaceAnimation;
+      const controller = createAnimation(
         exportCanvas, data, settings,
         () => {},
         () => {},
