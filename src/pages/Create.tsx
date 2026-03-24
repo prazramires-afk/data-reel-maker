@@ -155,7 +155,11 @@ const Create = () => {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
 
       controllerRef.current?.destroy();
-      controllerRef.current = createBarRaceAnimation(
+      const createAnimation = videoType === "timeline" ? createTimelineAnimation
+        : videoType === "top10" ? createTop10Animation
+        : videoType === "comparison" ? createComparisonAnimation
+        : createBarRaceAnimation;
+      controllerRef.current = createAnimation(
         canvas, data, settings,
         (p) => setProgress(p),
         () => setIsPlaying(false),
@@ -211,7 +215,11 @@ const Create = () => {
       exportCanvas.width = w;
       exportCanvas.height = h;
 
-      const controller = createBarRaceAnimation(
+      const createAnimation = videoType === "timeline" ? createTimelineAnimation
+        : videoType === "top10" ? createTop10Animation
+        : videoType === "comparison" ? createComparisonAnimation
+        : createBarRaceAnimation;
+      const controller = createAnimation(
         exportCanvas, data, settings,
         () => {},
         () => {},
