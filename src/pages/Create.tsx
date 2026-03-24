@@ -35,6 +35,43 @@ const Create = () => {
   // Loaded HTMLImageElement cache for canvas rendering
   const [loadedImages, setLoadedImages] = useState<Record<string, HTMLImageElement>>({});
 
+  const readImageFile = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error("Failed to read image"));
+      reader.readAsDataURL(file);
+    });
+
+  const normalizeImageDataUrl = (src: string, size = 1200) =>
+    new Promise<string>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const outputSize = Math.max(size, Math.min(img.naturalWidth, img.naturalHeight, 2000));
+        const offscreen = document.createElement("canvas");
+        offscreen.width = outputSize;
+        offscreen.height = outputSize;
+        const ctx = offscreen.getContext("2d");
+
+        if (!ctx) {
+          reject(new Error("Failed to process image"));
+          return;
+        }
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+
+        const sourceSize = Math.min(img.naturalWidth, img.naturalHeight);
+        const sourceX = (img.naturalWidth - sourceSize) / 2;
+        const sourceY = (img.naturalHeight - sourceSize) / 2;
+
+        ctx.drawImage(img, sourceX, sourceY, sourceSize, sourceSize, 0, 0, outputSize, outputSize);
+        resolve(offscreen.toDataURL("image/png"));
+      };
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = src;
+    });
+
   // Preview
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const controllerRef = useRef<AnimationController | null>(null);
@@ -60,6 +97,7 @@ const Create = () => {
     }
     Object.entries(labelImages).forEach(([label, src]) => {
       const img = new Image();
+      img.decoding = "async";
       img.onload = () => {
         newLoaded[label] = img;
         remaining--;
@@ -211,14 +249,17 @@ const Create = () => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        setLabelImages((prev) => ({ ...prev, [label]: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
+
+      try {
+        const rawDataUrl = await readImageFile(file);
+        const normalizedDataUrl = await normalizeImageDataUrl(rawDataUrl);
+        setLabelImages((prev) => ({ ...prev, [label]: normalizedDataUrl }));
+      } catch (error) {
+        console.error("Image upload failed:", error);
+      }
     };
     input.click();
   };
