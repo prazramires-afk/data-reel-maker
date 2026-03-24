@@ -167,7 +167,7 @@ const Create = () => {
       );
     }
     return () => controllerRef.current?.destroy();
-  }, [step, data, settings, loadedImages]);
+  }, [step, data, settings, loadedImages, videoType]);
 
   const handlePlay = () => {
     if (isPlaying) {
