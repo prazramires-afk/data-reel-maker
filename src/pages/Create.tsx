@@ -540,6 +540,32 @@ const Create = () => {
                 </div>
               ))}
             </div>
+
+            {/* Background Music */}
+            <div>
+              <label className="text-sm font-medium text-foreground block mb-2 flex items-center gap-2">
+                <Music className="w-4 h-4" /> Background Music
+              </label>
+              <div className="flex flex-col gap-2">
+                {AUDIO_TRACKS.map((track) => (
+                  <button
+                    key={track.id}
+                    onClick={() => setSelectedTrack(track.id)}
+                    className={`flex items-center gap-3 p-3 rounded-xl text-left transition-all active:scale-[0.97] ${
+                      selectedTrack === track.id
+                        ? "bg-primary/15 ring-2 ring-primary"
+                        : "bg-secondary"
+                    }`}
+                  >
+                    <span className="text-xl">{track.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">{track.name}</p>
+                      <p className="text-xs text-muted-foreground">{track.description}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
