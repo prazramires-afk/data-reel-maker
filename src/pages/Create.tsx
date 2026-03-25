@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Plus, Trash2, Play, RotateCcw, Download, Share2, Pause, ImagePlus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Trash2, Play, RotateCcw, Download, Share2, Pause, ImagePlus, Music } from "lucide-react";
 import {
   VideoType, DataRow, ProjectSettings, Project, DEFAULT_SETTINGS,
   VIDEO_TYPES, ThemeType, SpeedType,
@@ -13,6 +13,7 @@ import { createBarRaceAnimation, AnimationController } from "@/lib/animationEngi
 import { createTimelineAnimation } from "@/lib/timelineAnimation";
 import { createTop10Animation } from "@/lib/top10Animation";
 import { createComparisonAnimation } from "@/lib/comparisonAnimation";
+import { AUDIO_TRACKS, createAudioStream } from "@/lib/audioTracks";
 
 const STEPS = ["Type", "Data", "Style", "Preview", "Export"];
 
@@ -89,6 +90,7 @@ const Create = () => {
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [exportFormat, setExportFormat] = useState<"webm" | "mp4">("mp4");
   const [exportResolution, setExportResolution] = useState<"480p" | "720p" | "1080p">("1080p");
+  const [selectedTrack, setSelectedTrack] = useState("none");
 
   // Load images into HTMLImageElement cache when labelImages change
   useEffect(() => {
@@ -226,10 +228,17 @@ const Create = () => {
         loadedImages
       );
 
+      // Calculate duration for audio
+      const baseDuration = 15;
+      const speedMultiplier = settings.speed === "slow" ? 0.7 : settings.speed === "fast" ? 1.5 : 1;
+      const totalMs = (baseDuration / speedMultiplier) * 1000;
+
+      const audio = createAudioStream(selectedTrack, totalMs);
       const blob = await controller.recordVideo((p) => {
         setExportProgress(Math.round(p * 100));
-      });
+      }, audio?.stream);
 
+      audio?.stop();
       controller.destroy();
       setVideoBlob(blob);
       setExported(true);
@@ -530,6 +539,32 @@ const Create = () => {
                   </button>
                 </div>
               ))}
+            </div>
+
+            {/* Background Music */}
+            <div>
+              <label className="text-sm font-medium text-foreground block mb-2 flex items-center gap-2">
+                <Music className="w-4 h-4" /> Background Music
+              </label>
+              <div className="flex flex-col gap-2">
+                {AUDIO_TRACKS.map((track) => (
+                  <button
+                    key={track.id}
+                    onClick={() => setSelectedTrack(track.id)}
+                    className={`flex items-center gap-3 p-3 rounded-xl text-left transition-all active:scale-[0.97] ${
+                      selectedTrack === track.id
+                        ? "bg-primary/15 ring-2 ring-primary"
+                        : "bg-secondary"
+                    }`}
+                  >
+                    <span className="text-xl">{track.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">{track.name}</p>
+                      <p className="text-xs text-muted-foreground">{track.description}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}

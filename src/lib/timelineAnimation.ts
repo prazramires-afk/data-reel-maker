@@ -243,7 +243,7 @@ export function createTimelineAnimation(
     },
     destroy() { playing = false; cancelAnimationFrame(animFrame); },
     isPlaying: () => playing,
-    async recordVideo(onRecordProgress: (p: number) => void): Promise<Blob> {
+    async recordVideo(onRecordProgress: (p: number) => void, audioStream?: MediaStream): Promise<Blob> {
       playing = false; cancelAnimationFrame(animFrame);
       elapsed = 0; startTime = 0;
 
@@ -254,6 +254,9 @@ export function createTimelineAnimation(
         ? 'video/webm;codecs=vp9' : 'video/webm;codecs=vp8';
 
       const stream = canvas.captureStream(fps);
+      if (audioStream) {
+        audioStream.getAudioTracks().forEach(t => stream.addTrack(t));
+      }
       const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 5_000_000 });
       const chunks: Blob[] = [];
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
