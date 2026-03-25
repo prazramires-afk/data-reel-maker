@@ -228,10 +228,17 @@ const Create = () => {
         loadedImages
       );
 
+      // Calculate duration for audio
+      const baseDuration = 15;
+      const speedMultiplier = settings.speed === "slow" ? 0.7 : settings.speed === "fast" ? 1.5 : 1;
+      const totalMs = (baseDuration / speedMultiplier) * 1000;
+
+      const audio = createAudioStream(selectedTrack, totalMs);
       const blob = await controller.recordVideo((p) => {
         setExportProgress(Math.round(p * 100));
-      });
+      }, audio?.stream);
 
+      audio?.stop();
       controller.destroy();
       setVideoBlob(blob);
       setExported(true);
