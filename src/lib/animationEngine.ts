@@ -340,7 +340,7 @@ export function createBarRaceAnimation(
       cancelAnimationFrame(animFrame);
     },
     isPlaying: () => playing,
-    async recordVideo(onRecordProgress: (p: number) => void): Promise<Blob> {
+    async recordVideo(onRecordProgress: (p: number) => void, audioStream?: MediaStream): Promise<Blob> {
       // Reset state for recording
       playing = false;
       cancelAnimationFrame(animFrame);
@@ -364,6 +364,9 @@ export function createBarRaceAnimation(
         : 'video/webm;codecs=vp8';
 
       const stream = canvas.captureStream(fps);
+      if (audioStream) {
+        audioStream.getAudioTracks().forEach(t => stream.addTrack(t));
+      }
       const recorder = new MediaRecorder(stream, {
         mimeType,
         videoBitsPerSecond: 5_000_000,
