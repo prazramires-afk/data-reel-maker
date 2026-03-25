@@ -90,6 +90,7 @@ const Create = () => {
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [exportFormat, setExportFormat] = useState<"webm" | "mp4">("mp4");
   const [exportResolution, setExportResolution] = useState<"480p" | "720p" | "1080p">("1080p");
+  const [selectedTrack, setSelectedTrack] = useState("none");
 
   // Load images into HTMLImageElement cache when labelImages change
   useEffect(() => {
