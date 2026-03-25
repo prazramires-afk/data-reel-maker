@@ -1,6 +1,6 @@
 export type VideoType = "bar_race" | "timeline" | "top10" | "comparison";
 
-export type ThemeType = "dark" | "light" | "neon";
+export type ThemeType = "dark" | "light" | "neon" | "greenscreen";
 
 export type SpeedType = "slow" | "medium" | "fast";
 

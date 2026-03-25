@@ -7,6 +7,8 @@ function getThemeColors(theme: ThemeType) {
       return { bg: "#f8f9fa", text: "#1a1a2e", sub: "#6b7280", vs: "#ef4444" };
     case "neon":
       return { bg: "#0a0a1a", text: "#00ffff", sub: "#ff00ff", vs: "#ff3366" };
+    case "greenscreen":
+      return { bg: "#00ff00", text: "#ffffff", sub: "#e0e0e0", vs: "#ffffff" };
     default:
       return { bg: "#16161e", text: "#f0f0f5", sub: "#8888a0", vs: "#ef4444" };
   }

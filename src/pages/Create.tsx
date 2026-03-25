@@ -487,16 +487,16 @@ const Create = () => {
 
             <div>
               <label className="text-sm font-medium text-foreground block mb-2">Theme</label>
-              <div className="flex gap-2">
-                {(["dark", "light", "neon"] as ThemeType[]).map((t) => (
+              <div className="flex gap-2 flex-wrap">
+                {(["dark", "light", "neon", "greenscreen"] as ThemeType[]).map((t) => (
                   <button
                     key={t}
                     onClick={() => setSettings({ ...settings, theme: t })}
-                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold capitalize transition-colors active:scale-95 ${
+                    className={`flex-1 min-w-[70px] py-2.5 rounded-lg text-sm font-semibold transition-colors active:scale-95 ${
                       settings.theme === t ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
-                    }`}
+                    } ${t === "greenscreen" ? "!text-xs" : "capitalize"}`}
                   >
-                    {t}
+                    {t === "greenscreen" ? "🟢 Green Screen" : t}
                   </button>
                 ))}
               </div>
