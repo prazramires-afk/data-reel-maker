@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Plus, Trash2, Play, RotateCcw, Download, Share2, Pause, ImagePlus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Trash2, Play, RotateCcw, Download, Share2, Pause, ImagePlus, Music } from "lucide-react";
 import {
   VideoType, DataRow, ProjectSettings, Project, DEFAULT_SETTINGS,
   VIDEO_TYPES, ThemeType, SpeedType,
@@ -13,6 +13,7 @@ import { createBarRaceAnimation, AnimationController } from "@/lib/animationEngi
 import { createTimelineAnimation } from "@/lib/timelineAnimation";
 import { createTop10Animation } from "@/lib/top10Animation";
 import { createComparisonAnimation } from "@/lib/comparisonAnimation";
+import { AUDIO_TRACKS, createAudioStream } from "@/lib/audioTracks";
 
 const STEPS = ["Type", "Data", "Style", "Preview", "Export"];
 

@@ -72,7 +72,7 @@ export interface AnimationController {
   restart: () => void;
   destroy: () => void;
   isPlaying: () => boolean;
-  recordVideo: (onProgress: (p: number) => void) => Promise<Blob>;
+  recordVideo: (onProgress: (p: number) => void, audioStream?: MediaStream) => Promise<Blob>;
 }
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
