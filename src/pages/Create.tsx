@@ -412,10 +412,36 @@ const Create = () => {
                 <textarea
                   value={csvText}
                   onChange={(e) => setCsvText(e.target.value)}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData.getData("text");
+                    if (pasted) {
+                      e.preventDefault();
+                      setCsvText(pasted);
+                      const parsed = parseCSV(pasted);
+                      if (parsed.length >= 5) {
+                        setData(parsed);
+                        setDataTab("manual");
+                      }
+                    }
+                  }}
                   placeholder={"Year,USA,China,Japan\n2010,15000,6000,5000\n2020,21000,14700,5040"}
                   className="w-full h-48 bg-secondary rounded-xl p-4 text-sm text-foreground font-mono placeholder:text-muted-foreground resize-none outline-none focus:ring-1 focus:ring-primary"
                 />
-                <p className="text-xs text-muted-foreground mt-2">First column = Year, rest = data series</p>
+                <p className="text-xs text-muted-foreground mt-2">Paste your CSV here — it will auto-populate the table</p>
+                {csvText.trim() && (
+                  <button
+                    onClick={() => {
+                      const parsed = parseCSV(csvText);
+                      if (parsed.length >= 5) {
+                        setData(parsed);
+                        setDataTab("manual");
+                      }
+                    }}
+                    className="mt-2 text-sm text-primary font-medium active:scale-95 transition-transform"
+                  >
+                    Load into Table →
+                  </button>
+                )}
               </div>
             )}
 
