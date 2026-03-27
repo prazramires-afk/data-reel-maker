@@ -19,7 +19,24 @@ export function saveProject(project: Project): void {
   } else {
     projects.push(project);
   }
-  localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+  try {
+    localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+  } catch (e) {
+    // Storage full — trim oldest projects and retry
+    console.warn("Storage quota exceeded, trimming old projects");
+    const trimmed = projects.slice(-5);
+    try {
+      localStorage.setItem(PROJECTS_KEY, JSON.stringify(trimmed));
+    } catch {
+      // Still full — clear and save only current
+      localStorage.removeItem(PROJECTS_KEY);
+      try {
+        localStorage.setItem(PROJECTS_KEY, JSON.stringify([project]));
+      } catch {
+        console.error("Cannot save to localStorage");
+      }
+    }
+  }
 }
 
 export function deleteProject(id: string): void {
