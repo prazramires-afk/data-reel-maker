@@ -204,9 +204,9 @@ export function createBarRaceAnimation(
     ctx.fillStyle = theme.sub;
     ctx.globalAlpha = 0.15;
     ctx.font = `bold ${Math.round(w * 0.18)}px system-ui, sans-serif`;
-    ctx.textAlign = "right";
+    ctx.textAlign = "center";
     ctx.textBaseline = "bottom";
-    ctx.fillText(Math.round(currentYear).toString(), w - 12, h - 8);
+    ctx.fillText(Math.round(currentYear).toString(), w / 2, h - 8);
     ctx.globalAlpha = 1;
 
     // Title — positioned above the bars area
@@ -214,17 +214,17 @@ export function createBarRaceAnimation(
     if (settings.title) {
       ctx.fillStyle = theme.text;
       ctx.font = `bold ${Math.round(w * 0.05)}px system-ui, sans-serif`;
-      ctx.textAlign = "left";
+      ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      ctx.fillText(settings.title, sidePadding, titleY);
+      ctx.fillText(settings.title, w / 2, titleY);
     }
 
     // Year indicator small
     ctx.fillStyle = theme.sub;
     ctx.font = `600 ${Math.round(w * 0.035)}px system-ui, sans-serif`;
-    ctx.textAlign = "right";
+    ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.fillText(Math.round(currentYear).toString(), w - rightPadding, titleY);
+    ctx.fillText(Math.round(currentYear).toString(), w / 2, titleY + w * 0.06);
 
     // Bars
     const visibleLabels = new Set(visible.map((v) => v.label));
