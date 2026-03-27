@@ -92,9 +92,9 @@ export function createComparisonAnimation(
     ctx.fillStyle = theme.sub;
     ctx.globalAlpha = 0.12;
     ctx.font = `bold ${Math.round(w * 0.18)}px system-ui, sans-serif`;
-    ctx.textAlign = "right";
+    ctx.textAlign = "center";
     ctx.textBaseline = "bottom";
-    ctx.fillText(Math.round(currentYear).toString(), w - 12, h - 8);
+    ctx.fillText(Math.round(currentYear).toString(), w / 2, h - 8);
     ctx.globalAlpha = 1;
 
     // Year small
