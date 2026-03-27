@@ -282,7 +282,7 @@ export function createBarRaceAnimation(
     ctx.font = `500 ${Math.round(w * 0.025)}px system-ui, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "bottom";
-    ctx.fillText("Made with Data to Video", w / 2, h - bottomPadding + 30);
+    ctx.fillText("Made with datatovid.com", w / 2, h - bottomPadding + 30);
     ctx.globalAlpha = 1;
   }
 

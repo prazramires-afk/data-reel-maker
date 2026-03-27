@@ -162,7 +162,7 @@ export function createTop10Animation(
     ctx.font = `500 ${Math.round(w * 0.025)}px system-ui, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "bottom";
-    ctx.fillText("Made with Data to Video", w / 2, h - 20);
+    ctx.fillText("Made with datatovid.com", w / 2, h - 20);
     ctx.globalAlpha = 1;
   }
 
