@@ -70,9 +70,9 @@ export function createTop10Animation(
     if (settings.title) {
       ctx.fillStyle = theme.text;
       ctx.font = `bold ${Math.round(w * 0.05)}px system-ui, sans-serif`;
-      ctx.textAlign = "center";
+      ctx.textAlign = "left";
       ctx.textBaseline = "top";
-      ctx.fillText(settings.title, w / 2, topPad);
+      ctx.fillText(settings.title, sidePad, topPad);
     }
 
     // Get final rankings
