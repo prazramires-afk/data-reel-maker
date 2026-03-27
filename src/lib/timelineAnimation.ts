@@ -79,9 +79,9 @@ export function createTimelineAnimation(
     if (settings.title) {
       ctx.fillStyle = theme.text;
       ctx.font = `bold ${Math.round(w * 0.05)}px system-ui, sans-serif`;
-      ctx.textAlign = "center";
+      ctx.textAlign = "left";
       ctx.textBaseline = "top";
-      ctx.fillText(settings.title, w / 2, topPad - w * 0.07);
+      ctx.fillText(settings.title, sidePad, topPad - w * 0.07);
     }
 
     const dataProgress = Math.max(0, progress / 0.95);
@@ -202,9 +202,9 @@ export function createTimelineAnimation(
     ctx.fillStyle = theme.sub;
     ctx.globalAlpha = 0.12;
     ctx.font = `bold ${Math.round(w * 0.2)}px system-ui, sans-serif`;
-    ctx.textAlign = "center";
+    ctx.textAlign = "right";
     ctx.textBaseline = "bottom";
-    ctx.fillText(Math.round(currentYear).toString(), w / 2, h - 8);
+    ctx.fillText(Math.round(currentYear).toString(), w - 12, h - 8);
     ctx.globalAlpha = 1;
 
     // Watermark
