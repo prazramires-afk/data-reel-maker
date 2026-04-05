@@ -549,6 +549,7 @@ const Create = () => {
               {[
                 { label: "Show Labels", key: "showLabels" as const },
                 { label: "Show Values", key: "showValues" as const },
+                { label: "Show Intro Text", key: "showIntro" as const },
                 { label: "Smooth Animation", key: "smoothAnimation" as const },
               ].map(({ label, key }) => (
                 <div key={key} className="flex items-center justify-between">
