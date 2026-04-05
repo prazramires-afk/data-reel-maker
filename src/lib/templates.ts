@@ -15,7 +15,7 @@ export const TEMPLATES: Template[] = [
       speed: "medium",
       showLabels: true,
       showValues: true,
-      smoothAnimation: true,
+      showIntro: true, smoothAnimation: true,
     },
   },
   {
@@ -31,7 +31,7 @@ export const TEMPLATES: Template[] = [
       speed: "slow",
       showLabels: true,
       showValues: true,
-      smoothAnimation: true,
+      showIntro: true, smoothAnimation: true,
     },
   },
   {
@@ -47,7 +47,7 @@ export const TEMPLATES: Template[] = [
       speed: "fast",
       showLabels: true,
       showValues: true,
-      smoothAnimation: true,
+      showIntro: true, smoothAnimation: true,
     },
   },
   {
@@ -63,7 +63,7 @@ export const TEMPLATES: Template[] = [
       speed: "slow",
       showLabels: true,
       showValues: true,
-      smoothAnimation: true,
+      showIntro: true, smoothAnimation: true,
     },
   },
   {
@@ -79,7 +79,7 @@ export const TEMPLATES: Template[] = [
       speed: "medium",
       showLabels: true,
       showValues: true,
-      smoothAnimation: true,
+      showIntro: true, smoothAnimation: true,
     },
   },
   {
@@ -95,7 +95,7 @@ export const TEMPLATES: Template[] = [
       speed: "medium",
       showLabels: true,
       showValues: true,
-      smoothAnimation: true,
+      showIntro: true, smoothAnimation: true,
     },
   },
   {
@@ -111,7 +111,7 @@ export const TEMPLATES: Template[] = [
       speed: "medium",
       showLabels: true,
       showValues: true,
-      smoothAnimation: true,
+      showIntro: true, smoothAnimation: true,
     },
   },
 ];
