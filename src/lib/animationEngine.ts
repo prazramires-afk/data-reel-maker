@@ -150,7 +150,7 @@ export function createBarRaceAnimation(
     ctx.fillRect(0, 0, w, h);
 
     // Hook text fade out in first 15%
-    if (showHook && progress < 0.15) {
+    if (settings.showIntro && showHook && progress < 0.15) {
       const hookAlpha = progress < 0.1 ? 1 : 1 - (progress - 0.1) / 0.05;
       ctx.save();
       ctx.globalAlpha = hookAlpha;

@@ -22,6 +22,7 @@ export interface ProjectSettings {
   speed: SpeedType;
   showLabels: boolean;
   showValues: boolean;
+  showIntro: boolean;
   smoothAnimation: boolean;
 }
 
@@ -52,6 +53,7 @@ export const DEFAULT_SETTINGS: ProjectSettings = {
   speed: "medium",
   showLabels: true,
   showValues: true,
+  showIntro: true,
   smoothAnimation: true,
 };
 
