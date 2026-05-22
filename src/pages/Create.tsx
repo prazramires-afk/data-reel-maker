@@ -745,12 +745,14 @@ const Create = () => {
                 onChange={(p) => setSettings({ ...settings, yearPos: p })}
                 label="Year"
               />
-              <DraggableHandle
-                containerRef={previewContainerRef}
-                pos={settings.watermarkPos ?? { x: 0.5, y: 0.97 }}
-                onChange={(p) => setSettings({ ...settings, watermarkPos: p })}
-                label="Watermark"
-              />
+              {!effectiveSettings.hideWatermark && (
+                <DraggableHandle
+                  containerRef={previewContainerRef}
+                  pos={settings.watermarkPos ?? { x: 0.5, y: 0.97 }}
+                  onChange={(p) => setSettings({ ...settings, watermarkPos: p })}
+                  label="Watermark"
+                />
+              )}
             </div>
 
             {/* Progress bar */}
@@ -858,7 +860,7 @@ const Create = () => {
                   onClick={handleExport}
                   className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold text-lg active:scale-[0.97] transition-transform shadow-lg shadow-primary/25"
                 >
-                  Export Video
+                  Export Video · {VIDEO_COST} tokens
                 </button>
               </div>
             )}
