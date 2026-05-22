@@ -200,13 +200,14 @@ export function createBarRaceAnimation(
       bar.width = lerp(bar.width, bar.targetWidth, lerpSpeed);
     });
 
-    // Year display
+    // Year display (draggable)
+    const yp = settings.yearPos ?? { x: 0.85, y: 0.92 };
     ctx.fillStyle = theme.sub;
     ctx.globalAlpha = 0.15;
     ctx.font = `bold ${Math.round(w * 0.18)}px system-ui, sans-serif`;
-    ctx.textAlign = "right";
-    ctx.textBaseline = "bottom";
-    ctx.fillText(Math.round(currentYear).toString(), w - 12, h - 8);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(Math.round(currentYear).toString(), w * yp.x, h * yp.y);
     ctx.globalAlpha = 1;
 
     // Title — positioned above the bars area
@@ -276,13 +277,14 @@ export function createBarRaceAnimation(
       }
     });
 
-    // Watermark
+    // Watermark (draggable)
+    const wp = settings.watermarkPos ?? { x: 0.5, y: 0.97 };
     ctx.fillStyle = theme.sub;
     ctx.globalAlpha = 0.4;
     ctx.font = `500 ${Math.round(w * 0.025)}px system-ui, sans-serif`;
     ctx.textAlign = "center";
-    ctx.textBaseline = "bottom";
-    ctx.fillText("Made with datatovid.com", w / 2, h - bottomPadding + 30);
+    ctx.textBaseline = "middle";
+    ctx.fillText("Made with datatovid.com", w * wp.x, h * wp.y);
     ctx.globalAlpha = 1;
   }
 
