@@ -411,6 +411,14 @@ const Create = () => {
           </div>
           <p className="text-xs text-muted-foreground mt-1.5">Step {step + 1}: {STEPS[step]}</p>
         </div>
+        {user && (
+          <div className="flex items-center gap-1.5 bg-card border border-border rounded-full px-2.5 py-1">
+            {isPremium ? <Sparkles className="w-3 h-3 text-primary" /> : <Coins className="w-3 h-3 text-muted-foreground" />}
+            <span className="text-[11px] font-semibold text-foreground tabular-nums">
+              {credits?.tokens ?? 0}/{isPremium ? 50 : 10}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -662,6 +670,34 @@ const Create = () => {
                   </button>
                 </div>
               ))}
+
+              {/* Premium-only: remove watermark */}
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-foreground font-medium">Remove Watermark</span>
+                  {!isPremium && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase bg-primary/15 text-primary px-1.5 py-0.5 rounded-full">
+                      <Lock className="w-2.5 h-2.5" /> Premium
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    if (!isPremium) {
+                      toast("Upgrade to Premium to remove the watermark.");
+                      return;
+                    }
+                    setSettings({ ...settings, hideWatermark: !settings.hideWatermark });
+                  }}
+                  className={`w-12 h-7 rounded-full transition-colors relative ${
+                    isPremium && settings.hideWatermark ? "bg-primary" : "bg-secondary"
+                  } ${!isPremium ? "opacity-60" : ""}`}
+                >
+                  <div className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                    isPremium && settings.hideWatermark ? "translate-x-6" : "translate-x-1"
+                  }`} />
+                </button>
+              </div>
             </div>
 
             {/* Background Music */}
