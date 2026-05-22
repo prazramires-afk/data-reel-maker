@@ -24,6 +24,14 @@ export interface ProjectSettings {
   showValues: boolean;
   showIntro: boolean;
   smoothAnimation: boolean;
+  /** Normalized 0-1 anchor for the big year display (centered). */
+  yearPos?: { x: number; y: number };
+  /** Normalized 0-1 anchor for the watermark (centered). */
+  watermarkPos?: { x: number; y: number };
+  /** Custom export width in pixels (overrides preset). */
+  exportWidth?: number;
+  /** Custom export height in pixels (overrides preset). */
+  exportHeight?: number;
 }
 
 export interface Project {
@@ -55,6 +63,8 @@ export const DEFAULT_SETTINGS: ProjectSettings = {
   showValues: true,
   showIntro: true,
   smoothAnimation: true,
+  yearPos: { x: 0.85, y: 0.92 },
+  watermarkPos: { x: 0.5, y: 0.97 },
 };
 
 export const VIDEO_TYPES: { type: VideoType; label: string; description: string; available: boolean }[] = [
