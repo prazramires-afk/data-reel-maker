@@ -17,6 +17,50 @@ import { AUDIO_TRACKS, createAudioStream } from "@/lib/audioTracks";
 
 const STEPS = ["Type", "Data", "Style", "Preview", "Export"];
 
+/**
+ * Drag handle overlay for repositioning canvas-drawn elements.
+ * Position is normalized (0-1) relative to the canvas container.
+ */
+const DraggableHandle = ({
+  pos,
+  onChange,
+  label,
+  containerRef,
+}: {
+  pos: { x: number; y: number };
+  onChange: (p: { x: number; y: number }) => void;
+  label: string;
+  containerRef: React.RefObject<HTMLElement>;
+}) => {
+  const onPointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const el = containerRef.current;
+    if (!el) return;
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    const move = (ev: PointerEvent) => {
+      const rect = el.getBoundingClientRect();
+      const x = Math.max(0.02, Math.min(0.98, (ev.clientX - rect.left) / rect.width));
+      const y = Math.max(0.02, Math.min(0.98, (ev.clientY - rect.top) / rect.height));
+      onChange({ x, y });
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+  return (
+    <div
+      onPointerDown={onPointerDown}
+      className="absolute -translate-x-1/2 -translate-y-1/2 px-2 py-1 rounded-md bg-primary/30 border border-primary text-[10px] font-semibold text-primary-foreground cursor-move select-none touch-none backdrop-blur-sm"
+      style={{ left: `${pos.x * 100}%`, top: `${pos.y * 100}%` }}
+    >
+      ⠿ {label}
+    </div>
+  );
+};
+
 const Create = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -84,6 +128,7 @@ const Create = () => {
 
   // Export
   const exportCanvasRef = useRef<HTMLCanvasElement>(null);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [exported, setExported] = useState(false);
@@ -203,6 +248,7 @@ const Create = () => {
   }, [projectId, videoType, data, settings, labelImages]);
 
   const resolutionMap = { "480p": { w: 480, h: 854 }, "720p": { w: 720, h: 1280 }, "1080p": { w: 1080, h: 1920 } };
+  const useCustomSize = !!(settings.exportWidth && settings.exportHeight);
   const fileExt = exportFormat === "mp4" ? "mp4" : "webm";
 
   const handleExport = async () => {
@@ -212,7 +258,9 @@ const Create = () => {
     setVideoBlob(null);
 
     try {
-      const { w, h } = resolutionMap[exportResolution];
+      const { w, h } = useCustomSize
+        ? { w: settings.exportWidth!, h: settings.exportHeight! }
+        : resolutionMap[exportResolution];
       const exportCanvas = exportCanvasRef.current!;
       exportCanvas.width = w;
       exportCanvas.height = h;
@@ -600,11 +648,24 @@ const Create = () => {
         {step === 3 && (
           <div className="opacity-0 animate-fade-in">
             <h2 className="text-xl font-bold text-foreground mb-4">Preview</h2>
-            <div className="bg-card rounded-2xl overflow-hidden">
+            <p className="text-xs text-muted-foreground mb-2">Tip: drag the year and watermark labels to reposition them.</p>
+            <div ref={previewContainerRef} className="relative bg-card rounded-2xl overflow-hidden">
               <canvas
                 ref={canvasRef}
                 className="w-full"
                 style={{ aspectRatio: "9/16", maxHeight: "70vh" }}
+              />
+              <DraggableHandle
+                containerRef={previewContainerRef}
+                pos={settings.yearPos ?? { x: 0.85, y: 0.92 }}
+                onChange={(p) => setSettings({ ...settings, yearPos: p })}
+                label="Year"
+              />
+              <DraggableHandle
+                containerRef={previewContainerRef}
+                pos={settings.watermarkPos ?? { x: 0.5, y: 0.97 }}
+                onChange={(p) => setSettings({ ...settings, watermarkPos: p })}
+                label="Watermark"
               />
             </div>
 
@@ -661,9 +722,12 @@ const Create = () => {
                     {(["480p", "720p", "1080p"] as const).map((r) => (
                       <button
                         key={r}
-                        onClick={() => setExportResolution(r)}
+                        onClick={() => {
+                          setExportResolution(r);
+                          setSettings({ ...settings, exportWidth: undefined, exportHeight: undefined });
+                        }}
                         className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors active:scale-95 ${
-                          exportResolution === r ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                          !useCustomSize && exportResolution === r ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
                         }`}
                       >
                         {r}
@@ -671,7 +735,38 @@ const Create = () => {
                     ))}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1.5">
-                    {resolutionMap[exportResolution].w}×{resolutionMap[exportResolution].h} vertical
+                    {useCustomSize
+                      ? `Custom: ${settings.exportWidth}×${settings.exportHeight}`
+                      : `${resolutionMap[exportResolution].w}×${resolutionMap[exportResolution].h} vertical`}
+                  </p>
+                </div>
+
+                {/* Custom size */}
+                <div className="text-left">
+                  <label className="text-sm font-medium text-foreground block mb-2">Custom Size (optional)</label>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="number"
+                      min={120}
+                      max={3840}
+                      placeholder="Width"
+                      value={settings.exportWidth ?? ""}
+                      onChange={(e) => setSettings({ ...settings, exportWidth: e.target.value ? Number(e.target.value) : undefined })}
+                      className="flex-1 bg-secondary rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+                    />
+                    <span className="text-muted-foreground">×</span>
+                    <input
+                      type="number"
+                      min={120}
+                      max={3840}
+                      placeholder="Height"
+                      value={settings.exportHeight ?? ""}
+                      onChange={(e) => setSettings({ ...settings, exportHeight: e.target.value ? Number(e.target.value) : undefined })}
+                      className="flex-1 bg-secondary rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    Set both to crop the video to a custom size. Leave empty to use the preset above.
                   </p>
                 </div>
 
