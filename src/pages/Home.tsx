@@ -1,13 +1,48 @@
 import { useNavigate } from "react-router-dom";
-import { Play, FolderOpen, Layout } from "lucide-react";
+import { Play, FolderOpen, Layout, LogIn, LogOut, Sparkles, Coins } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const Home = () => {
   const navigate = useNavigate();
+  const { user, credits, signOut } = useAuth();
+  const dailyCap = credits?.is_premium ? 50 : 10;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 relative overflow-hidden">
       {/* Subtle background glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full opacity-20 blur-[120px]" style={{ background: "hsl(252 85% 60%)" }} />
+
+      {/* Top-right auth area */}
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+        {user ? (
+          <>
+            <div className="flex items-center gap-1.5 bg-card border border-border rounded-full px-3 py-1.5">
+              {credits?.is_premium ? (
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
+              ) : (
+                <Coins className="w-3.5 h-3.5 text-muted-foreground" />
+              )}
+              <span className="text-xs font-semibold text-foreground tabular-nums">
+                {credits?.tokens ?? 0}/{dailyCap}
+              </span>
+            </div>
+            <button
+              onClick={signOut}
+              className="p-2 rounded-full bg-secondary text-muted-foreground active:scale-90 transition-transform"
+              aria-label="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => navigate("/auth")}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border text-foreground text-xs font-semibold active:scale-95 transition-transform"
+          >
+            <LogIn className="w-3.5 h-3.5" /> Sign in
+          </button>
+        )}
+      </div>
 
       <div className="relative z-10 text-center max-w-md w-full">
         <h1
@@ -44,7 +79,23 @@ const Home = () => {
             <Layout className="w-5 h-5" />
             Templates
           </button>
+
+          {user && !credits?.is_premium && (
+            <button
+              onClick={() => navigate("/create?upgrade=1")}
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-gradient-to-r from-primary to-primary/70 text-primary-foreground font-semibold text-sm active:scale-[0.97] transition-transform shadow-lg shadow-primary/20"
+            >
+              <Sparkles className="w-4 h-4" />
+              Upgrade to Premium — $10/mo
+            </button>
+          )}
         </div>
+
+        {user && (
+          <p className="mt-6 text-xs text-muted-foreground">
+            {credits?.is_premium ? "Premium" : "Free"} · {credits?.tokens ?? 0} tokens left today · 5 tokens / video
+          </p>
+        )}
       </div>
     </div>
   );
