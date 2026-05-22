@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Plus, Trash2, Play, RotateCcw, Download, Share2, Pause, ImagePlus, Music } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Trash2, Play, RotateCcw, Download, Share2, Pause, ImagePlus, Music, Sparkles, Lock, Coins } from "lucide-react";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 import {
   VideoType, DataRow, ProjectSettings, Project, DEFAULT_SETTINGS,
   VIDEO_TYPES, ThemeType, SpeedType,
@@ -16,6 +18,7 @@ import { createComparisonAnimation } from "@/lib/comparisonAnimation";
 import { AUDIO_TRACKS, createAudioStream } from "@/lib/audioTracks";
 
 const STEPS = ["Type", "Data", "Style", "Preview", "Export"];
+const VIDEO_COST = 5;
 
 /**
  * Drag handle overlay for repositioning canvas-drawn elements.
@@ -64,6 +67,8 @@ const DraggableHandle = ({
 const Create = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user, credits, consumeTokens, loading: authLoading } = useAuth();
+  const isPremium = !!credits?.is_premium;
   const [step, setStep] = useState(0);
   const [videoType, setVideoType] = useState<VideoType>("bar_race");
   const [data, setData] = useState<DataRow[]>([
@@ -137,6 +142,26 @@ const Create = () => {
   const [exportResolution, setExportResolution] = useState<"480p" | "720p" | "1080p">("1080p");
   const [selectedTrack, setSelectedTrack] = useState("none");
 
+  // Effective settings: free users can never hide watermark, regardless of toggle
+  const effectiveSettings = useMemo(
+    () => ({ ...settings, hideWatermark: !!settings.hideWatermark && isPremium }),
+    [settings, isPremium]
+  );
+
+  // Redirect to auth if not signed in (after auth state has loaded)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth", { replace: true });
+    }
+  }, [authLoading, user, navigate]);
+
+  // Show upgrade toast when ?upgrade=1 is present
+  useEffect(() => {
+    if (searchParams.get("upgrade") === "1") {
+      toast("Premium subscription will be available once a payment provider is enabled. Contact the developer to enable it.");
+    }
+  }, [searchParams]);
+
   // Load images into HTMLImageElement cache when labelImages change
   useEffect(() => {
     const newLoaded: Record<string, HTMLImageElement> = {};
@@ -207,14 +232,14 @@ const Create = () => {
         : videoType === "comparison" ? createComparisonAnimation
         : createBarRaceAnimation;
       controllerRef.current = createAnimation(
-        canvas, data, settings,
+        canvas, data, effectiveSettings,
         (p) => setProgress(p),
         () => setIsPlaying(false),
         loadedImages
       );
     }
     return () => controllerRef.current?.destroy();
-  }, [step, data, settings, loadedImages, videoType]);
+  }, [step, data, effectiveSettings, loadedImages, videoType]);
 
   const handlePlay = () => {
     if (isPlaying) {
@@ -252,6 +277,29 @@ const Create = () => {
   const fileExt = exportFormat === "mp4" ? "mp4" : "webm";
 
   const handleExport = async () => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    // Pre-check tokens (server is the source of truth via consume_tokens RPC)
+    if ((credits?.tokens ?? 0) < VIDEO_COST) {
+      toast.error(`Not enough tokens — you need ${VIDEO_COST}. Daily refill at 00:00 UTC.`);
+      return;
+    }
+
+    // Deduct tokens atomically before rendering
+    let consumed;
+    try {
+      consumed = await consumeTokens(VIDEO_COST);
+    } catch (err) {
+      toast.error("Could not deduct tokens. Try again.");
+      return;
+    }
+    if (!consumed.success) {
+      toast.error(`Not enough tokens — ${consumed.tokens_remaining} left.`);
+      return;
+    }
+
     handleSave();
     setExporting(true);
     setExportProgress(0);
@@ -270,7 +318,7 @@ const Create = () => {
         : videoType === "comparison" ? createComparisonAnimation
         : createBarRaceAnimation;
       const controller = createAnimation(
-        exportCanvas, data, settings,
+        exportCanvas, data, effectiveSettings,
         () => {},
         () => {},
         loadedImages
@@ -363,6 +411,14 @@ const Create = () => {
           </div>
           <p className="text-xs text-muted-foreground mt-1.5">Step {step + 1}: {STEPS[step]}</p>
         </div>
+        {user && (
+          <div className="flex items-center gap-1.5 bg-card border border-border rounded-full px-2.5 py-1">
+            {isPremium ? <Sparkles className="w-3 h-3 text-primary" /> : <Coins className="w-3 h-3 text-muted-foreground" />}
+            <span className="text-[11px] font-semibold text-foreground tabular-nums">
+              {credits?.tokens ?? 0}/{isPremium ? 50 : 10}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -614,6 +670,34 @@ const Create = () => {
                   </button>
                 </div>
               ))}
+
+              {/* Premium-only: remove watermark */}
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-foreground font-medium">Remove Watermark</span>
+                  {!isPremium && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase bg-primary/15 text-primary px-1.5 py-0.5 rounded-full">
+                      <Lock className="w-2.5 h-2.5" /> Premium
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    if (!isPremium) {
+                      toast("Upgrade to Premium to remove the watermark.");
+                      return;
+                    }
+                    setSettings({ ...settings, hideWatermark: !settings.hideWatermark });
+                  }}
+                  className={`w-12 h-7 rounded-full transition-colors relative ${
+                    isPremium && settings.hideWatermark ? "bg-primary" : "bg-secondary"
+                  } ${!isPremium ? "opacity-60" : ""}`}
+                >
+                  <div className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                    isPremium && settings.hideWatermark ? "translate-x-6" : "translate-x-1"
+                  }`} />
+                </button>
+              </div>
             </div>
 
             {/* Background Music */}
@@ -661,12 +745,14 @@ const Create = () => {
                 onChange={(p) => setSettings({ ...settings, yearPos: p })}
                 label="Year"
               />
-              <DraggableHandle
-                containerRef={previewContainerRef}
-                pos={settings.watermarkPos ?? { x: 0.5, y: 0.97 }}
-                onChange={(p) => setSettings({ ...settings, watermarkPos: p })}
-                label="Watermark"
-              />
+              {!effectiveSettings.hideWatermark && (
+                <DraggableHandle
+                  containerRef={previewContainerRef}
+                  pos={settings.watermarkPos ?? { x: 0.5, y: 0.97 }}
+                  onChange={(p) => setSettings({ ...settings, watermarkPos: p })}
+                  label="Watermark"
+                />
+              )}
             </div>
 
             {/* Progress bar */}
@@ -774,7 +860,7 @@ const Create = () => {
                   onClick={handleExport}
                   className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold text-lg active:scale-[0.97] transition-transform shadow-lg shadow-primary/25"
                 >
-                  Export Video
+                  Export Video · {VIDEO_COST} tokens
                 </button>
               </div>
             )}

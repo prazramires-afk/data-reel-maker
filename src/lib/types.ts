@@ -32,6 +32,8 @@ export interface ProjectSettings {
   exportWidth?: number;
   /** Custom export height in pixels (overrides preset). */
   exportHeight?: number;
+  /** Premium-only: when true, watermark is not drawn on the canvas. */
+  hideWatermark?: boolean;
 }
 
 export interface Project {
@@ -65,6 +67,7 @@ export const DEFAULT_SETTINGS: ProjectSettings = {
   smoothAnimation: true,
   yearPos: { x: 0.85, y: 0.92 },
   watermarkPos: { x: 0.5, y: 0.97 },
+  hideWatermark: false,
 };
 
 export const VIDEO_TYPES: { type: VideoType; label: string; description: string; available: boolean }[] = [
