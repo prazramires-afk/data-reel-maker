@@ -14,13 +14,55 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      user_credits: {
+        Row: {
+          created_at: string
+          is_premium: boolean
+          last_reset: string
+          premium_until: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tokens: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          is_premium?: boolean
+          last_reset?: string
+          premium_until?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tokens?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          is_premium?: boolean
+          last_reset?: string
+          premium_until?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tokens?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      consume_tokens: {
+        Args: { cost: number }
+        Returns: {
+          is_premium: boolean
+          success: boolean
+          tokens_remaining: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
