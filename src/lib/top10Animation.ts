@@ -156,13 +156,14 @@ export function createTop10Animation(
       }
     }
 
-    // Watermark
+    // Watermark (draggable)
+    const wp = settings.watermarkPos ?? { x: 0.5, y: 0.97 };
     ctx.fillStyle = theme.sub;
     ctx.globalAlpha = 0.4;
     ctx.font = `500 ${Math.round(w * 0.025)}px system-ui, sans-serif`;
     ctx.textAlign = "center";
-    ctx.textBaseline = "bottom";
-    ctx.fillText("Made with datatovid.com", w / 2, h - 20);
+    ctx.textBaseline = "middle";
+    ctx.fillText("Made with datatovid.com", w * wp.x, h * wp.y);
     ctx.globalAlpha = 1;
   }
 
