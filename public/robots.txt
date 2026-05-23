@@ -12,3 +12,5 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+Sitemap: https://data-reel-maker.lovable.app/sitemap.xml

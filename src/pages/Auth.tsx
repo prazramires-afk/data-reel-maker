@@ -5,6 +5,7 @@ import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -63,6 +64,12 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex flex-col max-w-lg mx-auto px-5 py-6">
+      <Seo
+        title="Sign in — Data to Video"
+        description="Sign in or create a Data to Video account to save projects and export animated data videos."
+        path="/auth"
+        noindex
+      />
       <button onClick={() => navigate("/")} className="p-1.5 -ml-1.5 active:scale-90 transition-transform w-fit">
         <ArrowLeft className="w-5 h-5 text-muted-foreground" />
       </button>

@@ -16,6 +16,7 @@ import { createTimelineAnimation } from "@/lib/timelineAnimation";
 import { createTop10Animation } from "@/lib/top10Animation";
 import { createComparisonAnimation } from "@/lib/comparisonAnimation";
 import { AUDIO_TRACKS, createAudioStream } from "@/lib/audioTracks";
+import { Seo } from "@/components/Seo";
 
 const STEPS = ["Type", "Data", "Style", "Preview", "Export"];
 const VIDEO_COST = 5;
@@ -399,6 +400,11 @@ const Create = () => {
 
   return (
     <div className="min-h-screen flex flex-col max-w-lg mx-auto">
+      <Seo
+        title="Create animated data video — Data to Video"
+        description="Build bar chart races, top 10 countdowns, timelines, and comparison videos from your CSV or manual data. Export 9:16 vertical videos for TikTok and Reels."
+        path="/create"
+      />
       {/* Header */}
       <div className="px-5 pt-5 pb-3 flex items-center gap-3">
         <button onClick={() => step > 0 ? setStep(step - 1) : navigate("/")} className="p-1.5 active:scale-90 transition-transform">

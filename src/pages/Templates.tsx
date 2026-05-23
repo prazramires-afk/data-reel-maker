@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { TEMPLATES } from "@/lib/templates";
+import { Seo } from "@/components/Seo";
 
 const Templates = () => {
   const navigate = useNavigate();
@@ -11,6 +12,11 @@ const Templates = () => {
 
   return (
     <div className="min-h-screen px-5 py-6 max-w-lg mx-auto">
+      <Seo
+        title="Video templates — Data to Video"
+        description="Pre-built data video templates: bar chart races, top 10 countdowns, timelines, and comparisons. Pick one and customize in seconds."
+        path="/templates"
+      />
       <button onClick={() => navigate("/")} className="flex items-center gap-2 text-muted-foreground mb-6 active:scale-95 transition-transform">
         <ArrowLeft className="w-5 h-5" /> Back
       </button>
