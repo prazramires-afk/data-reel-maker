@@ -9,12 +9,12 @@ const Projects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
 
   useEffect(() => {
-    setProjects(getProjects());
+    getProjects().then(setProjects);
   }, []);
 
-  const handleDelete = (id: string) => {
-    deleteProject(id);
-    setProjects(getProjects());
+  const handleDelete = async (id: string) => {
+    await deleteProject(id);
+    setProjects(await getProjects());
   };
 
   return (

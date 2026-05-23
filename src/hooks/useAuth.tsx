@@ -14,6 +14,7 @@ interface AuthContextValue {
   session: Session | null;
   loading: boolean;
   credits: UserCredits | null;
+  isAdmin: boolean;
   refreshCredits: () => Promise<void>;
   consumeTokens: (cost: number) => Promise<{ success: boolean; tokens_remaining: number; is_premium: boolean }>;
   signOut: () => Promise<void>;
@@ -26,6 +27,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [credits, setCredits] = useState<UserCredits | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const fetchCredits = useCallback(async (uid: string) => {
     // Calling consume_tokens with cost 0 also performs the daily reset + premium expiry check.
@@ -52,6 +54,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const fetchAdmin = useCallback(async (uid: string) => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", uid)
+      .eq("role", "admin")
+      .maybeSingle();
+    setIsAdmin(!!data);
+  }, []);
+
   const refreshCredits = useCallback(async () => {
     if (user) await fetchCredits(user.id);
   }, [user, fetchCredits]);
@@ -62,21 +74,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(newSession?.user ?? null);
       if (newSession?.user) {
         // Defer to avoid deadlock
-        setTimeout(() => fetchCredits(newSession.user.id), 0);
+        setTimeout(() => {
+          fetchCredits(newSession.user.id);
+          fetchAdmin(newSession.user.id);
+        }, 0);
       } else {
         setCredits(null);
+        setIsAdmin(false);
       }
     });
 
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setUser(data.session?.user ?? null);
-      if (data.session?.user) fetchCredits(data.session.user.id);
+      if (data.session?.user) {
+        fetchCredits(data.session.user.id);
+        fetchAdmin(data.session.user.id);
+      }
       setLoading(false);
     });
 
     return () => sub.subscription.unsubscribe();
-  }, [fetchCredits]);
+  }, [fetchCredits, fetchAdmin]);
 
   const consumeTokens = useCallback(
     async (cost: number) => {
@@ -99,7 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, credits, refreshCredits, consumeTokens, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, credits, isAdmin, refreshCredits, consumeTokens, signOut }}>
       {children}
     </AuthContext.Provider>
   );

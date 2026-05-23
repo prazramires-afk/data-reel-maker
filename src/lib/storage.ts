@@ -1,8 +1,9 @@
 import { Project } from "./types";
+import { supabase } from "@/integrations/supabase/client";
 
 const PROJECTS_KEY = "dtv_projects";
 
-export function getProjects(): Project[] {
+function getLocalProjects(): Project[] {
   try {
     const raw = localStorage.getItem(PROJECTS_KEY);
     return raw ? JSON.parse(raw) : [];
@@ -11,8 +12,8 @@ export function getProjects(): Project[] {
   }
 }
 
-export function saveProject(project: Project): void {
-  const projects = getProjects();
+function saveLocalProject(project: Project): void {
+  const projects = getLocalProjects();
   const idx = projects.findIndex((p) => p.id === project.id);
   if (idx >= 0) {
     projects[idx] = { ...project, updatedAt: new Date().toISOString() };
@@ -39,11 +40,90 @@ export function saveProject(project: Project): void {
   }
 }
 
-export function deleteProject(id: string): void {
-  const projects = getProjects().filter((p) => p.id !== id);
+function deleteLocalProject(id: string): void {
+  const projects = getLocalProjects().filter((p) => p.id !== id);
   localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
 }
 
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+}
+
+function rowToProject(r: any): Project {
+  return {
+    id: r.id,
+    name: r.name,
+    type: r.type,
+    data: r.data ?? [],
+    settings: r.settings ?? {},
+    labelImages: r.label_images ?? {},
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
+/** Fetch projects for the current user (or all if admin via RLS). Falls back to localStorage when signed out. */
+export async function getProjects(): Promise<Project[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return getLocalProjects();
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("updated_at", { ascending: false });
+  if (error) {
+    console.error("getProjects error", error);
+    return getLocalProjects();
+  }
+  return (data ?? []).map(rowToProject);
+}
+
+export async function saveProject(project: Project): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    saveLocalProject(project);
+    return;
+  }
+  const payload = {
+    id: project.id,
+    user_id: user.id,
+    name: project.name || "Untitled",
+    type: project.type,
+    data: project.data as any,
+    settings: project.settings as any,
+    label_images: project.labelImages as any,
+  };
+  const { error } = await supabase.from("projects").upsert(payload, { onConflict: "id" });
+  if (error) {
+    console.error("saveProject error", error);
+    saveLocalProject(project);
+  }
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    deleteLocalProject(id);
+    return;
+  }
+  const { error } = await supabase.from("projects").delete().eq("id", id);
+  if (error) console.error("deleteProject error", error);
+}
+
+/** Admin-only: fetch a single project by id (RLS allows admins). */
+export async function getProjectById(id: string): Promise<Project | null> {
+  const { data, error } = await supabase.from("projects").select("*").eq("id", id).maybeSingle();
+  if (error || !data) return null;
+  return rowToProject(data);
+}
+
+/** Admin-only: fetch all projects belonging to a target user. */
+export async function getProjectsByUser(userId: string): Promise<Project[]> {
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false });
+  if (error) return [];
+  return (data ?? []).map(rowToProject);
 }

@@ -10,7 +10,7 @@ import {
 import { TEMPLATES } from "@/lib/templates";
 import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE } from "@/lib/sampleData";
 import { parseCSV } from "@/lib/parseCSV";
-import { saveProject, getProjects, generateId } from "@/lib/storage";
+import { saveProject, getProjectById, generateId } from "@/lib/storage";
 import { createBarRaceAnimation, AnimationController } from "@/lib/animationEngine";
 import { createTimelineAnimation } from "@/lib/timelineAnimation";
 import { createTop10Animation } from "@/lib/top10Animation";
@@ -200,15 +200,16 @@ const Create = () => {
         setStep(2);
       }
     } else if (editId) {
-      const project = getProjects().find((p) => p.id === editId);
-      if (project) {
-        setProjectId(project.id);
-        setVideoType(project.type);
-        setData(project.data);
-        setSettings(project.settings);
-        if (project.labelImages) setLabelImages(project.labelImages);
-        setStep(2);
-      }
+      getProjectById(editId).then((project) => {
+        if (project) {
+          setProjectId(project.id);
+          setVideoType(project.type);
+          setData(project.data);
+          setSettings(project.settings);
+          if (project.labelImages) setLabelImages(project.labelImages);
+          setStep(2);
+        }
+      });
     }
   }, [searchParams]);
 
