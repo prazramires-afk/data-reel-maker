@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Play, FolderOpen, Layout, LogIn, LogOut, Sparkles, Coins, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { Seo } from "@/components/Seo";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -9,6 +10,11 @@ const Home = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 relative overflow-hidden">
+      <Seo
+        title="Data to Video — Turn CSV & data into animated short videos"
+        description="Create TikTok and Reels-ready animated videos from CSV or manual data. Bar chart races, top 10 countdowns, timelines, and comparisons — rendered in your browser."
+        path="/"
+      />
       {/* Subtle background glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full opacity-20 blur-[120px]" style={{ background: "hsl(252 85% 60%)" }} />
 
