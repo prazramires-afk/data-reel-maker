@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { Project } from "@/lib/types";
 import { getProjects, deleteProject } from "@/lib/storage";
+import { Seo } from "@/components/Seo";
 
 const Projects = () => {
   const navigate = useNavigate();
@@ -19,6 +20,12 @@ const Projects = () => {
 
   return (
     <div className="min-h-screen px-5 py-6 max-w-lg mx-auto">
+      <Seo
+        title="My projects — Data to Video"
+        description="Open, edit, or delete your saved data video projects."
+        path="/projects"
+        noindex
+      />
       <button onClick={() => navigate("/")} className="flex items-center gap-2 text-muted-foreground mb-6 active:scale-95 transition-transform">
         <ArrowLeft className="w-5 h-5" /> Back
       </button>
