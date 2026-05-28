@@ -18,6 +18,7 @@ import { HOME_FAQS } from "../src/lib/seoContent/faqs";
 import { DATASETS } from "../src/lib/seoContent/datasets";
 import { TOOLS } from "../src/lib/seoContent/tools";
 import { WATCH_PAGES } from "../src/lib/seoContent/watchPages";
+import { ogImageFor } from "../src/lib/ogImage";
 
 const SITE = "https://data-reel-maker.lovable.app";
 const DIST = resolve(dirname(fileURLToPath(import.meta.url)), "..", "dist");
