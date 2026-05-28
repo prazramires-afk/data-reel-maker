@@ -13,6 +13,9 @@ const SITE = "https://data-reel-maker.lovable.app";
 
 export const Seo = ({ title, description, path, noindex, jsonLd, ogImage }: SeoProps) => {
   const url = path.startsWith("http") ? path : `${SITE}${path}`;
+  const ogImageUrl = ogImage
+    ? ogImage.startsWith("http") ? ogImage : `${SITE}${ogImage.startsWith("/") ? "" : "/"}${ogImage}`
+    : undefined;
   const blocks = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
   return (
     <Helmet>
@@ -26,8 +29,8 @@ export const Seo = ({ title, description, path, noindex, jsonLd, ogImage }: SeoP
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
-      {ogImage && <meta property="og:image" content={ogImage} />}
-      {ogImage && <meta name="twitter:image" content={ogImage} />}
+      {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
+      {ogImageUrl && <meta name="twitter:image" content={ogImageUrl} />}
       {noindex && <meta name="robots" content="noindex, nofollow" />}
       {blocks.map((b, i) => (
         <script key={i} type="application/ld+json">{JSON.stringify(b)}</script>
