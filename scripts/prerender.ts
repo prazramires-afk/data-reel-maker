@@ -104,7 +104,7 @@ routes.push({
   title: "Free Bar Chart Race Maker — Turn Data into Viral TikTok Videos",
   description:
     "Create viral data videos online for free. Bar chart races, top 10 countdowns, animated statistics and CSV-to-video — all in your browser, ready for TikTok and Reels.",
-  ogImage: ogImageFor("__PATH__"),
+  ogImage: ogImageFor("/"),
   jsonLd: [
     { "@context": "https://schema.org", "@type": "WebSite", name: "Data to Video", url: `${SITE}/` },
     faqJsonLd(HOME_FAQS),
@@ -139,7 +139,7 @@ routes.push({
   path: "/templates",
   title: "Video templates — Data to Video",
   description: "Browse free animated video templates: bar chart race, top 10 countdown, timeline, head-to-head comparison and more.",
-  ogImage: ogImageFor("__PATH__"),
+  ogImage: ogImageFor("/templates"),
   body: `
     ${headerHtml}
     <main>
@@ -158,7 +158,7 @@ for (const t of TEMPLATE_LANDINGS) {
     path: `/templates/${t.slug}`,
     title: t.seoTitle,
     description: t.seoDescription,
-    ogImage: ogImageFor("__PATH__"),
+    ogImage: ogImageFor(`/templates/${t.slug}`),
     jsonLd: [
       faqJsonLd(t.faqs),
       {
@@ -199,7 +199,7 @@ routes.push({
   path: "/datasets",
   title: "Free Datasets for Animated Stats Videos — Data to Video",
   description: "Browse free datasets for GDP, sports, demographics, business and crypto. Drop any dataset into the editor and export a viral animated chart video.",
-  ogImage: ogImageFor("__PATH__"),
+  ogImage: ogImageFor("/datasets"),
   jsonLd: [{
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -229,7 +229,7 @@ for (const d of DATASETS) {
     path: `/datasets/${d.slug}`,
     title: d.seoTitle,
     description: d.seoDescription,
-    ogImage: ogImageFor("__PATH__"),
+    ogImage: ogImageFor(`/datasets/${d.slug}`),
     jsonLd: [
       {
         "@context": "https://schema.org",
@@ -276,7 +276,7 @@ routes.push({
   path: "/tools",
   title: "Free Data Video Tools — CSV to Video, Chart Race & More",
   description: "Free online tools to turn data into video: CSV to video, chart race generator, ranking video maker, statistics video generator.",
-  ogImage: ogImageFor("__PATH__"),
+  ogImage: ogImageFor("/tools"),
   body: `
     ${headerHtml}
     <main>
@@ -295,7 +295,7 @@ for (const t of TOOLS) {
     path: `/tools/${t.slug}`,
     title: t.seoTitle,
     description: t.seoDescription,
-    ogImage: ogImageFor("__PATH__"),
+    ogImage: ogImageFor(`/tools/${t.slug}`),
     jsonLd: [
       {
         "@context": "https://schema.org",
@@ -339,7 +339,7 @@ routes.push({
   path: "/blog",
   title: "Blog — Data video tips, viral formats & creator guides",
   description: "Guides on making viral bar chart race videos, TikTok data visualizations, football stats content and animated chart videos.",
-  ogImage: ogImageFor("__PATH__"),
+  ogImage: ogImageFor("/blog"),
   jsonLd: [{
     "@context": "https://schema.org",
     "@type": "Blog",
@@ -434,7 +434,7 @@ for (const raw of BLOG_POSTS) {
     path: `/blog/${p.slug}`,
     title: p.seoTitle,
     description: p.excerpt,
-    ogImage: p.ogImage ?? "/og/default.jpg",
+    ogImage: p.ogImage ?? ogImageFor(`/blog/${p.slug}`),
     jsonLd: [
       {
         "@context": "https://schema.org",
@@ -448,7 +448,7 @@ for (const raw of BLOG_POSTS) {
         mainEntityOfPage: { "@type": "WebPage", "@id": `${SITE}/blog/${p.slug}` },
         articleSection: p.category,
         keywords: p.tags.join(", "),
-        image: `${SITE}${p.ogImage ?? "/og/default.jpg"}`,
+        image: `${SITE}${p.ogImage ?? ogImageFor(`/blog/${p.slug}`)}`,
       },
       breadcrumbJsonLd([
         { name: "Home", path: "/" },
