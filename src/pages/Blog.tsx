@@ -10,6 +10,7 @@ const Blog = () => (
       title="Blog — Data video tips, viral formats & creator guides"
       description="Guides on making viral bar chart race videos, TikTok data visualizations, football stats content and animated chart videos."
       path="/blog"
+      ogImage="/og/default.jpg"
     />
     <SiteHeader />
     <main className="flex-1 max-w-4xl mx-auto px-6 py-12 w-full">
