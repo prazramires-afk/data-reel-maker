@@ -11,12 +11,13 @@ interface ShareEntry {
   title: string;
   description: string;
   templateId: string;
+  ogImage: string;
 }
 
 const SHARES: ShareEntry[] = [
-  { slug: "gdp-race-usa-vs-china", title: "GDP Race: USA vs China (1980–2025)", description: "The animated race between the world's two biggest economies over the last 45 years.", templateId: "viral-bar-race" },
-  { slug: "ronaldo-vs-messi-goals", title: "Ronaldo vs Messi — All-Time Goals", description: "Head-to-head animated comparison of every official goal scored by both players.", templateId: "comparison-football" },
-  { slug: "top-10-economies-2025", title: "Top 10 Economies in 2025", description: "The world's biggest economies, ranked and revealed one by one.", templateId: "top10-gdp" },
+  { slug: "gdp-race-usa-vs-china", title: "GDP Race: USA vs China (1980–2025)", description: "The animated race between the world's two biggest economies over the last 45 years.", templateId: "viral-bar-race", ogImage: "/og/watch-gdp-usa-china.jpg" },
+  { slug: "ronaldo-vs-messi-goals", title: "Ronaldo vs Messi — All-Time Goals", description: "Head-to-head animated comparison of every official goal scored by both players.", templateId: "comparison-football", ogImage: "/og/watch-ronaldo-messi.jpg" },
+  { slug: "top-10-economies-2025", title: "Top 10 Economies in 2025", description: "The world's biggest economies, ranked and revealed one by one.", templateId: "top10-gdp", ogImage: "/og/watch-top10-economies.jpg" },
 ];
 
 const Watch = () => {
@@ -42,13 +43,14 @@ const Watch = () => {
         title={`${entry.title} — Data to Video`}
         description={entry.description}
         path={`/watch/${entry.slug}`}
+        ogImage={entry.ogImage}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "VideoObject",
           name: entry.title,
           description: entry.description,
           uploadDate: "2026-01-01",
-          thumbnailUrl: "https://data-reel-maker.lovable.app/placeholder.svg",
+          thumbnailUrl: `https://data-reel-maker.lovable.app${entry.ogImage}`,
         }}
       />
       <SiteHeader />
