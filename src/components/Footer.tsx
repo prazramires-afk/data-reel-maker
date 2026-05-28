@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 export const Footer = () => (
   <footer className="border-t border-border mt-20 bg-card/30">
-    <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
+    <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-5 gap-8 text-sm">
       <div>
         <h3 className="font-bold text-foreground mb-3">Data to Video</h3>
         <p className="text-muted-foreground text-xs leading-relaxed">
@@ -16,16 +16,26 @@ export const Footer = () => (
           <li><Link to="/templates/gdp-race" className="hover:text-foreground">GDP Race</Link></li>
           <li><Link to="/templates/football-stats" className="hover:text-foreground">Football Stats</Link></li>
           <li><Link to="/templates/top-10" className="hover:text-foreground">Top 10 Countdown</Link></li>
-          <li><Link to="/templates/population-growth" className="hover:text-foreground">Population Growth</Link></li>
+          <li><Link to="/templates/nba-ranking-animation" className="hover:text-foreground">NBA Ranking</Link></li>
         </ul>
       </div>
       <div>
-        <h4 className="font-semibold text-foreground mb-3">Learn</h4>
+        <h4 className="font-semibold text-foreground mb-3">Datasets</h4>
         <ul className="space-y-2 text-muted-foreground">
+          <li><Link to="/datasets" className="hover:text-foreground">All datasets</Link></li>
+          <li><Link to="/datasets/gdp-countries" className="hover:text-foreground">GDP by Country</Link></li>
+          <li><Link to="/datasets/fifa-goals" className="hover:text-foreground">Football Goals</Link></li>
+          <li><Link to="/datasets/nba-points" className="hover:text-foreground">NBA Points</Link></li>
+          <li><Link to="/datasets/crypto-marketcap" className="hover:text-foreground">Crypto Market Cap</Link></li>
+        </ul>
+      </div>
+      <div>
+        <h4 className="font-semibold text-foreground mb-3">Tools &amp; Learn</h4>
+        <ul className="space-y-2 text-muted-foreground">
+          <li><Link to="/tools/csv-to-video" className="hover:text-foreground">CSV to Video</Link></li>
+          <li><Link to="/tools/chart-race-generator" className="hover:text-foreground">Chart Race Generator</Link></li>
+          <li><Link to="/tools" className="hover:text-foreground">All tools</Link></li>
           <li><Link to="/blog" className="hover:text-foreground">Blog</Link></li>
-          <li><Link to="/blog/why-bar-chart-races-go-viral" className="hover:text-foreground">Why bar chart races go viral</Link></li>
-          <li><Link to="/blog/best-tiktok-data-visualization-ideas" className="hover:text-foreground">TikTok data ideas</Link></li>
-          <li><Link to="/templates" className="hover:text-foreground">All templates</Link></li>
         </ul>
       </div>
       <div>

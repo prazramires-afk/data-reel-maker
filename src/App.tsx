@@ -19,6 +19,10 @@ const Contact = lazy(() => import("./pages/Contact"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Watch = lazy(() => import("./pages/Watch"));
+const Datasets = lazy(() => import("./pages/Datasets"));
+const DatasetPage = lazy(() => import("./pages/DatasetPage"));
+const Tools = lazy(() => import("./pages/Tools"));
+const ToolPage = lazy(() => import("./pages/ToolPage"));
 import { AuthProvider } from "./hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -44,6 +48,10 @@ const App = () => (
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/watch/:slug" element={<Watch />} />
+          <Route path="/datasets" element={<Datasets />} />
+          <Route path="/datasets/:slug" element={<DatasetPage />} />
+          <Route path="/tools" element={<Tools />} />
+          <Route path="/tools/:slug" element={<ToolPage />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="*" element={<NotFound />} />

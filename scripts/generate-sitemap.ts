@@ -3,6 +3,9 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { BLOG_POSTS } from "../src/lib/seoContent/blogPosts";
 import { TEMPLATE_LANDINGS } from "../src/lib/seoContent/templateLandings";
+import { DATASETS } from "../src/lib/seoContent/datasets";
+import { TOOLS } from "../src/lib/seoContent/tools";
+import { WATCH_PAGES } from "../src/lib/seoContent/watchPages";
 
 const BASE_URL = "https://data-reel-maker.lovable.app";
 const OUT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "public", "sitemap.xml");
@@ -25,6 +28,18 @@ const entries: Entry[] = [
     changefreq: "monthly" as const,
     priority: "0.8",
   })),
+  { path: "/datasets", changefreq: "weekly", priority: "0.9", lastmod: today },
+  ...DATASETS.map((d) => ({
+    path: `/datasets/${d.slug}`,
+    changefreq: "monthly" as const,
+    priority: "0.8",
+  })),
+  { path: "/tools", changefreq: "weekly", priority: "0.9", lastmod: today },
+  ...TOOLS.map((t) => ({
+    path: `/tools/${t.slug}`,
+    changefreq: "monthly" as const,
+    priority: "0.8",
+  })),
   { path: "/blog", changefreq: "weekly", priority: "0.8", lastmod: today },
   ...BLOG_POSTS.map((p) => ({
     path: `/blog/${p.slug}`,
@@ -32,9 +47,12 @@ const entries: Entry[] = [
     priority: "0.7",
     lastmod: p.date,
   })),
-  { path: "/watch/gdp-race-usa-vs-china", changefreq: "monthly", priority: "0.6" },
-  { path: "/watch/ronaldo-vs-messi-goals", changefreq: "monthly", priority: "0.6" },
-  { path: "/watch/top-10-economies-2025", changefreq: "monthly", priority: "0.6" },
+  ...WATCH_PAGES.map((w) => ({
+    path: `/watch/${w.slug}`,
+    changefreq: "monthly" as const,
+    priority: "0.6",
+    lastmod: w.uploadDate,
+  })),
   { path: "/about", changefreq: "yearly", priority: "0.4" },
   { path: "/contact", changefreq: "yearly", priority: "0.4" },
   { path: "/privacy", changefreq: "yearly", priority: "0.3" },

@@ -128,6 +128,40 @@ export const TEMPLATE_LANDINGS: TemplateLanding[] = [
       { q: "Is my data uploaded anywhere?", a: "No — all rendering happens locally in your browser." },
     ],
   },
+  {
+    slug: "nba-ranking-animation",
+    templateId: "viral-bar-race",
+    h1: "NBA Ranking Animation Maker",
+    seoTitle: "NBA Ranking Animation Maker — Animated Basketball Stats Videos",
+    seoDescription: "Make NBA ranking and scoring animation videos for TikTok and Reels. All-time scorers, MVP races and team standings.",
+    intro: "Animate NBA scoring leaders, MVP races and team standings in the format basketball pages use to go viral.",
+    paragraphs: [
+      "Basketball stats videos dominate sports TikTok. The NBA ranking animation maker turns career totals and per-season tallies into clean vertical videos with player avatars and team colors.",
+      "Pair with the All-Time NBA Points dataset for an instant LeBron vs Jordan vs Kareem race.",
+    ],
+    features: ["Player avatar support", "Team color theming", "Per-season race mode", "TikTok-ready 9:16 export"],
+    keywords: ["NBA ranking animation", "basketball stats video", "all time scorers video"],
+    faqs: [
+      { q: "Does it work for WNBA?", a: "Yes — any league or division works as long as you bring the data." },
+      { q: "Can I theme it per team?", a: "Yes — set custom primary and accent colors per export." },
+    ],
+  },
+  {
+    slug: "crypto-marketcap-race",
+    templateId: "viral-bar-race",
+    h1: "Crypto Market Cap Race Video Maker",
+    seoTitle: "Crypto Market Cap Race — Animated Top Coin Ranking Videos",
+    seoDescription: "Animate the top cryptocurrencies by market cap. Free crypto bar chart race maker for TikTok, Reels and YouTube Shorts.",
+    intro: "Visualize the rise and fall of Bitcoin, Ethereum and the rest of the top 50 coins in a viral bar race.",
+    paragraphs: [
+      "Crypto ranking content has one of the highest watch-through rates on finance TikTok. This template ships with a bundled top-50 dataset and a dark neon theme tuned for the niche.",
+    ],
+    features: ["Bundled top-50 crypto dataset", "Neon dark theme", "Ticker symbols + logos", "TikTok-ready export"],
+    keywords: ["crypto market cap race", "bitcoin ranking video", "crypto stats animation"],
+    faqs: [
+      { q: "Is price data live?", a: "We ship a snapshot. Plug a live CSV for fresh values." },
+    ],
+  },
 ];
 
 export const getLanding = (slug?: string) =>
