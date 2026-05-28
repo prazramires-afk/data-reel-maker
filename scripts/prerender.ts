@@ -31,6 +31,7 @@ interface Route {
   noindex?: boolean;
   jsonLd?: object[];
   body: string;            // HTML to inject inside #root
+  ogImage?: string;        // absolute or site-relative path
 }
 
 const headerHtml = `
@@ -84,6 +85,7 @@ routes.push({
   title: "Free Bar Chart Race Maker — Turn Data into Viral TikTok Videos",
   description:
     "Create viral data videos online for free. Bar chart races, top 10 countdowns, animated statistics and CSV-to-video — all in your browser, ready for TikTok and Reels.",
+  ogImage: "/og/default.jpg",
   jsonLd: [
     { "@context": "https://schema.org", "@type": "WebSite", name: "Data to Video", url: `${SITE}/` },
     faqJsonLd(HOME_FAQS),
@@ -118,6 +120,7 @@ routes.push({
   path: "/templates",
   title: "Video templates — Data to Video",
   description: "Browse free animated video templates: bar chart race, top 10 countdown, timeline, head-to-head comparison and more.",
+  ogImage: "/og/default.jpg",
   body: `
     ${headerHtml}
     <main>
@@ -136,6 +139,7 @@ for (const t of TEMPLATE_LANDINGS) {
     path: `/templates/${t.slug}`,
     title: t.seoTitle,
     description: t.seoDescription,
+    ogImage: "/og/default.jpg",
     jsonLd: [
       faqJsonLd(t.faqs),
       {
@@ -170,6 +174,7 @@ routes.push({
   path: "/blog",
   title: "Blog — Data video tips, viral formats & creator guides",
   description: "Guides on making viral bar chart race videos, TikTok data visualizations, football stats content and animated chart videos.",
+  ogImage: "/og/default.jpg",
   body: `
     ${headerHtml}
     <main>
@@ -194,6 +199,7 @@ for (const p of BLOG_POSTS) {
     path: `/blog/${p.slug}`,
     title: p.seoTitle,
     description: p.excerpt,
+    ogImage: p.ogImage ?? "/og/default.jpg",
     jsonLd: [{
       "@context": "https://schema.org",
       "@type": "Article",
@@ -252,22 +258,23 @@ for (const t of trustPages) {
 }
 
 const shares = [
-  { slug: "gdp-race-usa-vs-china", title: "GDP Race: USA vs China (1980–2025)", description: "The animated race between the world's two biggest economies over the last 45 years.", templateId: "viral-bar-race" },
-  { slug: "ronaldo-vs-messi-goals", title: "Ronaldo vs Messi — All-Time Goals", description: "Head-to-head animated comparison of every official goal scored by both players.", templateId: "comparison-football" },
-  { slug: "top-10-economies-2025", title: "Top 10 Economies in 2025", description: "The world's biggest economies, ranked and revealed one by one.", templateId: "top10-gdp" },
+  { slug: "gdp-race-usa-vs-china", title: "GDP Race: USA vs China (1980–2025)", description: "The animated race between the world's two biggest economies over the last 45 years.", templateId: "viral-bar-race", ogImage: "/og/watch-gdp-usa-china.jpg" },
+  { slug: "ronaldo-vs-messi-goals", title: "Ronaldo vs Messi — All-Time Goals", description: "Head-to-head animated comparison of every official goal scored by both players.", templateId: "comparison-football", ogImage: "/og/watch-ronaldo-messi.jpg" },
+  { slug: "top-10-economies-2025", title: "Top 10 Economies in 2025", description: "The world's biggest economies, ranked and revealed one by one.", templateId: "top10-gdp", ogImage: "/og/watch-top10-economies.jpg" },
 ];
 for (const s of shares) {
   routes.push({
     path: `/watch/${s.slug}`,
     title: `${s.title} — Data to Video`,
     description: s.description,
+    ogImage: s.ogImage,
     jsonLd: [{
       "@context": "https://schema.org",
       "@type": "VideoObject",
       name: s.title,
       description: s.description,
       uploadDate: "2026-01-01",
-      thumbnailUrl: `${SITE}/placeholder.svg`,
+      thumbnailUrl: `${SITE}${s.ogImage}`,
     }],
     body: `${headerHtml}<main><article><h1>${esc(s.title)}</h1><p>${esc(s.description)}</p><p>Made with Data to Video.</p><p><a href="/create?template=${s.templateId}">Create your own</a></p></article></main>${footerHtml}`,
   });
@@ -294,6 +301,7 @@ for (const r of noindexRoutes) {
 // ---------- Renderer ----------
 function buildHead(r: Route): string {
   const url = `${SITE}${r.path === "/" ? "/" : r.path}`;
+  const ogImg = r.ogImage ? `${SITE}${r.ogImage}` : undefined;
   const parts: string[] = [];
   parts.push(`<title>${esc(r.title)}</title>`);
   parts.push(`<meta name="description" content="${esc(r.description)}" />`);
@@ -302,9 +310,15 @@ function buildHead(r: Route): string {
   parts.push(`<meta property="og:description" content="${esc(r.description)}" />`);
   parts.push(`<meta property="og:url" content="${url}" />`);
   parts.push(`<meta property="og:type" content="website" />`);
+  if (ogImg) {
+    parts.push(`<meta property="og:image" content="${ogImg}" />`);
+    parts.push(`<meta property="og:image:width" content="1216" />`);
+    parts.push(`<meta property="og:image:height" content="640" />`);
+  }
   parts.push(`<meta name="twitter:card" content="summary_large_image" />`);
   parts.push(`<meta name="twitter:title" content="${esc(r.title)}" />`);
   parts.push(`<meta name="twitter:description" content="${esc(r.description)}" />`);
+  if (ogImg) parts.push(`<meta name="twitter:image" content="${ogImg}" />`);
   if (r.noindex) parts.push(`<meta name="robots" content="noindex, nofollow" />`);
   for (const block of r.jsonLd ?? []) {
     parts.push(`<script type="application/ld+json">${JSON.stringify(block)}</script>`);
