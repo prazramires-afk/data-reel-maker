@@ -17,6 +17,7 @@ const BlogPost = () => {
         title={post.seoTitle}
         description={post.excerpt}
         path={`/blog/${post.slug}`}
+        ogImage={post.ogImage ?? "/og/default.jpg"}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "Article",
