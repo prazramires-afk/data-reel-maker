@@ -18,6 +18,7 @@ import { HOME_FAQS } from "../src/lib/seoContent/faqs";
 import { DATASETS } from "../src/lib/seoContent/datasets";
 import { TOOLS } from "../src/lib/seoContent/tools";
 import { WATCH_PAGES } from "../src/lib/seoContent/watchPages";
+import { ogImageFor } from "../src/lib/ogImage";
 
 const SITE = "https://data-reel-maker.lovable.app";
 const DIST = resolve(dirname(fileURLToPath(import.meta.url)), "..", "dist");
@@ -103,7 +104,7 @@ routes.push({
   title: "Free Bar Chart Race Maker — Turn Data into Viral TikTok Videos",
   description:
     "Create viral data videos online for free. Bar chart races, top 10 countdowns, animated statistics and CSV-to-video — all in your browser, ready for TikTok and Reels.",
-  ogImage: "/og/default.jpg",
+  ogImage: ogImageFor("/"),
   jsonLd: [
     { "@context": "https://schema.org", "@type": "WebSite", name: "Data to Video", url: `${SITE}/` },
     faqJsonLd(HOME_FAQS),
@@ -138,7 +139,7 @@ routes.push({
   path: "/templates",
   title: "Video templates — Data to Video",
   description: "Browse free animated video templates: bar chart race, top 10 countdown, timeline, head-to-head comparison and more.",
-  ogImage: "/og/default.jpg",
+  ogImage: ogImageFor("/templates"),
   body: `
     ${headerHtml}
     <main>
@@ -157,7 +158,7 @@ for (const t of TEMPLATE_LANDINGS) {
     path: `/templates/${t.slug}`,
     title: t.seoTitle,
     description: t.seoDescription,
-    ogImage: "/og/default.jpg",
+    ogImage: ogImageFor(`/templates/${t.slug}`),
     jsonLd: [
       faqJsonLd(t.faqs),
       {
@@ -198,7 +199,7 @@ routes.push({
   path: "/datasets",
   title: "Free Datasets for Animated Stats Videos — Data to Video",
   description: "Browse free datasets for GDP, sports, demographics, business and crypto. Drop any dataset into the editor and export a viral animated chart video.",
-  ogImage: "/og/default.jpg",
+  ogImage: ogImageFor("/datasets"),
   jsonLd: [{
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -228,7 +229,7 @@ for (const d of DATASETS) {
     path: `/datasets/${d.slug}`,
     title: d.seoTitle,
     description: d.seoDescription,
-    ogImage: "/og/default.jpg",
+    ogImage: ogImageFor(`/datasets/${d.slug}`),
     jsonLd: [
       {
         "@context": "https://schema.org",
@@ -275,7 +276,7 @@ routes.push({
   path: "/tools",
   title: "Free Data Video Tools — CSV to Video, Chart Race & More",
   description: "Free online tools to turn data into video: CSV to video, chart race generator, ranking video maker, statistics video generator.",
-  ogImage: "/og/default.jpg",
+  ogImage: ogImageFor("/tools"),
   body: `
     ${headerHtml}
     <main>
@@ -294,7 +295,7 @@ for (const t of TOOLS) {
     path: `/tools/${t.slug}`,
     title: t.seoTitle,
     description: t.seoDescription,
-    ogImage: "/og/default.jpg",
+    ogImage: ogImageFor(`/tools/${t.slug}`),
     jsonLd: [
       {
         "@context": "https://schema.org",
@@ -338,7 +339,7 @@ routes.push({
   path: "/blog",
   title: "Blog — Data video tips, viral formats & creator guides",
   description: "Guides on making viral bar chart race videos, TikTok data visualizations, football stats content and animated chart videos.",
-  ogImage: "/og/default.jpg",
+  ogImage: ogImageFor("/blog"),
   jsonLd: [{
     "@context": "https://schema.org",
     "@type": "Blog",
@@ -433,7 +434,7 @@ for (const raw of BLOG_POSTS) {
     path: `/blog/${p.slug}`,
     title: p.seoTitle,
     description: p.excerpt,
-    ogImage: p.ogImage ?? "/og/default.jpg",
+    ogImage: p.ogImage ?? ogImageFor(`/blog/${p.slug}`),
     jsonLd: [
       {
         "@context": "https://schema.org",
@@ -447,7 +448,7 @@ for (const raw of BLOG_POSTS) {
         mainEntityOfPage: { "@type": "WebPage", "@id": `${SITE}/blog/${p.slug}` },
         articleSection: p.category,
         keywords: p.tags.join(", "),
-        image: `${SITE}${p.ogImage ?? "/og/default.jpg"}`,
+        image: `${SITE}${p.ogImage ?? ogImageFor(`/blog/${p.slug}`)}`,
       },
       breadcrumbJsonLd([
         { name: "Home", path: "/" },
@@ -508,6 +509,7 @@ for (const t of trustPages) {
     path: t.path,
     title: t.title,
     description: t.description,
+    ogImage: ogImageFor(t.path),
     body: `${headerHtml}<main><h1>${esc(t.h1)}</h1>${t.body}</main>${footerHtml}`,
   });
 }
@@ -517,7 +519,7 @@ for (const s of WATCH_PAGES) {
     path: `/watch/${s.slug}`,
     title: `${s.title} — Data to Video`,
     description: s.description,
-    ogImage: s.ogImage,
+    ogImage: s.ogImage ?? ogImageFor(`/watch/${s.slug}`),
     jsonLd: [
       {
         "@context": "https://schema.org",
@@ -525,7 +527,7 @@ for (const s of WATCH_PAGES) {
         name: s.title,
         description: s.description,
         uploadDate: s.uploadDate,
-        thumbnailUrl: `${SITE}${s.ogImage}`,
+        thumbnailUrl: `${SITE}${s.ogImage ?? ogImageFor(`/watch/${s.slug}`)}`,
         contentUrl: `${SITE}/watch/${s.slug}`,
       },
       breadcrumbJsonLd([

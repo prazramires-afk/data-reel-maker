@@ -6,7 +6,8 @@
   "scripts": {
     "predev": "bunx tsx scripts/generate-sitemap.ts",
     "dev": "vite",
-    "prebuild": "bunx tsx scripts/generate-sitemap.ts",
+    "generate:og": "bunx tsx scripts/generate-og-images.ts",
+    "prebuild": "bunx tsx scripts/generate-sitemap.ts && bunx tsx scripts/generate-og-images.ts",
     "build": "vite build",
     "postbuild": "tsx scripts/prerender.ts",
     "build:dev": "vite build --mode development",
@@ -72,6 +73,7 @@
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@playwright/test": "^1.57.0",
+    "@resvg/resvg-js": "^2.6.2",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",

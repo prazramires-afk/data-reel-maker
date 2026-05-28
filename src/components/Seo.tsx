@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { ogImageFor, OG_DEFAULT } from "@/lib/ogImage";
 
 interface SeoProps {
   title: string;
@@ -13,9 +14,12 @@ const SITE = "https://data-reel-maker.lovable.app";
 
 export const Seo = ({ title, description, path, noindex, jsonLd, ogImage }: SeoProps) => {
   const url = path.startsWith("http") ? path : `${SITE}${path}`;
-  const ogImageUrl = ogImage
-    ? ogImage.startsWith("http") ? ogImage : `${SITE}${ogImage.startsWith("/") ? "" : "/"}${ogImage}`
-    : undefined;
+  // Resolve OG image: explicit prop wins, then a per-route prerendered card,
+  // then the global default. This guarantees every page ships a real preview.
+  const resolved = ogImage ?? ogImageFor(path) ?? OG_DEFAULT;
+  const ogImageUrl = resolved.startsWith("http")
+    ? resolved
+    : `${SITE}${resolved.startsWith("/") ? "" : "/"}${resolved}`;
   const blocks = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
   return (
     <Helmet>
@@ -29,8 +33,10 @@ export const Seo = ({ title, description, path, noindex, jsonLd, ogImage }: SeoP
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
-      {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
-      {ogImageUrl && <meta name="twitter:image" content={ogImageUrl} />}
+      <meta property="og:image" content={ogImageUrl} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta name="twitter:image" content={ogImageUrl} />
       {noindex && <meta name="robots" content="noindex, nofollow" />}
       {blocks.map((b, i) => (
         <script key={i} type="application/ld+json">{JSON.stringify(b)}</script>
