@@ -509,6 +509,7 @@ for (const t of trustPages) {
     path: t.path,
     title: t.title,
     description: t.description,
+    ogImage: ogImageFor(t.path),
     body: `${headerHtml}<main><h1>${esc(t.h1)}</h1>${t.body}</main>${footerHtml}`,
   });
 }
@@ -518,7 +519,7 @@ for (const s of WATCH_PAGES) {
     path: `/watch/${s.slug}`,
     title: `${s.title} — Data to Video`,
     description: s.description,
-    ogImage: s.ogImage,
+    ogImage: s.ogImage ?? ogImageFor(`/watch/${s.slug}`),
     jsonLd: [
       {
         "@context": "https://schema.org",
@@ -526,7 +527,7 @@ for (const s of WATCH_PAGES) {
         name: s.title,
         description: s.description,
         uploadDate: s.uploadDate,
-        thumbnailUrl: `${SITE}${s.ogImage}`,
+        thumbnailUrl: `${SITE}${s.ogImage ?? ogImageFor(`/watch/${s.slug}`)}`,
         contentUrl: `${SITE}/watch/${s.slug}`,
       },
       breadcrumbJsonLd([
