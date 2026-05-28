@@ -11,6 +11,7 @@ import Templates from "./pages/Templates";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+import { WhatsAppFloat } from "./components/WhatsAppFloat";
 const TemplateLanding = lazy(() => import("./pages/TemplateLanding"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
@@ -57,6 +58,7 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
         </Suspense>
+        <WhatsAppFloat />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
