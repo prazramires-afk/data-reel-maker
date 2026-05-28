@@ -19,7 +19,9 @@ export const SiteHeader = ({ back }: Props) => {
         )}
         <nav className="flex items-center gap-4 text-sm text-muted-foreground">
           <Link to="/templates" className="hover:text-foreground hidden sm:inline">Templates</Link>
-          <Link to="/blog" className="hover:text-foreground hidden sm:inline">Blog</Link>
+          <Link to="/datasets" className="hover:text-foreground hidden sm:inline">Datasets</Link>
+          <Link to="/tools" className="hover:text-foreground hidden md:inline">Tools</Link>
+          <Link to="/blog" className="hover:text-foreground hidden md:inline">Blog</Link>
           <Link to="/create" className="px-3 py-1.5 rounded-full bg-primary text-primary-foreground font-semibold text-xs">
             Create
           </Link>
