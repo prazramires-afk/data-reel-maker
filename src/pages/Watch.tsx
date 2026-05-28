@@ -5,26 +5,18 @@ import { Seo } from "@/components/Seo";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Footer } from "@/components/Footer";
 import { toast } from "@/hooks/use-toast";
+import { WATCH_PAGES, getWatch } from "@/lib/seoContent/watchPages";
+import { getDataset } from "@/lib/seoContent/datasets";
 
-interface ShareEntry {
-  slug: string;
-  title: string;
-  description: string;
-  templateId: string;
-  ogImage: string;
-}
-
-const SHARES: ShareEntry[] = [
-  { slug: "gdp-race-usa-vs-china", title: "GDP Race: USA vs China (1980–2025)", description: "The animated race between the world's two biggest economies over the last 45 years.", templateId: "viral-bar-race", ogImage: "/og/watch-gdp-usa-china.jpg" },
-  { slug: "ronaldo-vs-messi-goals", title: "Ronaldo vs Messi — All-Time Goals", description: "Head-to-head animated comparison of every official goal scored by both players.", templateId: "comparison-football", ogImage: "/og/watch-ronaldo-messi.jpg" },
-  { slug: "top-10-economies-2025", title: "Top 10 Economies in 2025", description: "The world's biggest economies, ranked and revealed one by one.", templateId: "top10-gdp", ogImage: "/og/watch-top10-economies.jpg" },
-];
+const SITE = "https://data-reel-maker.lovable.app";
 
 const Watch = () => {
   const { slug } = useParams();
-  const entry = SHARES.find((s) => s.slug === slug) ?? SHARES[0];
+  const entry = getWatch(slug) ?? WATCH_PAGES[0];
+  const dataset = entry.datasetSlug ? getDataset(entry.datasetSlug) : undefined;
+  const related = WATCH_PAGES.filter((w) => w.slug !== entry.slug).slice(0, 4);
   const [copied, setCopied] = useState(false);
-  const url = typeof window !== "undefined" ? window.location.href : "";
+  const url = typeof window !== "undefined" ? window.location.href : `${SITE}/watch/${entry.slug}`;
 
   const onCopy = async () => {
     await navigator.clipboard.writeText(url);
@@ -44,14 +36,25 @@ const Watch = () => {
         description={entry.description}
         path={`/watch/${entry.slug}`}
         ogImage={entry.ogImage}
-        jsonLd={{
-          "@context": "https://schema.org",
-          "@type": "VideoObject",
-          name: entry.title,
-          description: entry.description,
-          uploadDate: "2026-01-01",
-          thumbnailUrl: `https://data-reel-maker.lovable.app${entry.ogImage}`,
-        }}
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "VideoObject",
+            name: entry.title,
+            description: entry.description,
+            uploadDate: entry.uploadDate,
+            thumbnailUrl: `${SITE}${entry.ogImage}`,
+            contentUrl: `${SITE}/watch/${entry.slug}`,
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: `${SITE}/` },
+              { "@type": "ListItem", position: 2, name: "Watch", item: `${SITE}/watch/${entry.slug}` },
+            ],
+          },
+        ]}
       />
       <SiteHeader />
       <main className="flex-1 max-w-3xl mx-auto px-6 py-10 w-full">
@@ -78,6 +81,28 @@ const Watch = () => {
               Create your own
             </Link>
           </div>
+
+          <section className="mt-10">
+            <h2 className="text-xl font-bold text-foreground mb-3">About this video</h2>
+            <p className="text-foreground/90 leading-relaxed">{entry.summary}</p>
+            {dataset && (
+              <p className="mt-3 text-sm text-muted-foreground">
+                Data source: <Link to={`/datasets/${dataset.slug}`} className="text-primary hover:underline">{dataset.title}</Link> · {dataset.source}
+              </p>
+            )}
+          </section>
+
+          <section className="mt-10">
+            <h2 className="text-xl font-bold text-foreground mb-3">Related videos</h2>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {related.map((w) => (
+                <Link key={w.slug} to={`/watch/${w.slug}`} className="bg-card rounded-xl p-4 hover:bg-card/70">
+                  <p className="font-semibold text-foreground">{w.title}</p>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{w.description}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
         </article>
       </main>
       <Footer />
