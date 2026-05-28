@@ -12,7 +12,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { BLOG_POSTS } from "../src/lib/seoContent/blogPosts";
+import { BLOG_POSTS, AUTHORS, withAnchors, type BodyBlock } from "../src/lib/seoContent/blogPosts";
 import { TEMPLATE_LANDINGS } from "../src/lib/seoContent/templateLandings";
 import { HOME_FAQS } from "../src/lib/seoContent/faqs";
 import { DATASETS } from "../src/lib/seoContent/datasets";
@@ -339,6 +339,19 @@ routes.push({
   title: "Blog — Data video tips, viral formats & creator guides",
   description: "Guides on making viral bar chart race videos, TikTok data visualizations, football stats content and animated chart videos.",
   ogImage: "/og/default.jpg",
+  jsonLd: [{
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    name: "Data to Video Blog",
+    url: `${SITE}/blog`,
+    blogPost: BLOG_POSTS.map((p) => ({
+      "@type": "BlogPosting",
+      headline: p.title,
+      url: `${SITE}/blog/${p.slug}`,
+      datePublished: p.date,
+      author: { "@type": "Person", name: AUTHORS[p.authorKey].name },
+    })),
+  }],
   body: `
     ${headerHtml}
     <main>
@@ -348,7 +361,7 @@ routes.push({
       </header>
       <ul>
         ${BLOG_POSTS.map((p) => `<li><article>
-          <p><small><time datetime="${p.date}">${p.date}</time> · ${p.readMinutes} min read</small></p>
+          <p><small>${esc(p.category)} · <time datetime="${p.date}">${p.date}</time> · ${p.readMinutes} min read · ${esc(AUTHORS[p.authorKey].name)}</small></p>
           <h2><a href="/blog/${p.slug}">${esc(p.title)}</a></h2>
           <p>${esc(p.excerpt)}</p>
         </article></li>`).join("")}
@@ -358,27 +371,105 @@ routes.push({
   `,
 });
 
-for (const p of BLOG_POSTS) {
+const renderBlockHtml = (b: BodyBlock): string => {
+  switch (b.type) {
+    case "p": return `<p>${esc(b.text)}</p>`;
+    case "h2": return `<h2 id="${esc(b.id ?? "")}">${esc(b.text)}</h2>`;
+    case "h3": return `<h3>${esc(b.text)}</h3>`;
+    case "list":
+      return `<${b.ordered ? "ol" : "ul"}>${b.items.map((it) => `<li>${esc(it)}</li>`).join("")}</${b.ordered ? "ol" : "ul"}>`;
+    case "callout": return `<aside><strong>Tip:</strong> ${esc(b.text)}</aside>`;
+    case "quote": return `<blockquote>${esc(b.text)}${b.cite ? `<footer>— ${esc(b.cite)}</footer>` : ""}</blockquote>`;
+    case "embed": {
+      const href =
+        b.kind === "template" ? `/templates/${b.slug}` :
+        b.kind === "dataset" ? `/datasets/${b.slug}` :
+        b.kind === "tool" ? `/tools/${b.slug}` :
+        `/watch/${b.slug}`;
+      const label = b.label ?? `${b.kind}: ${b.slug}`;
+      return `<p><a href="${href}">${esc(label)}</a></p>`;
+    }
+  }
+};
+
+for (const raw of BLOG_POSTS) {
+  const p = withAnchors(raw);
+  const author = AUTHORS[p.authorKey];
+  const toc = p.body.filter((b): b is Extract<BodyBlock, { type: "h2" }> => b.type === "h2");
+  const tocHtml = toc.length > 1
+    ? `<nav aria-label="Table of contents"><strong>In this article</strong><ol>${toc.map((t) => `<li><a href="#${esc(t.id ?? "")}">${esc(t.text)}</a></li>`).join("")}</ol></nav>`
+    : "";
+  const faqsHtml = p.faqs && p.faqs.length > 0 ? faqHtml(p.faqs) : "";
+  const relatedHtml = p.related.length > 0
+    ? `<section><h2>Related reading</h2><ul>${p.related.map((s) => {
+        const r = BLOG_POSTS.find((x) => x.slug === s);
+        return r ? `<li><a href="/blog/${r.slug}">${esc(r.title)}</a></li>` : "";
+      }).join("")}</ul></section>`
+    : "";
+
+  const mentionedHtml = `
+    ${(p.relatedTemplates ?? []).map((s) => {
+      const t = TEMPLATE_LANDINGS.find((x) => x.slug === s);
+      return t ? `<li><a href="/templates/${t.slug}">Template: ${esc(t.h1)}</a></li>` : "";
+    }).join("")}
+    ${(p.relatedDatasets ?? []).map((s) => {
+      const d = DATASETS.find((x) => x.slug === s);
+      return d ? `<li><a href="/datasets/${d.slug}">Dataset: ${esc(d.title)}</a></li>` : "";
+    }).join("")}
+    ${(p.relatedTools ?? []).map((s) => {
+      const t = TOOLS.find((x) => x.slug === s);
+      return t ? `<li><a href="/tools/${t.slug}">Tool: ${esc(t.h1)}</a></li>` : "";
+    }).join("")}
+    ${(p.relatedWatch ?? []).map((s) => {
+      const w = WATCH_PAGES.find((x) => x.slug === s);
+      return w ? `<li><a href="/watch/${w.slug}">Watch: ${esc(w.title)}</a></li>` : "";
+    }).join("")}
+  `;
+  const mentionedSection = mentionedHtml.trim()
+    ? `<section><h2>Mentioned in this article</h2><ul>${mentionedHtml}</ul></section>`
+    : "";
+
   routes.push({
     path: `/blog/${p.slug}`,
     title: p.seoTitle,
     description: p.excerpt,
     ogImage: p.ogImage ?? "/og/default.jpg",
-    jsonLd: [{
-      "@context": "https://schema.org",
-      "@type": "Article",
-      headline: p.title,
-      datePublished: p.date,
-      author: { "@type": "Organization", name: "Data to Video" },
-    }],
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        headline: p.title,
+        description: p.excerpt,
+        datePublished: p.date,
+        dateModified: p.updated ?? p.date,
+        author: { "@type": "Person", name: author.name, jobTitle: author.role },
+        publisher: { "@type": "Organization", name: "Data to Video", logo: { "@type": "ImageObject", url: `${SITE}/og/default.jpg` } },
+        mainEntityOfPage: { "@type": "WebPage", "@id": `${SITE}/blog/${p.slug}` },
+        articleSection: p.category,
+        keywords: p.tags.join(", "),
+        image: `${SITE}${p.ogImage ?? "/og/default.jpg"}`,
+      },
+      breadcrumbJsonLd([
+        { name: "Home", path: "/" },
+        { name: "Blog", path: "/blog" },
+        { name: p.title, path: `/blog/${p.slug}` },
+      ]),
+      ...(p.faqs && p.faqs.length > 0 ? [faqJsonLd(p.faqs)] : []),
+    ],
     body: `
       ${headerHtml}
       <main>
+        <nav aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/blog">Blog</a> › ${esc(p.category)}</nav>
         <article>
-          <p><small><time datetime="${p.date}">${p.date}</time> · ${p.readMinutes} min read</small></p>
+          <p><small>${esc(p.category)} · <time datetime="${p.date}">${p.date}</time> · ${p.readMinutes} min read · By ${esc(author.name)}</small></p>
           <h1>${esc(p.title)}</h1>
           <p>${esc(p.excerpt)}</p>
-          ${p.body.map((b) => b.h2 ? `<h2>${esc(b.h2)}</h2>` : `<p>${esc(b.p!)}</p>`).join("")}
+          ${tocHtml}
+          ${p.body.map(renderBlockHtml).join("")}
+          ${faqsHtml}
+          <section><h2>About the author</h2><p><strong>${esc(author.name)}</strong> — ${esc(author.role)}. ${esc(author.bio)}</p></section>
+          ${mentionedSection}
+          ${relatedHtml}
         </article>
       </main>
       ${footerHtml}
