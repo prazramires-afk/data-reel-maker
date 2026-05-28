@@ -15,6 +15,9 @@ import { fileURLToPath } from "node:url";
 import { BLOG_POSTS } from "../src/lib/seoContent/blogPosts";
 import { TEMPLATE_LANDINGS } from "../src/lib/seoContent/templateLandings";
 import { HOME_FAQS } from "../src/lib/seoContent/faqs";
+import { DATASETS } from "../src/lib/seoContent/datasets";
+import { TOOLS } from "../src/lib/seoContent/tools";
+import { WATCH_PAGES } from "../src/lib/seoContent/watchPages";
 
 const SITE = "https://data-reel-maker.lovable.app";
 const DIST = resolve(dirname(fileURLToPath(import.meta.url)), "..", "dist");
@@ -39,6 +42,8 @@ const headerHtml = `
   <a href="/" rel="home"><strong>Data to Video</strong></a>
   <nav aria-label="Primary">
     <a href="/templates">Templates</a>
+    <a href="/datasets">Datasets</a>
+    <a href="/tools">Tools</a>
     <a href="/blog">Blog</a>
     <a href="/about">About</a>
     <a href="/create">Create</a>
@@ -50,6 +55,8 @@ const footerHtml = `
   <nav aria-label="Footer">
     <a href="/">Home</a>
     <a href="/templates">Templates</a>
+    <a href="/datasets">Datasets</a>
+    <a href="/tools">Tools</a>
     <a href="/blog">Blog</a>
     <a href="/about">About</a>
     <a href="/contact">Contact</a>
@@ -58,6 +65,17 @@ const footerHtml = `
   </nav>
   <p>&copy; ${new Date().getFullYear()} Data to Video. Turn data into viral short-form video.</p>
 </footer>`;
+
+const breadcrumbJsonLd = (crumbs: { name: string; path: string }[]) => ({
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: crumbs.map((c, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    name: c.name,
+    item: `${SITE}${c.path}`,
+  })),
+});
 
 const faqHtml = (faqs: { q: string; a: string }[]) => `
 <section aria-labelledby="faq-heading">
@@ -150,6 +168,11 @@ for (const t of TEMPLATE_LANDINGS) {
         operatingSystem: "Web",
         offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
       },
+      breadcrumbJsonLd([
+        { name: "Home", path: "/" },
+        { name: "Templates", path: "/templates" },
+        { name: t.h1, path: `/templates/${t.slug}` },
+      ]),
     ],
     body: `
       ${headerHtml}
@@ -162,6 +185,147 @@ for (const t of TEMPLATE_LANDINGS) {
           ${t.paragraphs.map((p) => `<p>${esc(p)}</p>`).join("")}
           <h2>What you get</h2>
           <ul>${t.features.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>
+          ${faqHtml(t.faqs)}
+        </article>
+      </main>
+      ${footerHtml}
+    `,
+  });
+}
+
+// ---------- Datasets ----------
+routes.push({
+  path: "/datasets",
+  title: "Free Datasets for Animated Stats Videos — Data to Video",
+  description: "Browse free datasets for GDP, sports, demographics, business and crypto. Drop any dataset into the editor and export a viral animated chart video.",
+  ogImage: "/og/default.jpg",
+  jsonLd: [{
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "Data to Video — Datasets",
+    hasPart: DATASETS.map((d) => ({
+      "@type": "Dataset",
+      name: d.title,
+      description: d.seoDescription,
+      url: `${SITE}/datasets/${d.slug}`,
+    })),
+  }],
+  body: `
+    ${headerHtml}
+    <main>
+      <h1>Free datasets for animated stats videos</h1>
+      <p>Curated datasets ready to drop into the editor and export as a TikTok or Reels video.</p>
+      <ul>
+        ${DATASETS.map((d) => `<li><h2><a href="/datasets/${d.slug}">${esc(d.title)}</a></h2><p>${esc(d.intro)}</p></li>`).join("")}
+      </ul>
+    </main>
+    ${footerHtml}
+  `,
+});
+
+for (const d of DATASETS) {
+  routes.push({
+    path: `/datasets/${d.slug}`,
+    title: d.seoTitle,
+    description: d.seoDescription,
+    ogImage: "/og/default.jpg",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "Dataset",
+        name: d.title,
+        description: d.seoDescription,
+        url: `${SITE}/datasets/${d.slug}`,
+        keywords: d.keywords.join(", "),
+        creator: { "@type": "Organization", name: "Data to Video" },
+        isAccessibleForFree: true,
+      },
+      breadcrumbJsonLd([
+        { name: "Home", path: "/" },
+        { name: "Datasets", path: "/datasets" },
+        { name: d.title, path: `/datasets/${d.slug}` },
+      ]),
+      faqJsonLd(d.faqs),
+    ],
+    body: `
+      ${headerHtml}
+      <main>
+        <article>
+          <p><small>${esc(d.category)} dataset · Source: ${esc(d.source)}</small></p>
+          <h1>${esc(d.h1)}</h1>
+          <p>${esc(d.intro)}</p>
+          ${d.paragraphs.map((p) => `<p>${esc(p)}</p>`).join("")}
+          <h2>Preview rows</h2>
+          <ul>${d.preview.map((r) => `<li><strong>${esc(r.label)}</strong> — ${esc(String(r.value))} ${esc(d.unit)}${r.meta ? ` (${esc(r.meta)})` : ""}</li>`).join("")}</ul>
+          <h2>Templates that use this dataset</h2>
+          <ul>${d.recommendedTemplates.map((s) => {
+            const t = TEMPLATE_LANDINGS.find((x) => x.slug === s);
+            return t ? `<li><a href="/templates/${t.slug}">${esc(t.h1)}</a></li>` : "";
+          }).join("")}</ul>
+          ${faqHtml(d.faqs)}
+        </article>
+      </main>
+      ${footerHtml}
+    `,
+  });
+}
+
+// ---------- Tools ----------
+routes.push({
+  path: "/tools",
+  title: "Free Data Video Tools — CSV to Video, Chart Race & More",
+  description: "Free online tools to turn data into video: CSV to video, chart race generator, ranking video maker, statistics video generator.",
+  ogImage: "/og/default.jpg",
+  body: `
+    ${headerHtml}
+    <main>
+      <h1>Free data video tools</h1>
+      <p>Pick a tool, drop in your data, export a vertical MP4 — all in your browser.</p>
+      <ul>
+        ${TOOLS.map((t) => `<li><h2><a href="/tools/${t.slug}">${esc(t.h1)}</a></h2><p>${esc(t.intro)}</p></li>`).join("")}
+      </ul>
+    </main>
+    ${footerHtml}
+  `,
+});
+
+for (const t of TOOLS) {
+  routes.push({
+    path: `/tools/${t.slug}`,
+    title: t.seoTitle,
+    description: t.seoDescription,
+    ogImage: "/og/default.jpg",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        name: t.h1,
+        applicationCategory: "MultimediaApplication",
+        operatingSystem: "Web",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        name: t.h1,
+        step: t.steps.map((s, i) => ({ "@type": "HowToStep", position: i + 1, name: s })),
+      },
+      breadcrumbJsonLd([
+        { name: "Home", path: "/" },
+        { name: "Tools", path: "/tools" },
+        { name: t.h1, path: `/tools/${t.slug}` },
+      ]),
+      faqJsonLd(t.faqs),
+    ],
+    body: `
+      ${headerHtml}
+      <main>
+        <article>
+          <h1>${esc(t.h1)}</h1>
+          <p>${esc(t.intro)}</p>
+          ${t.paragraphs.map((p) => `<p>${esc(p)}</p>`).join("")}
+          <h2>How it works</h2>
+          <ol>${t.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>
           ${faqHtml(t.faqs)}
         </article>
       </main>
@@ -257,26 +421,28 @@ for (const t of trustPages) {
   });
 }
 
-const shares = [
-  { slug: "gdp-race-usa-vs-china", title: "GDP Race: USA vs China (1980–2025)", description: "The animated race between the world's two biggest economies over the last 45 years.", templateId: "viral-bar-race", ogImage: "/og/watch-gdp-usa-china.jpg" },
-  { slug: "ronaldo-vs-messi-goals", title: "Ronaldo vs Messi — All-Time Goals", description: "Head-to-head animated comparison of every official goal scored by both players.", templateId: "comparison-football", ogImage: "/og/watch-ronaldo-messi.jpg" },
-  { slug: "top-10-economies-2025", title: "Top 10 Economies in 2025", description: "The world's biggest economies, ranked and revealed one by one.", templateId: "top10-gdp", ogImage: "/og/watch-top10-economies.jpg" },
-];
-for (const s of shares) {
+for (const s of WATCH_PAGES) {
   routes.push({
     path: `/watch/${s.slug}`,
     title: `${s.title} — Data to Video`,
     description: s.description,
     ogImage: s.ogImage,
-    jsonLd: [{
-      "@context": "https://schema.org",
-      "@type": "VideoObject",
-      name: s.title,
-      description: s.description,
-      uploadDate: "2026-01-01",
-      thumbnailUrl: `${SITE}${s.ogImage}`,
-    }],
-    body: `${headerHtml}<main><article><h1>${esc(s.title)}</h1><p>${esc(s.description)}</p><p>Made with Data to Video.</p><p><a href="/create?template=${s.templateId}">Create your own</a></p></article></main>${footerHtml}`,
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        name: s.title,
+        description: s.description,
+        uploadDate: s.uploadDate,
+        thumbnailUrl: `${SITE}${s.ogImage}`,
+        contentUrl: `${SITE}/watch/${s.slug}`,
+      },
+      breadcrumbJsonLd([
+        { name: "Home", path: "/" },
+        { name: "Watch", path: `/watch/${s.slug}` },
+      ]),
+    ],
+    body: `${headerHtml}<main><article><h1>${esc(s.title)}</h1><p>${esc(s.description)}</p><p>${esc(s.summary)}</p><p>Made with the <a href="/templates/${s.templateSlug}">${esc(s.templateSlug)}</a> template.</p><p><a href="/create?template=${s.templateId}">Create your own</a></p></article></main>${footerHtml}`,
   });
 }
 
