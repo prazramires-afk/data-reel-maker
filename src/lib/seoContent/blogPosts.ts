@@ -7,6 +7,7 @@ export interface BlogPost {
   readMinutes: number;
   body: { h2?: string; p?: string }[];
   related: string[];
+  ogImage?: string;
 }
 
 export const BLOG_POSTS: BlogPost[] = [
@@ -31,6 +32,7 @@ export const BLOG_POSTS: BlogPost[] = [
       { p: "The accounts that grow fastest with bar chart races post daily. Each video uses the same template, same theme, same hook structure — different data. That's how you get the algorithm to learn your channel." },
     ],
     related: ["why-bar-chart-races-go-viral", "best-tiktok-data-visualization-ideas"],
+    ogImage: "/og/blog-bar-chart-race.jpg",
   },
   {
     slug: "best-tiktok-data-visualization-ideas",
@@ -52,6 +54,7 @@ export const BLOG_POSTS: BlogPost[] = [
       { p: "Pick one, open the matching template, and publish today. The accounts that win in this niche publish daily — the data is everywhere." },
     ],
     related: ["how-to-make-viral-bar-chart-race-videos", "how-football-channels-use-statistics-videos"],
+    ogImage: "/og/blog-tiktok-ideas.jpg",
   },
   {
     slug: "how-football-channels-use-statistics-videos",
@@ -70,6 +73,7 @@ export const BLOG_POSTS: BlogPost[] = [
       { p: "Three things: a confrontational title, fast pacing (under 25 seconds), and a clear winner reveal. Avoid neutral framing — 'Who has more goals?' beats 'Goals comparison' every time." },
     ],
     related: ["how-to-make-viral-bar-chart-race-videos", "best-tiktok-data-visualization-ideas"],
+    ogImage: "/og/blog-football-stats.jpg",
   },
   {
     slug: "why-bar-chart-races-go-viral",
@@ -90,6 +94,7 @@ export const BLOG_POSTS: BlogPost[] = [
       { p: "Keep the bar count between five and ten. Use bold colors that contrast against a dark background. Add a hook title in the first frame. Don't slow the animation down — fast pacing is part of the appeal." },
     ],
     related: ["how-to-make-viral-bar-chart-race-videos", "best-data-formats-for-animated-videos"],
+    ogImage: "/og/blog-why-viral.jpg",
   },
   {
     slug: "best-data-formats-for-animated-videos",
@@ -110,6 +115,7 @@ export const BLOG_POSTS: BlogPost[] = [
       { p: "Strip commas, currency symbols and percent signs. Numbers should be raw — 12500000, not '$12.5M'." },
     ],
     related: ["how-to-make-viral-bar-chart-race-videos"],
+    ogImage: "/og/blog-data-formats.jpg",
   },
 ];
 
