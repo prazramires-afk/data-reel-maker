@@ -7,6 +7,7 @@ import { FaqSection, faqJsonLd } from "@/components/FaqSection";
 import { HOME_FAQS } from "@/lib/seoContent/faqs";
 import { TEMPLATE_LANDINGS } from "@/lib/seoContent/templateLandings";
 import { BLOG_POSTS } from "@/lib/seoContent/blogPosts";
+import { LivePreview, LivePreviewMode } from "@/components/LivePreview";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -137,14 +138,19 @@ const Home = () => {
         <p className="text-center text-muted-foreground mt-3 max-w-2xl mx-auto">A complete animated data visualization generator built for TikTok, Reels and YouTube Shorts.</p>
         <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
-            { icon: BarChart3, title: "Animated Bar Chart Race", body: "Smooth reordering bars across years or rounds — the most viral data format on short-form video." },
+            { icon: BarChart3, title: "Animated Bar Chart Race", body: "Smooth reordering bars across years or rounds — the most viral data format on short-form video.", preview: "bar_race" as LivePreviewMode },
             { icon: Film, title: "TikTok & Reels Export", body: "Every video exports as a vertical 1080×1920 MP4, ready to upload straight to TikTok, Reels and Shorts." },
-            { icon: TrendingUp, title: "Data Storytelling", body: "Built-in titles, viral hooks and reveal animations turn raw numbers into a narrative viewers finish." },
-            { icon: Trophy, title: "Sports Statistics Videos", body: "Goal scorers, championship races, head-to-head player comparisons — perfect for football and esports pages." },
+            { icon: TrendingUp, title: "Data Storytelling", body: "Built-in titles, viral hooks and reveal animations turn raw numbers into a narrative viewers finish.", preview: "top10" as LivePreviewMode },
+            { icon: Trophy, title: "Sports Statistics Videos", body: "Goal scorers, championship races, head-to-head player comparisons — perfect for football and esports pages.", preview: "comparison" as LivePreviewMode },
             { icon: Globe2, title: "Economic Visualization", body: "GDP races, inflation timelines, currency moves — finance creators ship daily content with one template." },
-            { icon: GraduationCap, title: "Educational Timelines", body: "Animate population growth, historical events and demographic data for educational TikTok and YouTube." },
+            { icon: GraduationCap, title: "Educational Timelines", body: "Animate population growth, historical events and demographic data for educational TikTok and YouTube.", preview: "timeline" as LivePreviewMode },
           ].map((f) => (
             <article key={f.title} className="bg-card rounded-2xl p-6 border border-border">
+              {f.preview && (
+                <div className="mb-4 -mx-2">
+                  <LivePreview mode={f.preview} />
+                </div>
+              )}
               <f.icon className="w-6 h-6 text-primary mb-3" />
               <h3 className="font-bold text-foreground">{f.title}</h3>
               <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{f.body}</p>
