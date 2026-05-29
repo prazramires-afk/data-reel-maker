@@ -130,7 +130,7 @@ export const TEMPLATE_LANDINGS: TemplateLanding[] = [
   },
   {
     slug: "nba-ranking-animation",
-    templateId: "viral-bar-race",
+    templateId: "nba-ranking",
     h1: "NBA Ranking Animation Maker",
     seoTitle: "NBA Ranking Animation Maker — Animated Basketball Stats Videos",
     seoDescription: "Make NBA ranking and scoring animation videos for TikTok and Reels. All-time scorers, MVP races and team standings.",
@@ -148,7 +148,7 @@ export const TEMPLATE_LANDINGS: TemplateLanding[] = [
   },
   {
     slug: "crypto-marketcap-race",
-    templateId: "viral-bar-race",
+    templateId: "crypto-race",
     h1: "Crypto Market Cap Race Video Maker",
     seoTitle: "Crypto Market Cap Race — Animated Top Coin Ranking Videos",
     seoDescription: "Animate the top cryptocurrencies by market cap. Free crypto bar chart race maker for TikTok, Reels and YouTube Shorts.",

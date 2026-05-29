@@ -112,7 +112,7 @@ export const DATASETS: Dataset[] = [
       { label: "Kobe Bryant", value: 33_643 },
       { label: "Michael Jordan", value: 32_292 },
     ],
-    recommendedTemplates: ["bar-chart-race", "top-10", "football-stats"],
+    recommendedTemplates: ["nba-ranking-animation", "bar-chart-race", "top-10"],
     relatedWatch: [],
     keywords: ["NBA points dataset", "basketball scoring CSV", "LeBron Jordan data"],
     faqs: [
@@ -197,7 +197,7 @@ export const DATASETS: Dataset[] = [
       { label: "BNB", value: 95 },
       { label: "Solana", value: 88 },
     ],
-    recommendedTemplates: ["bar-chart-race", "top-10", "economic-growth"],
+    recommendedTemplates: ["crypto-marketcap-race", "top-10", "bar-chart-race"],
     relatedWatch: [],
     keywords: ["crypto dataset", "Bitcoin Ethereum data", "market cap CSV"],
     faqs: [

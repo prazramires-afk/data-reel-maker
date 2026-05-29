@@ -8,7 +8,7 @@ import {
   VIDEO_TYPES, ThemeType, SpeedType,
 } from "@/lib/types";
 import { TEMPLATES } from "@/lib/templates";
-import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE } from "@/lib/sampleData";
+import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE, NBA_SAMPLE, CRYPTO_SAMPLE, COMPANIES_SAMPLE } from "@/lib/sampleData";
 import { parseCSV } from "@/lib/parseCSV";
 import { saveProject, getProjectById, generateId } from "@/lib/storage";
 import { createBarRaceAnimation, AnimationController } from "@/lib/animationEngine";
@@ -191,15 +191,32 @@ const Create = () => {
   useEffect(() => {
     const templateId = searchParams.get("template");
     const editId = searchParams.get("edit");
+    const datasetSlug = searchParams.get("dataset");
+
+    const DATASET_MAP: Record<string, { data: DataRow[]; title: string }> = {
+      "gdp-countries": { data: GDP_SAMPLE, title: "Top Economies by GDP" },
+      "fifa-goals": { data: FOOTBALL_SAMPLE, title: "All-Time Football Goal Scorers" },
+      "nba-points": { data: NBA_SAMPLE, title: "NBA All-Time Scoring Leaders" },
+      "population-growth": { data: POPULATION_SAMPLE, title: "World Population Growth" },
+      "richest-companies": { data: COMPANIES_SAMPLE, title: "Most Valuable Companies" },
+      "crypto-marketcap": { data: CRYPTO_SAMPLE, title: "Top Crypto by Market Cap" },
+    };
 
     if (templateId) {
       const tpl = TEMPLATES.find((t) => t.id === templateId);
       if (tpl) {
         setVideoType(tpl.type);
-        setData(tpl.data);
-        setSettings(tpl.settings);
+        const ds = datasetSlug ? DATASET_MAP[datasetSlug] : undefined;
+        setData(ds ? ds.data : tpl.data);
+        setSettings(ds ? { ...tpl.settings, title: ds.title } : tpl.settings);
         setStep(2);
       }
+    } else if (datasetSlug && DATASET_MAP[datasetSlug]) {
+      const ds = DATASET_MAP[datasetSlug];
+      setVideoType("bar_race");
+      setData(ds.data);
+      setSettings({ ...DEFAULT_SETTINGS, title: ds.title });
+      setStep(2);
     } else if (editId) {
       getProjectById(editId).then((project) => {
         if (project) {
