@@ -197,7 +197,7 @@ export const DATASETS: Dataset[] = [
       { label: "BNB", value: 95 },
       { label: "Solana", value: 88 },
     ],
-    recommendedTemplates: ["bar-chart-race", "top-10", "economic-growth"],
+    recommendedTemplates: ["crypto-marketcap-race", "top-10", "bar-chart-race"],
     relatedWatch: [],
     keywords: ["crypto dataset", "Bitcoin Ethereum data", "market cap CSV"],
     faqs: [
