@@ -1,5 +1,5 @@
 import { Template } from "./types";
-import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE } from "./sampleData";
+import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE, NBA_SAMPLE, CRYPTO_SAMPLE, COMPANIES_SAMPLE } from "./sampleData";
 
 export const TEMPLATES: Template[] = [
   {
