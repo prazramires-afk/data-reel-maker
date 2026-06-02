@@ -1,13 +1,17 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Pencil, Trash2, Globe, Lock, Share2, Copy, Check } from "lucide-react";
 import { Project } from "@/lib/types";
-import { getProjects, deleteProject } from "@/lib/storage";
+import { getProjects, deleteProject, setProjectPublic } from "@/lib/storage";
 import { Seo } from "@/components/Seo";
+import { communityUrl, copyToClipboard } from "@/lib/share";
+import { toast } from "@/hooks/use-toast";
 
 const Projects = () => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     getProjects().then(setProjects);
@@ -16,6 +20,36 @@ const Projects = () => {
   const handleDelete = async (id: string) => {
     await deleteProject(id);
     setProjects(await getProjects());
+  };
+
+  const handlePublishToggle = async (project: Project) => {
+    setBusyId(project.id);
+    const next = !project.isPublic;
+    let authorName: string | undefined;
+    if (next) {
+      const input = window.prompt(
+        "Display name to show on the community page (optional, max 60 chars)",
+        project.authorName || "",
+      );
+      if (input === null) {
+        setBusyId(null);
+        return;
+      }
+      authorName = input.trim().slice(0, 60) || undefined;
+    }
+    await setProjectPublic(project.id, next, authorName);
+    setProjects(await getProjects());
+    toast({ title: next ? "Published to community" : "Unpublished" });
+    setBusyId(null);
+  };
+
+  const handleCopyLink = async (id: string) => {
+    const ok = await copyToClipboard(communityUrl(id));
+    if (ok) {
+      setCopiedId(id);
+      toast({ title: "Community link copied" });
+      setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 2000);
+    }
   };
 
   return (
@@ -47,28 +81,70 @@ const Projects = () => {
           {projects.map((project, i) => (
             <div
               key={project.id}
-              className="bg-card rounded-xl p-4 flex items-center justify-between opacity-0 animate-fade-in"
+              className="bg-card rounded-xl p-4 opacity-0 animate-fade-in"
               style={{ animationDelay: `${i * 60}ms` }}
             >
-              <div className="min-w-0">
-                <h3 className="font-semibold text-foreground truncate">{project.name || "Untitled"}</h3>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  {project.type === "bar_race" ? "Bar Chart Race" : project.type} · {new Date(project.updatedAt).toLocaleDateString()}
-                </p>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-foreground truncate">{project.name || "Untitled"}</h3>
+                    {project.isPublic && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/15 text-primary text-[10px] font-semibold">
+                        <Globe className="w-3 h-3" /> Public
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {project.type === "bar_race" ? "Bar Chart Race" : project.type} · {new Date(project.updatedAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={() => navigate(`/create?edit=${project.id}`)}
+                    className="p-2.5 rounded-lg bg-secondary active:scale-90 transition-transform"
+                    aria-label="Edit"
+                  >
+                    <Pencil className="w-4 h-4 text-foreground" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(project.id)}
+                    className="p-2.5 rounded-lg bg-destructive/15 active:scale-90 transition-transform"
+                    aria-label="Delete"
+                  >
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-2 shrink-0 ml-3">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button
-                  onClick={() => navigate(`/create?edit=${project.id}`)}
-                  className="p-2.5 rounded-lg bg-secondary active:scale-90 transition-transform"
+                  onClick={() => handlePublishToggle(project)}
+                  disabled={busyId === project.id}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold active:scale-95 transition-transform disabled:opacity-60 ${
+                    project.isPublic
+                      ? "bg-secondary text-secondary-foreground"
+                      : "bg-primary text-primary-foreground"
+                  }`}
                 >
-                  <Pencil className="w-4 h-4 text-foreground" />
+                  {project.isPublic ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+                  {project.isPublic ? "Unpublish" : "Publish to community"}
                 </button>
-                <button
-                  onClick={() => handleDelete(project.id)}
-                  className="p-2.5 rounded-lg bg-destructive/15 active:scale-90 transition-transform"
-                >
-                  <Trash2 className="w-4 h-4 text-destructive" />
-                </button>
+                {project.isPublic && (
+                  <>
+                    <Link
+                      to={`/community/${project.id}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-xs font-semibold active:scale-95 transition-transform"
+                    >
+                      <Share2 className="w-3 h-3" /> Open share page
+                    </Link>
+                    <button
+                      onClick={() => handleCopyLink(project.id)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-xs font-semibold active:scale-95 transition-transform"
+                    >
+                      {copiedId === project.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      {copiedId === project.id ? "Copied" : "Copy link"}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ))}
