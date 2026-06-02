@@ -9,11 +9,20 @@ import { TEMPLATE_LANDINGS } from "@/lib/seoContent/templateLandings";
 import { BLOG_POSTS } from "@/lib/seoContent/blogPosts";
 import { LivePreview, LivePreviewMode } from "@/components/LivePreview";
 import { TEMPLATES } from "@/lib/templates";
+import { useEffect, useState } from "react";
+import { Project } from "@/lib/types";
+import { getCommunityProjects } from "@/lib/storage";
+import { CommunityProjectCard } from "@/components/CommunityProjectCard";
 
 const Home = () => {
   const navigate = useNavigate();
   const { user, credits, signOut, isAdmin } = useAuth();
   const dailyCap = credits?.is_premium ? 50 : 10;
+  const [community, setCommunity] = useState<Project[]>([]);
+
+  useEffect(() => {
+    getCommunityProjects(6).then(setCommunity);
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-x-hidden">
@@ -158,6 +167,35 @@ const Home = () => {
             </article>
           ))}
         </div>
+      </section>
+
+      {/* Community */}
+      <section className="max-w-6xl mx-auto px-6 py-16 w-full">
+        <div className="flex items-end justify-between mb-8 gap-4 flex-wrap">
+          <div>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground">Made by the community</h2>
+            <p className="text-muted-foreground mt-3 max-w-2xl">Real data videos published by Data to Video creators. Share yours from the Projects page.</p>
+          </div>
+          <Link to="/community" className="text-sm text-primary font-semibold whitespace-nowrap">Browse all →</Link>
+        </div>
+        {community.length === 0 ? (
+          <div className="text-center py-12 bg-card rounded-2xl border border-border">
+            <p className="text-foreground font-semibold">Be the first to publish a community video</p>
+            <p className="text-muted-foreground text-sm mt-2 max-w-md mx-auto">Create one, then hit Publish on the Projects page and it will show up here.</p>
+            <button
+              onClick={() => navigate("/create")}
+              className="mt-5 inline-block px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
+            >
+              Create a video
+            </button>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {community.map((p) => (
+              <CommunityProjectCard key={p.id} project={p} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Use cases / Programmatic landing entry */}

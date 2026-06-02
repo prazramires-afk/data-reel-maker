@@ -24,6 +24,8 @@ const Datasets = lazy(() => import("./pages/Datasets"));
 const DatasetPage = lazy(() => import("./pages/DatasetPage"));
 const Tools = lazy(() => import("./pages/Tools"));
 const ToolPage = lazy(() => import("./pages/ToolPage"));
+const Community = lazy(() => import("./pages/Community"));
+const CommunityProject = lazy(() => import("./pages/CommunityProject"));
 import { AuthProvider } from "./hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -53,6 +55,8 @@ const App = () => (
           <Route path="/datasets/:slug" element={<DatasetPage />} />
           <Route path="/tools" element={<Tools />} />
           <Route path="/tools/:slug" element={<ToolPage />} />
+          <Route path="/community" element={<Community />} />
+          <Route path="/community/:id" element={<CommunityProject />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="*" element={<NotFound />} />

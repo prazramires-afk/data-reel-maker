@@ -16,33 +16,42 @@ export type Database = {
     Tables: {
       projects: {
         Row: {
+          author_name: string | null
           created_at: string
           data: Json
           id: string
+          is_public: boolean
           label_images: Json
           name: string
+          published_at: string | null
           settings: Json
           type: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          author_name?: string | null
           created_at?: string
           data?: Json
           id?: string
+          is_public?: boolean
           label_images?: Json
           name?: string
+          published_at?: string | null
           settings?: Json
           type: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          author_name?: string | null
           created_at?: string
           data?: Json
           id?: string
+          is_public?: boolean
           label_images?: Json
           name?: string
+          published_at?: string | null
           settings?: Json
           type?: string
           updated_at?: string
