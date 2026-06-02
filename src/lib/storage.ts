@@ -59,6 +59,9 @@ function rowToProject(r: any): Project {
     labelImages: r.label_images ?? {},
     createdAt: r.created_at,
     updatedAt: r.updated_at,
+    isPublic: r.is_public ?? false,
+    publishedAt: r.published_at ?? null,
+    authorName: r.author_name ?? null,
   };
 }
 
@@ -125,5 +128,35 @@ export async function getProjectsByUser(userId: string): Promise<Project[]> {
     .eq("user_id", userId)
     .order("updated_at", { ascending: false });
   if (error) return [];
+  return (data ?? []).map(rowToProject);
+}
+
+/** Toggle whether a project is visible to the community. */
+export async function setProjectPublic(
+  id: string,
+  isPublic: boolean,
+  authorName?: string,
+): Promise<void> {
+  const patch: Record<string, any> = {
+    is_public: isPublic,
+    published_at: isPublic ? new Date().toISOString() : null,
+  };
+  if (isPublic && authorName) patch.author_name = authorName.slice(0, 60);
+  const { error } = await supabase.from("projects").update(patch).eq("id", id);
+  if (error) console.error("setProjectPublic error", error);
+}
+
+/** Public — fetch most recently published community projects. */
+export async function getCommunityProjects(limit = 12): Promise<Project[]> {
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("is_public", true)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error("getCommunityProjects error", error);
+    return [];
+  }
   return (data ?? []).map(rowToProject);
 }

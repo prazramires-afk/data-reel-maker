@@ -45,6 +45,9 @@ export interface Project {
   labelImages: Record<string, string>; // label -> base64 data URL
   createdAt: string;
   updatedAt: string;
+  isPublic?: boolean;
+  publishedAt?: string | null;
+  authorName?: string | null;
 }
 
 export interface Template {
