@@ -8,6 +8,7 @@ import { HOME_FAQS } from "@/lib/seoContent/faqs";
 import { TEMPLATE_LANDINGS } from "@/lib/seoContent/templateLandings";
 import { BLOG_POSTS } from "@/lib/seoContent/blogPosts";
 import { LivePreview, LivePreviewMode } from "@/components/LivePreview";
+import { TEMPLATES } from "@/lib/templates";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -173,6 +174,38 @@ const Home = () => {
                 Open template <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
               </span>
             </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Ready-to-use template gallery */}
+      <section className="max-w-6xl mx-auto px-6 py-16 w-full">
+        <div className="flex items-end justify-between mb-8 gap-4 flex-wrap">
+          <div>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground">Ready-to-use templates</h2>
+            <p className="text-muted-foreground mt-3 max-w-2xl">Every template comes with real sample data — open one and export instantly.</p>
+          </div>
+          <Link to="/templates" className="text-sm text-primary font-semibold whitespace-nowrap">Browse all →</Link>
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {TEMPLATES.map((tpl) => (
+            <button
+              key={tpl.id}
+              onClick={() => navigate(`/create?template=${tpl.id}`)}
+              className="text-left bg-card rounded-2xl p-5 border border-border hover:border-primary/40 transition-colors active:scale-[0.98]"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{tpl.icon}</span>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-foreground truncate">{tpl.name}</h3>
+                  <p className="text-[11px] uppercase tracking-wider text-primary font-semibold mt-0.5">{tpl.type.replace("_", " ")}</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mt-3 line-clamp-2">{tpl.description}</p>
+              <span className="mt-4 inline-flex items-center gap-1 text-sm text-primary font-semibold">
+                Use template <ArrowRight className="w-3.5 h-3.5" />
+              </span>
+            </button>
           ))}
         </div>
       </section>
