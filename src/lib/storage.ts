@@ -137,12 +137,12 @@ export async function setProjectPublic(
   isPublic: boolean,
   authorName?: string,
 ): Promise<void> {
-  const patch: Record<string, any> = {
+  const patch = {
     is_public: isPublic,
     published_at: isPublic ? new Date().toISOString() : null,
+    ...(isPublic && authorName ? { author_name: authorName.slice(0, 60) } : {}),
   };
-  if (isPublic && authorName) patch.author_name = authorName.slice(0, 60);
-  const { error } = await supabase.from("projects").update(patch).eq("id", id);
+  const { error } = await supabase.from("projects").update(patch as any).eq("id", id);
   if (error) console.error("setProjectPublic error", error);
 }
 
