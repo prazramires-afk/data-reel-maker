@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Plus, Trash2, Play, RotateCcw, Download, Share2, Pause, ImagePlus, Music, Sparkles, Lock, Coins } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Trash2, Play, RotateCcw, Download, Share2, Pause, ImagePlus, Music, Sparkles, Lock, Coins, Globe2, CircleDot, Users, CheckCircle2, VolumeX, Film, Headphones, Zap, Drum } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -576,15 +576,18 @@ const Create = () => {
             {dataTab === "sample" && (
               <div className="flex flex-col gap-3">
                 {[
-                  { label: "🌍 GDP Countries", data: GDP_SAMPLE },
-                  { label: "⚽ Football Goals", data: FOOTBALL_SAMPLE },
-                  { label: "👥 Population Growth", data: POPULATION_SAMPLE },
+                  { label: "GDP Countries", icon: Globe2, data: GDP_SAMPLE },
+                  { label: "Football Goals", icon: CircleDot, data: FOOTBALL_SAMPLE },
+                  { label: "Population Growth", icon: Users, data: POPULATION_SAMPLE },
                 ].map((s) => (
                   <button
                     key={s.label}
                     onClick={() => loadSample(s.data)}
-                    className="bg-card rounded-xl p-4 text-left font-semibold text-foreground active:scale-[0.97] transition-transform"
+                    className="bg-card rounded-xl p-4 text-left font-semibold text-foreground active:scale-[0.97] transition-transform flex items-center gap-3"
                   >
+                    <span className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <s.icon className="w-4 h-4" />
+                    </span>
                     {s.label}
                   </button>
                 ))}
@@ -650,7 +653,7 @@ const Create = () => {
                       settings.theme === t ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
                     } ${t === "greenscreen" ? "!text-xs" : "capitalize"}`}
                   >
-                    {t === "greenscreen" ? "🟢 Green Screen" : t}
+                    {t === "greenscreen" ? "Green Screen" : t}
                   </button>
                 ))}
               </div>
@@ -740,7 +743,17 @@ const Create = () => {
                         : "bg-secondary"
                     }`}
                   >
-                    <span className="text-xl">{track.icon}</span>
+                    {(() => {
+                      const map: Record<string, typeof VolumeX> = {
+                        none: VolumeX,
+                        "epic-rise": Film,
+                        "chill-beats": Headphones,
+                        "digital-pulse": Zap,
+                        "dramatic-drums": Drum,
+                      };
+                      const Icon = map[track.id] ?? Music;
+                      return <Icon className="w-5 h-5 text-primary" />;
+                    })()}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground">{track.name}</p>
                       <p className="text-xs text-muted-foreground">{track.description}</p>
@@ -902,7 +915,7 @@ const Create = () => {
             {exported && videoBlob && (
               <div className="space-y-4 opacity-0 animate-scale-in">
                 <div className="w-16 h-16 rounded-full bg-success/15 flex items-center justify-center mx-auto">
-                  <span className="text-3xl">✅</span>
+                  <CheckCircle2 className="w-8 h-8 text-success" />
                 </div>
                 <p className="font-semibold text-foreground">Ready!</p>
                 <p className="text-sm text-muted-foreground">

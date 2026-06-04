@@ -9,6 +9,7 @@ import { TEMPLATE_LANDINGS } from "@/lib/seoContent/templateLandings";
 import { BLOG_POSTS } from "@/lib/seoContent/blogPosts";
 import { LivePreview, LivePreviewMode } from "@/components/LivePreview";
 import { TEMPLATES } from "@/lib/templates";
+import { getTemplateIcon } from "@/lib/templateIcons";
 import { useEffect, useState } from "react";
 import { Project } from "@/lib/types";
 import { getCommunityProjects } from "@/lib/storage";
@@ -233,7 +234,14 @@ const Home = () => {
               className="text-left bg-card rounded-2xl p-5 border border-border hover:border-primary/40 transition-colors active:scale-[0.98]"
             >
               <div className="flex items-center gap-3">
-                <span className="text-3xl">{tpl.icon}</span>
+                {(() => {
+                  const Icon = getTemplateIcon(tpl.id);
+                  return (
+                    <span className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <Icon className="w-5 h-5" strokeWidth={2} />
+                    </span>
+                  );
+                })()}
                 <div className="min-w-0">
                   <h3 className="font-bold text-foreground truncate">{tpl.name}</h3>
                   <p className="text-[11px] uppercase tracking-wider text-primary font-semibold mt-0.5">{tpl.type.replace("_", " ")}</p>

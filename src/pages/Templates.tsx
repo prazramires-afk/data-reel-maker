@@ -4,6 +4,7 @@ import { TEMPLATES } from "@/lib/templates";
 import { Seo } from "@/components/Seo";
 import { TEMPLATE_LANDINGS } from "@/lib/seoContent/templateLandings";
 import { Footer } from "@/components/Footer";
+import { getTemplateIcon } from "@/lib/templateIcons";
 
 const Templates = () => {
   const navigate = useNavigate();
@@ -36,7 +37,14 @@ const Templates = () => {
                 style={{ animationDelay: `${i * 60}ms` }}
               >
                 <div className="flex items-start gap-4">
-                  <span className="text-3xl">{tpl.icon}</span>
+                  {(() => {
+                    const Icon = getTemplateIcon(tpl.id);
+                    return (
+                      <span className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <Icon className="w-5 h-5" strokeWidth={2} />
+                      </span>
+                    );
+                  })()}
                   <div className="flex-1 min-w-0">
                     <h2 className="font-bold text-foreground text-lg">{tpl.name}</h2>
                     <p className="text-sm text-muted-foreground mt-1">{tpl.description}</p>
