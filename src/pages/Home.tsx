@@ -9,6 +9,7 @@ import { TEMPLATE_LANDINGS } from "@/lib/seoContent/templateLandings";
 import { BLOG_POSTS } from "@/lib/seoContent/blogPosts";
 import { LivePreview, LivePreviewMode } from "@/components/LivePreview";
 import { TEMPLATES } from "@/lib/templates";
+import { getTemplateIcon } from "@/lib/templateIcons";
 import { useEffect, useState } from "react";
 import { Project } from "@/lib/types";
 import { getCommunityProjects } from "@/lib/storage";
