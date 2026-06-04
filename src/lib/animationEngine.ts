@@ -119,8 +119,8 @@ export function createBarRaceAnimation(
   let showHook = true;
 
   const hookText = settings.title
-    ? `${settings.title}… #1 will shock you 😳`
-    : "Top rankings… #1 will shock you 😳";
+    ? `${settings.title} — #1 will shock you`
+    : "Top rankings — #1 will shock you";
 
   const initTop = getTopPadding(canvas.height);
   const bars: BarState[] = labels.map((label, i) => ({
