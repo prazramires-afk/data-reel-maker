@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Project, DataRow } from "@/lib/types";
 
@@ -71,8 +71,26 @@ function draw(ctx: CanvasRenderingContext2D, t: number, w: number, h: number, pr
 export function CommunityProjectCard({ project }: { project: Project }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(false);
 
   useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap || active) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setActive(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    io.observe(wrap);
+    return () => io.disconnect();
+  }, [active]);
+
+  useEffect(() => {
+    if (!active) return;
     const canvas = canvasRef.current;
     const wrap = wrapRef.current;
     if (!canvas || !wrap) return;
@@ -104,7 +122,7 @@ export function CommunityProjectCard({ project }: { project: Project }) {
     };
     raf = requestAnimationFrame(tick);
     return () => { cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); };
-  }, [project]);
+  }, [project, active]);
 
   return (
     <Link
@@ -112,7 +130,7 @@ export function CommunityProjectCard({ project }: { project: Project }) {
       className="block bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/40 transition-colors"
     >
       <div ref={wrapRef} style={{ width: "100%", aspectRatio: "16 / 9", background: BG }} aria-hidden>
-        <canvas ref={canvasRef} />
+        {active && <canvas ref={canvasRef} />}
       </div>
       <div className="p-4">
         <h3 className="font-bold text-foreground truncate">{project.settings?.title || project.name || "Untitled"}</h3>
