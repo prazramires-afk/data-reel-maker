@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE } from "@/lib/sampleData";
 import { DataRow } from "@/lib/types";
 
@@ -216,8 +216,27 @@ const DURATIONS: Record<LivePreviewMode, number> = {
 export function LivePreview({ mode, className }: { mode: LivePreviewMode; className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(false);
 
   useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    if (active) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setActive(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    io.observe(wrap);
+    return () => io.disconnect();
+  }, [active]);
+
+  useEffect(() => {
+    if (!active) return;
     const canvas = canvasRef.current;
     const wrap = wrapRef.current;
     if (!canvas || !wrap) return;
@@ -272,7 +291,7 @@ export function LivePreview({ mode, className }: { mode: LivePreviewMode; classN
       ro.disconnect();
       io.disconnect();
     };
-  }, [mode]);
+  }, [mode, active]);
 
   return (
     <div
@@ -281,7 +300,7 @@ export function LivePreview({ mode, className }: { mode: LivePreviewMode; classN
       style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 12, overflow: "hidden", background: BG }}
       aria-hidden
     >
-      <canvas ref={canvasRef} />
+      {active && <canvas ref={canvasRef} />}
     </div>
   );
 }
