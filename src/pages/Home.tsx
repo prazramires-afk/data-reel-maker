@@ -164,8 +164,8 @@ const Home = () => {
             { icon: TrendingUp, title: "Data Storytelling", body: "Built-in titles, viral hooks and reveal animations turn raw numbers into a narrative viewers finish.", preview: "top10" as LivePreviewMode },
             { icon: Trophy, title: "Sports Statistics Videos", body: "Goal scorers, championship races, head-to-head player comparisons — perfect for football and esports pages.", preview: "comparison" as LivePreviewMode },
             { icon: GraduationCap, title: "Educational Timelines", body: "Animate population growth, historical events and demographic data for educational TikTok and YouTube.", preview: "timeline" as LivePreviewMode },
-            { icon: Film, title: "TikTok & Reels Export", body: "Every video exports as a vertical 1080×1920 MP4, ready to upload straight to TikTok, Reels and Shorts." },
-            { icon: Globe2, title: "Economic Visualization", body: "GDP races, inflation timelines, currency moves — finance creators ship daily content with one template." },
+            { icon: Film, title: "TikTok & Reels Export", body: "Every video exports as a vertical 1080×1920 MP4, ready to upload straight to TikTok, Reels and Shorts.", preview: "timeline" as LivePreviewMode },
+            { icon: Globe2, title: "Economic Visualization", body: "GDP races, inflation timelines, currency moves — finance creators ship daily content with one template.", preview: "bar_race" as LivePreviewMode },
           ].map((f) => (
             <article key={f.title} className="bg-card rounded-2xl p-6 border border-border">
               {f.preview && (
