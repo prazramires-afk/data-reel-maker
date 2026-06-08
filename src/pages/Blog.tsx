@@ -5,12 +5,24 @@ import { Seo } from "@/components/Seo";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Footer } from "@/components/Footer";
 import { BLOG_POSTS, BLOG_CATEGORIES, AUTHORS } from "@/lib/seoContent/blogPosts";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
 
 const SITE = "https://data-reel-maker.lovable.app";
+const PAGE_SIZE = 9;
 
 const Blog = () => {
   const [params, setParams] = useSearchParams();
   const selectedCategory = params.get("category");
+  const pageParam = parseInt(params.get("page") || "1", 10);
+  const currentPage = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
 
   const sorted = useMemo(
     () => [...BLOG_POSTS].sort((a, b) => b.date.localeCompare(a.date)),
@@ -24,6 +36,30 @@ const Blog = () => {
   const setCategory = (cat: string | null) => {
     if (!cat) setParams({});
     else setParams({ category: cat });
+  };
+
+  const goToPage = (page: number) => {
+    const next: Record<string, string> = {};
+    if (selectedCategory) next.category = selectedCategory;
+    if (page > 1) next.page = String(page);
+    setParams(next);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // When filtering by category, treat the full filtered list as paginated.
+  // On the unfiltered view, the first post is featured outside the grid.
+  const paginated = selectedCategory ? filtered : rest;
+  const totalPages = Math.max(1, Math.ceil(paginated.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const start = (safePage - 1) * PAGE_SIZE;
+  const pageItems = paginated.slice(start, start + PAGE_SIZE);
+
+  const buildHref = (page: number) => {
+    const sp = new URLSearchParams();
+    if (selectedCategory) sp.set("category", selectedCategory);
+    if (page > 1) sp.set("page", String(page));
+    const qs = sp.toString();
+    return `/blog${qs ? `?${qs}` : ""}`;
   };
 
   return (
@@ -80,7 +116,7 @@ const Blog = () => {
           ))}
         </nav>
 
-        {featured && !selectedCategory && (
+        {featured && !selectedCategory && safePage === 1 && (
           <Link
             to={`/blog/${featured.slug}`}
             className="block bg-card rounded-3xl p-8 border border-border hover:border-primary/50 transition-colors mb-10"
@@ -98,7 +134,7 @@ const Blog = () => {
         )}
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {(selectedCategory ? filtered : rest).map((post) => (
+          {pageItems.map((post) => (
             <Link key={post.slug} to={`/blog/${post.slug}`} className="bg-card rounded-2xl p-6 border border-border hover:border-primary/50 transition-colors flex flex-col">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-2">{post.category}</p>
               <h2 className="text-lg font-bold text-foreground leading-snug">{post.title}</h2>
@@ -112,6 +148,66 @@ const Blog = () => {
 
         {filtered.length === 0 && (
           <p className="text-muted-foreground text-sm">No articles in this category yet.</p>
+        )}
+
+        {totalPages > 1 && (
+          <Pagination className="mt-10">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href={buildHref(Math.max(1, safePage - 1))}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (safePage > 1) goToPage(safePage - 1);
+                  }}
+                  aria-disabled={safePage === 1}
+                  className={safePage === 1 ? "pointer-events-none opacity-50" : ""}
+                />
+              </PaginationItem>
+              {Array.from({ length: totalPages }).map((_, i) => {
+                const p = i + 1;
+                const show =
+                  p === 1 ||
+                  p === totalPages ||
+                  (p >= safePage - 1 && p <= safePage + 1);
+                if (!show) {
+                  if (p === safePage - 2 || p === safePage + 2) {
+                    return (
+                      <PaginationItem key={`e-${p}`}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    );
+                  }
+                  return null;
+                }
+                return (
+                  <PaginationItem key={p}>
+                    <PaginationLink
+                      href={buildHref(p)}
+                      isActive={p === safePage}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        goToPage(p);
+                      }}
+                    >
+                      {p}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
+              <PaginationItem>
+                <PaginationNext
+                  href={buildHref(Math.min(totalPages, safePage + 1))}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (safePage < totalPages) goToPage(safePage + 1);
+                  }}
+                  aria-disabled={safePage === totalPages}
+                  className={safePage === totalPages ? "pointer-events-none opacity-50" : ""}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         )}
       </main>
       <Footer />
