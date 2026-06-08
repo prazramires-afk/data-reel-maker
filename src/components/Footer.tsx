@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export const Footer = () => (
   <footer className="border-t border-border mt-20 bg-card/30">
     <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-5 gap-8 text-sm">
       <div>
-        <h3 className="font-bold text-foreground mb-3">Data to Video</h3>
+        <div className="mb-3"><BrandLogo size={28} /></div>
         <p className="text-muted-foreground text-xs leading-relaxed">
           Turn statistics, CSVs and rankings into viral TikTok and Reels videos — free, in your browser.
         </p>
