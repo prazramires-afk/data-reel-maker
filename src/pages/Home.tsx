@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { Project } from "@/lib/types";
 import { getCommunityProjects } from "@/lib/storage";
 import { CommunityProjectCard } from "@/components/CommunityProjectCard";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -78,6 +79,16 @@ const Home = () => {
       </div>
 
       <div className="relative z-10 text-center max-w-2xl w-full mt-8">
+        <div className="flex justify-center mb-6 opacity-0 animate-fade-in">
+          <img
+            src="/icons/icon-512.png"
+            alt="Data to Video"
+            width={88}
+            height={88}
+            className="rounded-2xl"
+            style={{ filter: "drop-shadow(0 0 40px hsl(252 85% 60% / 0.45))" }}
+          />
+        </div>
         <h1
           className="text-5xl md:text-6xl font-extrabold tracking-tight text-foreground opacity-0 animate-fade-in"
           style={{ lineHeight: "1.1" }}
