@@ -3,6 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#0a0a14" />
+    <meta name="application-name" content="Data to Video" />
+    <meta name="apple-mobile-web-app-title" content="Data to Video" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="msapplication-TileColor" content="#0a0a14" />
+    <meta name="msapplication-TileImage" content="/icons/icon-192.png" />
     <title>Free Bar Chart Race Maker — Turn Data into Viral TikTok Videos</title>
     <meta name="description" content="Create viral data videos online for free. Bar chart races, top 10 countdowns, animated statistics and CSV-to-video — all in your browser, ready for TikTok and Reels." />
     <meta name="keywords" content="bar chart race maker, data video generator, animated statistics video, tiktok chart maker, statistics video creator, gdp race generator, football stats video maker, ranking animation creator, animated graph video, reels statistics generator, youtube shorts statistics maker" />
@@ -15,8 +28,8 @@
     <meta property="og:url" content="https://data-reel-maker.lovable.app/" />
     <meta property="og:site_name" content="Data to Video" />
     <meta property="og:image" content="https://data-reel-maker.lovable.app/og/default.jpg" />
-    <meta property="og:image:width" content="1216" />
-    <meta property="og:image:height" content="640" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Free Bar Chart Race Maker — Turn Data into Viral TikTok Videos" />
@@ -35,7 +48,29 @@
   </head>
 
   <body>
+    <style>
+      #boot-splash{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0a0a14;z-index:9999;transition:opacity .4s ease}
+      #boot-splash.hide{opacity:0;pointer-events:none}
+      #boot-splash .wrap{display:flex;flex-direction:column;align-items:center;gap:18px}
+      #boot-splash img{width:96px;height:96px;border-radius:22px;animation:bs-pulse 1.6s ease-in-out infinite;filter:drop-shadow(0 0 32px rgba(155,107,255,.45))}
+      #boot-splash span{font:600 14px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#a0a0b8;letter-spacing:.04em}
+      @keyframes bs-pulse{0%,100%{transform:scale(1);opacity:.95}50%{transform:scale(1.06);opacity:1}}
+    </style>
+    <div id="boot-splash" aria-hidden="true">
+      <div class="wrap">
+        <img src="/icons/icon-192.png" alt="" />
+        <span>Data to Video</span>
+      </div>
+    </div>
     <div id="root"></div>
+    <script>
+      window.addEventListener('load', function(){
+        setTimeout(function(){
+          var s=document.getElementById('boot-splash');
+          if(s){s.classList.add('hide');setTimeout(function(){s.remove();},500);}
+        }, 250);
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
