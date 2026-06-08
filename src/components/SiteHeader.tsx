@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { BrandLogo } from "@/components/BrandLogo";
 
 interface Props {
   back?: boolean;
@@ -15,7 +16,7 @@ export const SiteHeader = ({ back }: Props) => {
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
         ) : (
-          <Link to="/" className="font-bold text-foreground">Data to Video</Link>
+          <BrandLogo size={28} />
         )}
         <nav className="flex items-center gap-4 text-sm text-muted-foreground">
           <Link to="/templates" className="hover:text-foreground hidden sm:inline">Templates</Link>
