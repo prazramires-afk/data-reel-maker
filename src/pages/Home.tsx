@@ -9,6 +9,15 @@ import { TEMPLATE_LANDINGS } from "@/lib/seoContent/templateLandings";
 import { BLOG_POSTS } from "@/lib/seoContent/blogPosts";
 import { LivePreview, LivePreviewMode } from "@/components/LivePreview";
 import { TEMPLATES } from "@/lib/templates";
+import {
+  YOUTUBE_SAMPLE,
+  COMPANIES_SAMPLE,
+  FOOTBALL_SAMPLE,
+  POPULATION_SAMPLE,
+  NBA_SAMPLE,
+  GDP_SAMPLE,
+} from "@/lib/sampleData";
+import { DataRow } from "@/lib/types";
 import { getTemplateIcon } from "@/lib/templateIcons";
 import { useEffect, useState } from "react";
 import { Project } from "@/lib/types";
@@ -159,18 +168,18 @@ const Home = () => {
         <h2 className="text-3xl md:text-4xl font-bold text-foreground text-center">Everything creators need to make data move</h2>
         <p className="text-center text-muted-foreground mt-3 max-w-2xl mx-auto">A complete animated data visualization generator built for TikTok, Reels and YouTube Shorts.</p>
         <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            { icon: BarChart3, title: "Animated Bar Chart Race", body: "Smooth reordering bars across years or rounds — the most viral data format on short-form video.", preview: "bar_race" as LivePreviewMode },
-            { icon: TrendingUp, title: "Data Storytelling", body: "Built-in titles, viral hooks and reveal animations turn raw numbers into a narrative viewers finish.", preview: "top10" as LivePreviewMode },
-            { icon: Trophy, title: "Sports Statistics Videos", body: "Goal scorers, championship races, head-to-head player comparisons — perfect for football and esports pages.", preview: "comparison" as LivePreviewMode },
-            { icon: GraduationCap, title: "Educational Timelines", body: "Animate population growth, historical events and demographic data for educational TikTok and YouTube.", preview: "timeline" as LivePreviewMode },
-            { icon: Film, title: "TikTok & Reels Export", body: "Every video exports as a vertical 1080×1920 MP4, ready to upload straight to TikTok, Reels and Shorts.", preview: "timeline" as LivePreviewMode },
-            { icon: Globe2, title: "Economic Visualization", body: "GDP races, inflation timelines, currency moves — finance creators ship daily content with one template.", preview: "bar_race" as LivePreviewMode },
-          ].map((f) => (
+          {([
+            { icon: BarChart3, title: "Animated Bar Chart Race", body: "Smooth reordering bars across years or rounds — the most viral data format on short-form video.", preview: "bar_race" as LivePreviewMode, data: YOUTUBE_SAMPLE, previewTitle: "YouTube Subs Race" },
+            { icon: TrendingUp, title: "Data Storytelling", body: "Built-in titles, viral hooks and reveal animations turn raw numbers into a narrative viewers finish.", preview: "top10" as LivePreviewMode, data: COMPANIES_SAMPLE, previewTitle: "Top 5 Companies" },
+            { icon: Trophy, title: "Sports Statistics Videos", body: "Goal scorers, championship races, head-to-head player comparisons — perfect for football and esports pages.", preview: "comparison" as LivePreviewMode, data: FOOTBALL_SAMPLE, previewTitle: "Ronaldo vs Messi" },
+            { icon: GraduationCap, title: "Educational Timelines", body: "Animate population growth, historical events and demographic data for educational TikTok and YouTube.", preview: "timeline" as LivePreviewMode, data: POPULATION_SAMPLE, previewTitle: "Population Timeline" },
+            { icon: Film, title: "TikTok & Reels Export", body: "Every video exports as a vertical 1080×1920 MP4, ready to upload straight to TikTok, Reels and Shorts.", preview: "bar_race" as LivePreviewMode, data: NBA_SAMPLE, previewTitle: "NBA Scoring Race" },
+            { icon: Globe2, title: "Economic Visualization", body: "GDP races, inflation timelines, currency moves — finance creators ship daily content with one template.", preview: "bar_race" as LivePreviewMode, data: GDP_SAMPLE, previewTitle: "GDP Race" },
+          ] as { icon: typeof BarChart3; title: string; body: string; preview: LivePreviewMode; data: DataRow[]; previewTitle: string }[]).map((f) => (
             <article key={f.title} className="bg-card rounded-2xl p-6 border border-border">
               {f.preview && (
                 <div className="mb-4 -mx-2">
-                  <LivePreview mode={f.preview} />
+                  <LivePreview mode={f.preview} data={f.data} title={f.previewTitle} />
                 </div>
               )}
               <f.icon className="w-6 h-6 text-primary mb-3" />
