@@ -643,6 +643,29 @@ const Create = () => {
             </div>
 
             <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-medium text-foreground">Title Size</label>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {Math.round(((settings.titleScale ?? 1) * 100))}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0.5}
+                max={2}
+                step={0.05}
+                value={settings.titleScale ?? 1}
+                onChange={(e) =>
+                  setSettings({ ...settings, titleScale: parseFloat(e.target.value) })
+                }
+                className="w-full accent-primary"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Adjust so the title fits nicely on your chosen video size.
+              </p>
+            </div>
+
+            <div>
               <label className="text-sm font-medium text-foreground block mb-2">Theme</label>
               <div className="flex gap-2 flex-wrap">
                 {(["dark", "light", "neon", "greenscreen"] as ThemeType[]).map((t) => (
