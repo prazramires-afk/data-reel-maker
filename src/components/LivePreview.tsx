@@ -42,7 +42,7 @@ function interp(vm: Record<number, number>, years: number[], y: number) {
   return (vm[lo] || 0) + ((vm[hi] || 0) - (vm[lo] || 0)) * t;
 }
 
-function drawBarRace(ctx: CanvasRenderingContext2D, t: number, w: number, h: number, data: DataRow[]) {
+function drawBarRace(ctx: CanvasRenderingContext2D, t: number, w: number, h: number, data: DataRow[], title: string) {
   const { years, labels, valueMap } = processData(data);
   const cycle = (t % 1);
   const span = years[years.length - 1] - years[0];
@@ -72,14 +72,14 @@ function drawBarRace(ctx: CanvasRenderingContext2D, t: number, w: number, h: num
   ctx.fillStyle = TEXT;
   ctx.font = "700 11px ui-sans-serif, system-ui";
   ctx.textAlign = "left"; ctx.textBaseline = "top";
-  ctx.fillText("GDP Race", padX, 6);
+  ctx.fillText(title, padX, 6);
   ctx.textAlign = "right";
   ctx.fillStyle = "#7c5cfc";
   ctx.font = "800 13px ui-sans-serif, system-ui";
   ctx.fillText(Math.round(currentYear).toString(), w - padX, 4);
 }
 
-function drawTop10(ctx: CanvasRenderingContext2D, t: number, w: number, h: number, data: DataRow[]) {
+function drawTop10(ctx: CanvasRenderingContext2D, t: number, w: number, h: number, data: DataRow[], title: string) {
   const { years, labels, valueMap } = processData(data);
   const lastYear = years[years.length - 1];
   const rows = labels.map((l, i) => ({
@@ -92,7 +92,7 @@ function drawTop10(ctx: CanvasRenderingContext2D, t: number, w: number, h: numbe
   ctx.fillStyle = TEXT;
   ctx.font = "700 11px ui-sans-serif, system-ui";
   ctx.textAlign = "left"; ctx.textBaseline = "top";
-  ctx.fillText("Top 5 Economies", 12, 6);
+  ctx.fillText(title, 12, 6);
   const padTop = 24;
   const rowH = (h - padTop - 6) / 5;
   rows.forEach((r, i) => {
@@ -118,7 +118,7 @@ function drawTop10(ctx: CanvasRenderingContext2D, t: number, w: number, h: numbe
   });
 }
 
-function drawTimeline(ctx: CanvasRenderingContext2D, t: number, w: number, h: number, data: DataRow[]) {
+function drawTimeline(ctx: CanvasRenderingContext2D, t: number, w: number, h: number, data: DataRow[], title: string) {
   const { years, labels, valueMap } = processData(data);
   ctx.fillStyle = BG; ctx.fillRect(0, 0, w, h);
   const padX = 16, padTop = 24, padBottom = 18;
@@ -153,14 +153,14 @@ function drawTimeline(ctx: CanvasRenderingContext2D, t: number, w: number, h: nu
   ctx.fillStyle = TEXT;
   ctx.font = "700 11px ui-sans-serif, system-ui";
   ctx.textAlign = "left"; ctx.textBaseline = "top";
-  ctx.fillText("Population Timeline", padX, 6);
+  ctx.fillText(title, padX, 6);
   ctx.fillStyle = "#7c5cfc";
   ctx.font = "800 12px ui-sans-serif, system-ui";
   ctx.textAlign = "right";
   ctx.fillText(Math.round(lastYear).toString(), w - padX, 6);
 }
 
-function drawComparison(ctx: CanvasRenderingContext2D, t: number, w: number, h: number, data: DataRow[]) {
+function drawComparison(ctx: CanvasRenderingContext2D, t: number, w: number, h: number, data: DataRow[], title: string) {
   const { years, labels, valueMap } = processData(data);
   const a = labels[0], b = labels[1];
   const cycle = t % 1;
@@ -192,7 +192,7 @@ function drawComparison(ctx: CanvasRenderingContext2D, t: number, w: number, h: 
   ctx.fillStyle = TEXT;
   ctx.font = "700 11px ui-sans-serif, system-ui";
   ctx.textAlign = "left";
-  ctx.fillText("Head-to-Head", 12, 6);
+  ctx.fillText(title, 12, 6);
   ctx.fillStyle = "#7c5cfc";
   ctx.font = "800 12px ui-sans-serif, system-ui";
   ctx.textAlign = "right";
@@ -213,7 +213,7 @@ const DURATIONS: Record<LivePreviewMode, number> = {
   comparison: 5000,
 };
 
-export function LivePreview({ mode, className }: { mode: LivePreviewMode; className?: string }) {
+export function LivePreview({ mode, className, data: dataOverride, title }: { mode: LivePreviewMode; className?: string; data?: DataRow[]; title?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(false);
@@ -246,8 +246,9 @@ export function LivePreview({ mode, className }: { mode: LivePreviewMode; classN
     let raf = 0;
     let visible = true;
     let start = performance.now();
-    const data = DATASETS[mode];
+    const data = dataOverride ?? DATASETS[mode];
     const dur = DURATIONS[mode];
+    const titleText = title ?? DEFAULT_TITLES[mode];
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -276,10 +277,10 @@ export function LivePreview({ mode, className }: { mode: LivePreviewMode; classN
         const rect = wrap.getBoundingClientRect();
         const w = rect.width, h = rect.height;
         switch (mode) {
-          case "bar_race": drawBarRace(ctx, t, w, h, data); break;
-          case "top10": drawTop10(ctx, t, w, h, data); break;
-          case "timeline": drawTimeline(ctx, t, w, h, data); break;
-          case "comparison": drawComparison(ctx, t, w, h, data); break;
+          case "bar_race": drawBarRace(ctx, t, w, h, data, titleText); break;
+          case "top10": drawTop10(ctx, t, w, h, data, titleText); break;
+          case "timeline": drawTimeline(ctx, t, w, h, data, titleText); break;
+          case "comparison": drawComparison(ctx, t, w, h, data, titleText); break;
         }
       }
       raf = requestAnimationFrame(tick);
@@ -291,7 +292,7 @@ export function LivePreview({ mode, className }: { mode: LivePreviewMode; classN
       ro.disconnect();
       io.disconnect();
     };
-  }, [mode, active]);
+  }, [mode, active, dataOverride, title]);
 
   return (
     <div
