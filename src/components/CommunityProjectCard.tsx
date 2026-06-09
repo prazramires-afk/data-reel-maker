@@ -98,7 +98,8 @@ export function CommunityProjectCard({ project }: { project: Project }) {
     if (!ctx) return;
     let raf = 0;
     let visible = true;
-    const start = performance.now();
+    let start = performance.now();
+    let pausedAt = 0;
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const rect = wrap.getBoundingClientRect();
@@ -111,17 +112,27 @@ export function CommunityProjectCard({ project }: { project: Project }) {
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);
-    const io = new IntersectionObserver((e) => { visible = e[0]?.isIntersecting ?? true; }, { threshold: 0.1 });
+    const io = new IntersectionObserver((e) => {
+      const next = e[0]?.isIntersecting ?? true;
+      if (next === visible) return;
+      visible = next;
+      if (visible) {
+        start += performance.now() - pausedAt;
+        if (!raf) raf = requestAnimationFrame(tick);
+      } else {
+        pausedAt = performance.now();
+        if (raf) { cancelAnimationFrame(raf); raf = 0; }
+      }
+    }, { threshold: 0.01 });
     io.observe(wrap);
     const tick = (now: number) => {
-      if (visible) {
-        const rect = wrap.getBoundingClientRect();
-        draw(ctx, ((now - start) % 6000) / 6000, rect.width, rect.height, project);
-      }
+      if (!visible) { raf = 0; return; }
+      const rect = wrap.getBoundingClientRect();
+      draw(ctx, ((now - start) % 6000) / 6000, rect.width, rect.height, project);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); };
+    return () => { if (raf) cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); };
   }, [project, active]);
 
   return (
