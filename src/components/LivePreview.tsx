@@ -213,6 +213,13 @@ const DURATIONS: Record<LivePreviewMode, number> = {
   comparison: 5000,
 };
 
+const DEFAULT_TITLES: Record<LivePreviewMode, string> = {
+  bar_race: "GDP Race",
+  top10: "Top 5 Economies",
+  timeline: "Population Timeline",
+  comparison: "Head-to-Head",
+};
+
 export function LivePreview({ mode, className, data: dataOverride, title }: { mode: LivePreviewMode; className?: string; data?: DataRow[]; title?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
