@@ -78,7 +78,7 @@ export function createTimelineAnimation(
     // Title
     if (settings.title) {
       ctx.fillStyle = theme.text;
-      ctx.font = `bold ${Math.round(w * 0.05)}px system-ui, sans-serif`;
+      ctx.font = `bold ${Math.round(w * 0.05 * (settings.titleScale ?? 1))}px system-ui, sans-serif`;
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
       ctx.fillText(settings.title, sidePad, topPad - w * 0.07);

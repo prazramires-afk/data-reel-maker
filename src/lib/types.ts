@@ -34,6 +34,8 @@ export interface ProjectSettings {
   exportHeight?: number;
   /** Premium-only: when true, watermark is not drawn on the canvas. */
   hideWatermark?: boolean;
+  /** Multiplier for the video title font size (default 1.0). */
+  titleScale?: number;
 }
 
 export interface Project {
@@ -71,6 +73,7 @@ export const DEFAULT_SETTINGS: ProjectSettings = {
   yearPos: { x: 0.85, y: 0.92 },
   watermarkPos: { x: 0.5, y: 0.97 },
   hideWatermark: false,
+  titleScale: 1,
 };
 
 export const VIDEO_TYPES: { type: VideoType; label: string; description: string; available: boolean }[] = [

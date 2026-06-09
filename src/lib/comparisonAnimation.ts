@@ -78,7 +78,7 @@ export function createComparisonAnimation(
     // Title
     if (settings.title) {
       ctx.fillStyle = theme.text;
-      ctx.font = `bold ${Math.round(w * 0.048)}px system-ui, sans-serif`;
+      ctx.font = `bold ${Math.round(w * 0.048 * (settings.titleScale ?? 1))}px system-ui, sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
       ctx.fillText(settings.title, w / 2, topPad);
