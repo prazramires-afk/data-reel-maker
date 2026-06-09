@@ -253,6 +253,7 @@ export function LivePreview({ mode, className, data: dataOverride, title }: { mo
     let raf = 0;
     let visible = true;
     let start = performance.now();
+    let pausedAt = 0;
     const data = dataOverride ?? DATASETS[mode];
     const dur = DURATIONS[mode];
     const titleText = title ?? DEFAULT_TITLES[mode];
@@ -272,30 +273,39 @@ export function LivePreview({ mode, className, data: dataOverride, title }: { mo
 
     const io = new IntersectionObserver(
       (entries) => {
-        visible = entries[0]?.isIntersecting ?? true;
+        const next = entries[0]?.isIntersecting ?? true;
+        if (next === visible) return;
+        visible = next;
+        if (visible) {
+          // resume: shift start so animation continues from where it paused
+          start += performance.now() - pausedAt;
+          if (!raf) raf = requestAnimationFrame(tick);
+        } else {
+          pausedAt = performance.now();
+          if (raf) { cancelAnimationFrame(raf); raf = 0; }
+        }
       },
-      { threshold: 0.1 },
+      { threshold: 0.01 },
     );
     io.observe(wrap);
 
     const tick = (now: number) => {
-      if (visible) {
-        const t = ((now - start) % dur) / dur;
-        const rect = wrap.getBoundingClientRect();
-        const w = rect.width, h = rect.height;
-        switch (mode) {
-          case "bar_race": drawBarRace(ctx, t, w, h, data, titleText); break;
-          case "top10": drawTop10(ctx, t, w, h, data, titleText); break;
-          case "timeline": drawTimeline(ctx, t, w, h, data, titleText); break;
-          case "comparison": drawComparison(ctx, t, w, h, data, titleText); break;
-        }
+      if (!visible) { raf = 0; return; }
+      const t = ((now - start) % dur) / dur;
+      const rect = wrap.getBoundingClientRect();
+      const w = rect.width, h = rect.height;
+      switch (mode) {
+        case "bar_race": drawBarRace(ctx, t, w, h, data, titleText); break;
+        case "top10": drawTop10(ctx, t, w, h, data, titleText); break;
+        case "timeline": drawTimeline(ctx, t, w, h, data, titleText); break;
+        case "comparison": drawComparison(ctx, t, w, h, data, titleText); break;
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
 
     return () => {
-      cancelAnimationFrame(raf);
+      if (raf) cancelAnimationFrame(raf);
       ro.disconnect();
       io.disconnect();
     };
