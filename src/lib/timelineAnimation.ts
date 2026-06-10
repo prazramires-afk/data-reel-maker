@@ -78,11 +78,12 @@ export function createTimelineAnimation(
     // Title
     if (settings.title) {
       ctx.fillStyle = theme.text;
-      const titleFontSize = getFittedTitleFontSize(ctx, settings.title, w, w * 0.05, settings);
+      const titleMaxWidth = w - sidePad * 2;
+      const titleFontSize = getFittedTitleFontSize(ctx, settings.title, w, w * 0.05, settings, titleMaxWidth);
       ctx.font = `bold ${titleFontSize}px system-ui, sans-serif`;
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
-      ctx.fillText(settings.title, sidePad, topPad - w * 0.07);
+      ctx.fillText(settings.title, sidePad, topPad - w * 0.07, titleMaxWidth);
     }
 
     const dataProgress = Math.max(0, progress / 0.95);
