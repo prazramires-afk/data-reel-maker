@@ -1,5 +1,5 @@
 import { DataRow, ProjectSettings, BAR_COLORS, ThemeType } from "./types";
-import { processData, AnimationController } from "./animationEngine";
+import { processData, AnimationController, getFittedTitleFontSize } from "./animationEngine";
 
 function getThemeColors(theme: ThemeType) {
   switch (theme) {
@@ -69,7 +69,8 @@ export function createTop10Animation(
     // Title
     if (settings.title) {
       ctx.fillStyle = theme.text;
-      ctx.font = `bold ${Math.round(w * 0.05 * (settings.titleScale ?? 1))}px system-ui, sans-serif`;
+      const titleFontSize = getFittedTitleFontSize(ctx, settings.title, w, w * 0.05, settings);
+      ctx.font = `bold ${titleFontSize}px system-ui, sans-serif`;
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
       ctx.fillText(settings.title, sidePad, topPad);
