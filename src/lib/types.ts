@@ -36,6 +36,10 @@ export interface ProjectSettings {
   hideWatermark?: boolean;
   /** Multiplier for the video title font size (default 1.0). */
   titleScale?: number;
+  /** Automatically shrink title text so it stays inside export-safe margins. */
+  titleAutoFit?: boolean;
+  /** Safe margin used for auto-fitting title text, expressed as a 0-1 width ratio. */
+  titleSafeMargin?: number;
 }
 
 export interface Project {
@@ -74,6 +78,8 @@ export const DEFAULT_SETTINGS: ProjectSettings = {
   watermarkPos: { x: 0.5, y: 0.97 },
   hideWatermark: false,
   titleScale: 1,
+  titleAutoFit: true,
+  titleSafeMargin: 0.08,
 };
 
 export const VIDEO_TYPES: { type: VideoType; label: string; description: string; available: boolean }[] = [

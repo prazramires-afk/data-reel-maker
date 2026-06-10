@@ -81,11 +81,11 @@ export async function getProjects(): Promise<Project[]> {
   return (data ?? []).map(rowToProject);
 }
 
-export async function saveProject(project: Project): Promise<void> {
+export async function saveProject(project: Project): Promise<boolean> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     saveLocalProject(project);
-    return;
+    return true;
   }
   const payload = {
     id: project.id,
@@ -100,7 +100,9 @@ export async function saveProject(project: Project): Promise<void> {
   if (error) {
     console.error("saveProject error", error);
     saveLocalProject(project);
+    return false;
   }
+  return true;
 }
 
 export async function deleteProject(id: string): Promise<void> {
@@ -136,14 +138,18 @@ export async function setProjectPublic(
   id: string,
   isPublic: boolean,
   authorName?: string,
-): Promise<void> {
+): Promise<boolean> {
   const patch = {
     is_public: isPublic,
     published_at: isPublic ? new Date().toISOString() : null,
     ...(isPublic && authorName ? { author_name: authorName.slice(0, 60) } : {}),
   };
-  const { error } = await supabase.from("projects").update(patch as any).eq("id", id);
-  if (error) console.error("setProjectPublic error", error);
+  const { data, error } = await supabase.from("projects").update(patch as any).eq("id", id).select("id").maybeSingle();
+  if (error || !data) {
+    console.error("setProjectPublic error", error);
+    return false;
+  }
+  return true;
 }
 
 /** Public — fetch most recently published community projects. */

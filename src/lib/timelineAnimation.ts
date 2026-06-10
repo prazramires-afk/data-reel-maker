@@ -1,5 +1,5 @@
 import { DataRow, ProjectSettings, BAR_COLORS, ThemeType } from "./types";
-import { processData, AnimationController } from "./animationEngine";
+import { processData, AnimationController, getFittedTitleFontSize } from "./animationEngine";
 
 function getThemeColors(theme: ThemeType) {
   switch (theme) {
@@ -78,10 +78,13 @@ export function createTimelineAnimation(
     // Title
     if (settings.title) {
       ctx.fillStyle = theme.text;
-      ctx.font = `bold ${Math.round(w * 0.05 * (settings.titleScale ?? 1))}px system-ui, sans-serif`;
+      const titleMaxWidth = w - sidePad * 2;
+      const titleFontSize = getFittedTitleFontSize(ctx, settings.title, w, w * 0.05, settings, titleMaxWidth);
+      ctx.font = `bold ${titleFontSize}px system-ui, sans-serif`;
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
-      ctx.fillText(settings.title, sidePad, topPad - w * 0.07);
+      const titleY = Math.max(h * (settings.titleSafeMargin ?? 0.08), topPad - w * 0.07);
+      ctx.fillText(settings.title, sidePad, titleY, titleMaxWidth);
     }
 
     const dataProgress = Math.max(0, progress / 0.95);

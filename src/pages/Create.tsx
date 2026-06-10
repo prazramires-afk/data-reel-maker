@@ -10,7 +10,8 @@ import {
 import { TEMPLATES } from "@/lib/templates";
 import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE, NBA_SAMPLE, CRYPTO_SAMPLE, COMPANIES_SAMPLE } from "@/lib/sampleData";
 import { parseCSV } from "@/lib/parseCSV";
-import { saveProject, getProjectById, generateId } from "@/lib/storage";
+import { saveProject, getProjectById, generateId, setProjectPublic } from "@/lib/storage";
+import { communityUrl, copyToClipboard } from "@/lib/share";
 import { createBarRaceAnimation, AnimationController } from "@/lib/animationEngine";
 import { createTimelineAnimation } from "@/lib/timelineAnimation";
 import { createTop10Animation } from "@/lib/top10Animation";
@@ -142,6 +143,8 @@ const Create = () => {
   const [exportFormat, setExportFormat] = useState<"webm" | "mp4">("mp4");
   const [exportResolution, setExportResolution] = useState<"480p" | "720p" | "1080p">("1080p");
   const [selectedTrack, setSelectedTrack] = useState("none");
+  const [sharingCommunity, setSharingCommunity] = useState(false);
+  const [communityShareUrl, setCommunityShareUrl] = useState<string | null>(null);
 
   // Effective settings: free users can never hide watermark, regardless of toggle
   const effectiveSettings = useMemo(
@@ -277,7 +280,7 @@ const Create = () => {
   };
 
   // Save project
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     const project: Project = {
       id: projectId,
       name: settings.title || "Untitled",
@@ -288,12 +291,14 @@ const Create = () => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    saveProject(project);
+    await saveProject(project);
+    return project;
   }, [projectId, videoType, data, settings, labelImages]);
 
   const resolutionMap = { "480p": { w: 480, h: 854 }, "720p": { w: 720, h: 1280 }, "1080p": { w: 1080, h: 1920 } };
   const useCustomSize = !!(settings.exportWidth && settings.exportHeight);
   const fileExt = exportFormat === "mp4" ? "mp4" : "webm";
+  const selectedDurationSeconds = Math.round(15 / (settings.speed === "slow" ? 0.7 : settings.speed === "fast" ? 1.5 : 1));
 
   const handleExport = async () => {
     if (!user) {
@@ -319,10 +324,11 @@ const Create = () => {
       return;
     }
 
-    handleSave();
+    await handleSave();
     setExporting(true);
     setExportProgress(0);
     setVideoBlob(null);
+    setCommunityShareUrl(null);
 
     try {
       const { w, h } = useCustomSize
@@ -361,6 +367,43 @@ const Create = () => {
       console.error("Export failed:", err);
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleCommunityShare = async () => {
+    if (!videoBlob || sharingCommunity) return;
+    setSharingCommunity(true);
+
+    try {
+      const savedProject = await handleSave();
+      const published = await setProjectPublic(savedProject.id, true, savedProject.authorName || undefined);
+
+      if (!published) {
+        toast.error("Could not publish to Community. Please try again.");
+        return;
+      }
+
+      const url = communityUrl(savedProject.id);
+      setCommunityShareUrl(url);
+      const copied = await copyToClipboard(url);
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: savedProject.settings.title || savedProject.name || "Data to Video",
+            text: "Watch my animated data video on Data to Video",
+            url,
+          });
+        } catch (error) {
+          if ((error as DOMException)?.name !== "AbortError") {
+            console.warn("Native share failed", error);
+          }
+        }
+      }
+
+      toast.success(copied ? "Published to Community — link copied" : "Published to Community");
+    } finally {
+      setSharingCommunity(false);
     }
   };
 
@@ -665,6 +708,46 @@ const Create = () => {
               </p>
             </div>
 
+            <div className="rounded-xl bg-card border border-border p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-left">
+                  <p className="text-sm font-medium text-foreground">Auto-fit Title</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Uses {selectedDurationSeconds}s timing and safe margins to prevent export clipping.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSettings({ ...settings, titleAutoFit: !(settings.titleAutoFit ?? true) })}
+                  className={`w-12 h-7 rounded-full transition-colors relative shrink-0 ${
+                    (settings.titleAutoFit ?? true) ? "bg-primary" : "bg-secondary"
+                  }`}
+                  aria-pressed={settings.titleAutoFit ?? true}
+                >
+                  <div className={`absolute top-1 w-5 h-5 rounded-full bg-background shadow transition-transform ${
+                    (settings.titleAutoFit ?? true) ? "translate-x-6" : "translate-x-1"
+                  }`} />
+                </button>
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Safe Margins</label>
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {Math.round((settings.titleSafeMargin ?? 0.08) * 100)}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0.04}
+                  max={0.18}
+                  step={0.01}
+                  value={settings.titleSafeMargin ?? 0.08}
+                  onChange={(e) => setSettings({ ...settings, titleSafeMargin: parseFloat(e.target.value) })}
+                  disabled={settings.titleAutoFit === false}
+                  className="w-full accent-primary disabled:opacity-40"
+                />
+              </div>
+            </div>
+
             <div>
               <label className="text-sm font-medium text-foreground block mb-2">Theme</label>
               <div className="flex gap-2 flex-wrap">
@@ -959,19 +1042,24 @@ const Create = () => {
                     <Download className="w-4 h-4" /> Download
                   </button>
                   <button
-                    onClick={async () => {
-                      if (navigator.share) {
-                        const file = new File([videoBlob], `${settings.title || "data-video"}.${fileExt}`, { type: videoBlob.type });
-                        try {
-                          await navigator.share({ files: [file], title: settings.title || "Data to Video" });
-                        } catch {}
-                      }
-                    }}
-                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-secondary text-foreground font-semibold active:scale-95 transition-transform"
+                    onClick={handleCommunityShare}
+                    disabled={sharingCommunity}
+                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-secondary text-foreground font-semibold active:scale-95 transition-transform disabled:opacity-60 disabled:active:scale-100"
                   >
-                    <Share2 className="w-4 h-4" /> Share
+                    <Share2 className="w-4 h-4" /> {sharingCommunity ? "Publishing…" : "Share"}
                   </button>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Share publishes this export to Community and copies the public link.
+                </p>
+                {communityShareUrl && (
+                  <button
+                    onClick={() => navigate(`/community/${projectId}`)}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-primary/15 text-primary text-sm font-semibold active:scale-95 transition-transform"
+                  >
+                    <Globe2 className="w-4 h-4" /> Open Community Video
+                  </button>
+                )}
                 <button
                   onClick={() => navigate("/projects")}
                   className="text-sm text-primary font-medium mt-2"

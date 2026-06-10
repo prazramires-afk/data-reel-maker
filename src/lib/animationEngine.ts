@@ -79,6 +79,34 @@ export interface AnimationController {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+export function getFittedTitleFontSize(
+  ctx: CanvasRenderingContext2D,
+  title: string,
+  canvasWidth: number,
+  baseSize: number,
+  settings: ProjectSettings,
+  maxWidth?: number,
+) {
+  const speedMultiplier = settings.speed === "slow" ? 0.7 : settings.speed === "fast" ? 1.5 : 1;
+  const durationSeconds = 15 / speedMultiplier;
+  const durationFit = durationSeconds < 12 ? 0.95 : durationSeconds > 18 ? 1.05 : 1;
+  const scaledSize = baseSize * (settings.titleScale ?? 1) * durationFit;
+  if (settings.titleAutoFit === false || !title.trim()) return Math.round(scaledSize);
+
+  const safeMargin = Math.max(0.04, Math.min(settings.titleSafeMargin ?? 0.08, 0.2));
+  const availableWidth = Math.min(maxWidth ?? Number.POSITIVE_INFINITY, canvasWidth * (1 - safeMargin * 2));
+  let fittedSize = scaledSize;
+  ctx.font = `bold ${Math.round(fittedSize)}px system-ui, sans-serif`;
+
+  const measuredWidth = ctx.measureText(title).width;
+  if (measuredWidth > availableWidth) {
+    fittedSize *= availableWidth / measuredWidth;
+  }
+
+  const minSize = canvasWidth * 0.014;
+  return Math.round(Math.max(minSize, fittedSize));
+}
+
 export function createBarRaceAnimation(
   canvas: HTMLCanvasElement,
   data: DataRow[],
@@ -214,10 +242,19 @@ export function createBarRaceAnimation(
     const titleY = topPad - 50;
     if (settings.title) {
       ctx.fillStyle = theme.text;
-      ctx.font = `bold ${Math.round(w * 0.05 * (settings.titleScale ?? 1))}px system-ui, sans-serif`;
+      const titleMaxWidth = w - sidePadding - rightPadding - w * 0.16;
+      const titleFontSize = getFittedTitleFontSize(
+        ctx,
+        settings.title,
+        w,
+        w * 0.05,
+        settings,
+        titleMaxWidth,
+      );
+      ctx.font = `bold ${titleFontSize}px system-ui, sans-serif`;
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
-      ctx.fillText(settings.title, sidePadding, titleY);
+      ctx.fillText(settings.title, sidePadding, titleY, titleMaxWidth);
     }
 
     // Year indicator small
