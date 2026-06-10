@@ -144,8 +144,8 @@ export async function setProjectPublic(
     published_at: isPublic ? new Date().toISOString() : null,
     ...(isPublic && authorName ? { author_name: authorName.slice(0, 60) } : {}),
   };
-  const { error } = await supabase.from("projects").update(patch as any).eq("id", id);
-  if (error) {
+  const { data, error } = await supabase.from("projects").update(patch as any).eq("id", id).select("id").maybeSingle();
+  if (error || !data) {
     console.error("setProjectPublic error", error);
     return false;
   }
