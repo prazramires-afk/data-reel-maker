@@ -87,11 +87,14 @@ export function getFittedTitleFontSize(
   settings: ProjectSettings,
   maxWidth?: number,
 ) {
-  const scaledSize = baseSize * (settings.titleScale ?? 1);
+  const speedMultiplier = settings.speed === "slow" ? 0.7 : settings.speed === "fast" ? 1.5 : 1;
+  const durationSeconds = 15 / speedMultiplier;
+  const durationFit = durationSeconds < 12 ? 0.95 : durationSeconds > 18 ? 1.05 : 1;
+  const scaledSize = baseSize * (settings.titleScale ?? 1) * durationFit;
   if (settings.titleAutoFit === false || !title.trim()) return Math.round(scaledSize);
 
   const safeMargin = Math.max(0.04, Math.min(settings.titleSafeMargin ?? 0.08, 0.2));
-  const availableWidth = maxWidth ?? canvasWidth * (1 - safeMargin * 2);
+  const availableWidth = Math.min(maxWidth ?? Number.POSITIVE_INFINITY, canvasWidth * (1 - safeMargin * 2));
   let fittedSize = scaledSize;
   ctx.font = `bold ${Math.round(fittedSize)}px system-ui, sans-serif`;
 
@@ -100,7 +103,7 @@ export function getFittedTitleFontSize(
     fittedSize *= availableWidth / measuredWidth;
   }
 
-  const minSize = canvasWidth * 0.028;
+  const minSize = canvasWidth * 0.014;
   return Math.round(Math.max(minSize, fittedSize));
 }
 
