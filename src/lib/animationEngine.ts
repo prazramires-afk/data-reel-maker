@@ -88,7 +88,7 @@ export function getFittedTitleFontSize(
   maxWidth?: number,
 ) {
   const scaledSize = baseSize * (settings.titleScale ?? 1);
-  if (!settings.titleAutoFit || !title.trim()) return Math.round(scaledSize);
+  if (settings.titleAutoFit === false || !title.trim()) return Math.round(scaledSize);
 
   const safeMargin = Math.max(0.04, Math.min(settings.titleSafeMargin ?? 0.08, 0.2));
   const availableWidth = maxWidth ?? canvasWidth * (1 - safeMargin * 2);
