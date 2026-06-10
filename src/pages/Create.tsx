@@ -708,6 +708,46 @@ const Create = () => {
               </p>
             </div>
 
+            <div className="rounded-xl bg-card border border-border p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-left">
+                  <p className="text-sm font-medium text-foreground">Auto-fit Title</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Uses {selectedDurationSeconds}s timing and safe margins to prevent export clipping.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSettings({ ...settings, titleAutoFit: !(settings.titleAutoFit ?? true) })}
+                  className={`w-12 h-7 rounded-full transition-colors relative shrink-0 ${
+                    (settings.titleAutoFit ?? true) ? "bg-primary" : "bg-secondary"
+                  }`}
+                  aria-pressed={settings.titleAutoFit ?? true}
+                >
+                  <div className={`absolute top-1 w-5 h-5 rounded-full bg-background shadow transition-transform ${
+                    (settings.titleAutoFit ?? true) ? "translate-x-6" : "translate-x-1"
+                  }`} />
+                </button>
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Safe Margins</label>
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {Math.round((settings.titleSafeMargin ?? 0.08) * 100)}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0.04}
+                  max={0.18}
+                  step={0.01}
+                  value={settings.titleSafeMargin ?? 0.08}
+                  onChange={(e) => setSettings({ ...settings, titleSafeMargin: parseFloat(e.target.value) })}
+                  disabled={settings.titleAutoFit === false}
+                  className="w-full accent-primary disabled:opacity-40"
+                />
+              </div>
+            </div>
+
             <div>
               <label className="text-sm font-medium text-foreground block mb-2">Theme</label>
               <div className="flex gap-2 flex-wrap">
