@@ -79,6 +79,31 @@ export interface AnimationController {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+export function getFittedTitleFontSize(
+  ctx: CanvasRenderingContext2D,
+  title: string,
+  canvasWidth: number,
+  baseSize: number,
+  settings: ProjectSettings,
+  maxWidth?: number,
+) {
+  const scaledSize = baseSize * (settings.titleScale ?? 1);
+  if (!settings.titleAutoFit || !title.trim()) return Math.round(scaledSize);
+
+  const safeMargin = Math.max(0.04, Math.min(settings.titleSafeMargin ?? 0.08, 0.2));
+  const availableWidth = maxWidth ?? canvasWidth * (1 - safeMargin * 2);
+  let fittedSize = scaledSize;
+  ctx.font = `bold ${Math.round(fittedSize)}px system-ui, sans-serif`;
+
+  const measuredWidth = ctx.measureText(title).width;
+  if (measuredWidth > availableWidth) {
+    fittedSize *= availableWidth / measuredWidth;
+  }
+
+  const minSize = canvasWidth * 0.028;
+  return Math.round(Math.max(minSize, fittedSize));
+}
+
 export function createBarRaceAnimation(
   canvas: HTMLCanvasElement,
   data: DataRow[],
@@ -214,7 +239,15 @@ export function createBarRaceAnimation(
     const titleY = topPad - 50;
     if (settings.title) {
       ctx.fillStyle = theme.text;
-      ctx.font = `bold ${Math.round(w * 0.05 * (settings.titleScale ?? 1))}px system-ui, sans-serif`;
+      const titleFontSize = getFittedTitleFontSize(
+        ctx,
+        settings.title,
+        w,
+        w * 0.05,
+        settings,
+        w - sidePadding - rightPadding - w * 0.16,
+      );
+      ctx.font = `bold ${titleFontSize}px system-ui, sans-serif`;
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
       ctx.fillText(settings.title, sidePadding, titleY);
