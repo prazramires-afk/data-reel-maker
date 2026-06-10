@@ -298,6 +298,7 @@ const Create = () => {
   const resolutionMap = { "480p": { w: 480, h: 854 }, "720p": { w: 720, h: 1280 }, "1080p": { w: 1080, h: 1920 } };
   const useCustomSize = !!(settings.exportWidth && settings.exportHeight);
   const fileExt = exportFormat === "mp4" ? "mp4" : "webm";
+  const selectedDurationSeconds = Math.round(15 / (settings.speed === "slow" ? 0.7 : settings.speed === "fast" ? 1.5 : 1));
 
   const handleExport = async () => {
     if (!user) {
