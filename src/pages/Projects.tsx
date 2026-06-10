@@ -37,7 +37,12 @@ const Projects = () => {
       }
       authorName = input.trim().slice(0, 60) || undefined;
     }
-    await setProjectPublic(project.id, next, authorName);
+    const ok = await setProjectPublic(project.id, next, authorName);
+    if (!ok) {
+      toast({ title: next ? "Could not publish to community" : "Could not unpublish" });
+      setBusyId(null);
+      return;
+    }
     setProjects(await getProjects());
     toast({ title: next ? "Published to community" : "Unpublished" });
     setBusyId(null);
@@ -49,6 +54,8 @@ const Projects = () => {
       setCopiedId(id);
       toast({ title: "Community link copied" });
       setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 2000);
+    } else {
+      window.open(communityUrl(id), "_blank", "noopener,noreferrer");
     }
   };
 
