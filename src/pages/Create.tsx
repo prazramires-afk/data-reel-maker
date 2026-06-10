@@ -1042,19 +1042,24 @@ const Create = () => {
                     <Download className="w-4 h-4" /> Download
                   </button>
                   <button
-                    onClick={async () => {
-                      if (navigator.share) {
-                        const file = new File([videoBlob], `${settings.title || "data-video"}.${fileExt}`, { type: videoBlob.type });
-                        try {
-                          await navigator.share({ files: [file], title: settings.title || "Data to Video" });
-                        } catch {}
-                      }
-                    }}
-                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-secondary text-foreground font-semibold active:scale-95 transition-transform"
+                    onClick={handleCommunityShare}
+                    disabled={sharingCommunity}
+                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-secondary text-foreground font-semibold active:scale-95 transition-transform disabled:opacity-60 disabled:active:scale-100"
                   >
-                    <Share2 className="w-4 h-4" /> Share
+                    <Share2 className="w-4 h-4" /> {sharingCommunity ? "Publishing…" : "Share"}
                   </button>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Share publishes this export to Community and copies the public link.
+                </p>
+                {communityShareUrl && (
+                  <button
+                    onClick={() => navigate(`/community/${projectId}`)}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-primary/15 text-primary text-sm font-semibold active:scale-95 transition-transform"
+                  >
+                    <Globe2 className="w-4 h-4" /> Open Community Video
+                  </button>
+                )}
                 <button
                   onClick={() => navigate("/projects")}
                   className="text-sm text-primary font-medium mt-2"
