@@ -78,11 +78,12 @@ export function createComparisonAnimation(
     // Title
     if (settings.title) {
       ctx.fillStyle = theme.text;
-      const titleFontSize = getFittedTitleFontSize(ctx, settings.title, w, w * 0.048, settings);
+      const titleMaxWidth = w - sidePad * 2;
+      const titleFontSize = getFittedTitleFontSize(ctx, settings.title, w, w * 0.048, settings, titleMaxWidth);
       ctx.font = `bold ${titleFontSize}px system-ui, sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      ctx.fillText(settings.title, w / 2, topPad);
+      ctx.fillText(settings.title, w / 2, topPad, titleMaxWidth);
     }
 
     const dataProgress = Math.max(0, progress / 0.95);
