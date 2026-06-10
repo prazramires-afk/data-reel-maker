@@ -369,6 +369,43 @@ const Create = () => {
     }
   };
 
+  const handleCommunityShare = async () => {
+    if (!videoBlob || sharingCommunity) return;
+    setSharingCommunity(true);
+
+    try {
+      const savedProject = await handleSave();
+      const published = await setProjectPublic(savedProject.id, true, savedProject.authorName || undefined);
+
+      if (!published) {
+        toast.error("Could not publish to Community. Please try again.");
+        return;
+      }
+
+      const url = communityUrl(savedProject.id);
+      setCommunityShareUrl(url);
+      const copied = await copyToClipboard(url);
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: savedProject.settings.title || savedProject.name || "Data to Video",
+            text: "Watch my animated data video on Data to Video",
+            url,
+          });
+        } catch (error) {
+          if ((error as DOMException)?.name !== "AbortError") {
+            console.warn("Native share failed", error);
+          }
+        }
+      }
+
+      toast.success(copied ? "Published to Community — link copied" : "Published to Community");
+    } finally {
+      setSharingCommunity(false);
+    }
+  };
+
   const addRow = () => setData([...data, { label: "", value: 0, year: 2020 }]);
   const removeRow = (i: number) => {
     if (data.length <= 5) return;
