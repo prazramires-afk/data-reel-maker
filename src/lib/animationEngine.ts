@@ -239,18 +239,19 @@ export function createBarRaceAnimation(
     const titleY = topPad - 50;
     if (settings.title) {
       ctx.fillStyle = theme.text;
+      const titleMaxWidth = w - sidePadding - rightPadding - w * 0.16;
       const titleFontSize = getFittedTitleFontSize(
         ctx,
         settings.title,
         w,
         w * 0.05,
         settings,
-        w - sidePadding - rightPadding - w * 0.16,
+        titleMaxWidth,
       );
       ctx.font = `bold ${titleFontSize}px system-ui, sans-serif`;
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
-      ctx.fillText(settings.title, sidePadding, titleY);
+      ctx.fillText(settings.title, sidePadding, titleY, titleMaxWidth);
     }
 
     // Year indicator small
