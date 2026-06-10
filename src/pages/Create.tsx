@@ -10,7 +10,8 @@ import {
 import { TEMPLATES } from "@/lib/templates";
 import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE, NBA_SAMPLE, CRYPTO_SAMPLE, COMPANIES_SAMPLE } from "@/lib/sampleData";
 import { parseCSV } from "@/lib/parseCSV";
-import { saveProject, getProjectById, generateId } from "@/lib/storage";
+import { saveProject, getProjectById, generateId, setProjectPublic } from "@/lib/storage";
+import { communityUrl, copyToClipboard } from "@/lib/share";
 import { createBarRaceAnimation, AnimationController } from "@/lib/animationEngine";
 import { createTimelineAnimation } from "@/lib/timelineAnimation";
 import { createTop10Animation } from "@/lib/top10Animation";
@@ -142,6 +143,8 @@ const Create = () => {
   const [exportFormat, setExportFormat] = useState<"webm" | "mp4">("mp4");
   const [exportResolution, setExportResolution] = useState<"480p" | "720p" | "1080p">("1080p");
   const [selectedTrack, setSelectedTrack] = useState("none");
+  const [sharingCommunity, setSharingCommunity] = useState(false);
+  const [communityShareUrl, setCommunityShareUrl] = useState<string | null>(null);
 
   // Effective settings: free users can never hide watermark, regardless of toggle
   const effectiveSettings = useMemo(
@@ -277,7 +280,7 @@ const Create = () => {
   };
 
   // Save project
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     const project: Project = {
       id: projectId,
       name: settings.title || "Untitled",
@@ -288,7 +291,8 @@ const Create = () => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    saveProject(project);
+    await saveProject(project);
+    return project;
   }, [projectId, videoType, data, settings, labelImages]);
 
   const resolutionMap = { "480p": { w: 480, h: 854 }, "720p": { w: 720, h: 1280 }, "1080p": { w: 1080, h: 1920 } };
@@ -319,10 +323,11 @@ const Create = () => {
       return;
     }
 
-    handleSave();
+    await handleSave();
     setExporting(true);
     setExportProgress(0);
     setVideoBlob(null);
+    setCommunityShareUrl(null);
 
     try {
       const { w, h } = useCustomSize
