@@ -10,7 +10,7 @@ import {
 import { TEMPLATES } from "@/lib/templates";
 import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE, NBA_SAMPLE, CRYPTO_SAMPLE, COMPANIES_SAMPLE } from "@/lib/sampleData";
 import { parseCSV } from "@/lib/parseCSV";
-import { saveProject, getProjectById, generateId, setProjectPublic, publishProject } from "@/lib/storage";
+import { saveProject, getProjectById, generateId, setProjectPublic, publishProject, isValidProjectId } from "@/lib/storage";
 import { communityUrl, copyToClipboard } from "@/lib/share";
 import { createBarRaceAnimation, AnimationController } from "@/lib/animationEngine";
 import { createTimelineAnimation } from "@/lib/timelineAnimation";
@@ -281,8 +281,11 @@ const Create = () => {
 
   // Save project
   const handleSave = useCallback(async () => {
+    const safeProjectId = isValidProjectId(projectId) ? projectId : generateId();
+    if (safeProjectId !== projectId) setProjectId(safeProjectId);
+
     const project: Project = {
-      id: projectId,
+      id: safeProjectId,
       name: settings.title || "Untitled",
       type: videoType,
       data,
