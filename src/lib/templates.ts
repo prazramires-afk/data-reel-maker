@@ -1,4 +1,5 @@
 import { Template } from "./types";
+import { DEFAULT_VALUE_FORMAT } from "./valueFormat";
 import {
   GDP_SAMPLE,
   FOOTBALL_SAMPLE,
