@@ -17,6 +17,7 @@ import { createTimelineAnimation } from "@/lib/timelineAnimation";
 import { createTop10Animation } from "@/lib/top10Animation";
 import { createComparisonAnimation } from "@/lib/comparisonAnimation";
 import { AUDIO_TRACKS, createAudioStream } from "@/lib/audioTracks";
+import { formatValue, UNIT_TYPE_OPTIONS, CURRENCY_PRESETS, DEFAULT_VALUE_FORMAT, ValueFormat, UnitType } from "@/lib/valueFormat";
 import { Seo } from "@/components/Seo";
 
 const STEPS = ["Type", "Data", "Style", "Preview", "Export"];
