@@ -17,6 +17,7 @@ import { createTimelineAnimation } from "@/lib/timelineAnimation";
 import { createTop10Animation } from "@/lib/top10Animation";
 import { createComparisonAnimation } from "@/lib/comparisonAnimation";
 import { AUDIO_TRACKS, createAudioStream } from "@/lib/audioTracks";
+import { formatValue, UNIT_TYPE_OPTIONS, CURRENCY_PRESETS, DEFAULT_VALUE_FORMAT, ValueFormat, UnitType } from "@/lib/valueFormat";
 import { Seo } from "@/components/Seo";
 
 const STEPS = ["Type", "Data", "Style", "Preview", "Export"];
@@ -752,6 +753,171 @@ const Create = () => {
                 />
               </div>
             </div>
+
+            {/* Value Display Format */}
+            {(() => {
+              const vf: ValueFormat = settings.valueFormat ?? { ...DEFAULT_VALUE_FORMAT };
+              const updateVf = (patch: Partial<ValueFormat>) =>
+                setSettings({ ...settings, valueFormat: { ...vf, ...patch } });
+              const sampleRaw = (() => {
+                const numeric = data.map(d => d.value).filter(v => Number.isFinite(v) && v > 0);
+                if (!numeric.length) return 1000000;
+                return Math.max(...numeric);
+              })();
+              return (
+                <div className="rounded-xl bg-card border border-border p-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Value Display Format</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Controls how numbers appear in the video. Sorting still uses raw values.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground block mb-1.5">Unit Type</label>
+                    <select
+                      value={vf.unitType}
+                      onChange={(e) => updateVf({ unitType: e.target.value as UnitType })}
+                      className="w-full bg-secondary rounded-lg px-3 py-2.5 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      {UNIT_TYPE_OPTIONS.map(o => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {vf.unitType === "currency" && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1.5">Currency Symbol</label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {CURRENCY_PRESETS.map(sym => (
+                            <button
+                              key={sym}
+                              onClick={() => updateVf({ currencySymbol: sym })}
+                              className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                                vf.currencySymbol === sym ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                              }`}
+                            >
+                              {sym}
+                            </button>
+                          ))}
+                        </div>
+                        <input
+                          type="text"
+                          value={vf.currencySymbol ?? ""}
+                          onChange={(e) => updateVf({ currencySymbol: e.target.value })}
+                          placeholder="Custom (e.g. USD)"
+                          className="mt-2 w-full bg-secondary rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1.5">Position</label>
+                        <div className="flex gap-2">
+                          {(["before", "after"] as const).map(p => (
+                            <button
+                              key={p}
+                              onClick={() => updateVf({ currencyPosition: p })}
+                              className={`flex-1 py-2 rounded-lg text-xs font-semibold capitalize transition-colors ${
+                                (vf.currencyPosition ?? "before") === p ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                              }`}
+                            >
+                              {p} value
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {vf.unitType === "population" && (
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground block mb-1.5">Scale</label>
+                      <div className="flex gap-2">
+                        {([
+                          { v: "people", l: "People" },
+                          { v: "million", l: "Million" },
+                          { v: "billion", l: "Billion" },
+                        ] as const).map(s => (
+                          <button
+                            key={s.v}
+                            onClick={() => updateVf({ populationScale: s.v })}
+                            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                              (vf.populationScale ?? "people") === s.v ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                            }`}
+                          >
+                            {s.l}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {vf.unitType === "custom" && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1.5">Prefix</label>
+                        <input
+                          type="text"
+                          value={vf.prefix ?? ""}
+                          onChange={(e) => updateVf({ prefix: e.target.value })}
+                          placeholder="e.g. ★"
+                          className="w-full bg-secondary rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1.5">Suffix</label>
+                        <input
+                          type="text"
+                          value={vf.suffix ?? ""}
+                          onChange={(e) => updateVf({ suffix: e.target.value })}
+                          placeholder="e.g. Goals"
+                          className="w-full bg-secondary rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-foreground">Abbreviate Large Numbers</p>
+                      <p className="text-[10px] text-muted-foreground">1,000 → 1K · 1M · 1B · 1T</p>
+                    </div>
+                    <button
+                      onClick={() => updateVf({ abbreviate: !vf.abbreviate })}
+                      className={`w-12 h-7 rounded-full transition-colors relative shrink-0 ${vf.abbreviate ? "bg-primary" : "bg-secondary"}`}
+                    >
+                      <div className={`absolute top-1 w-5 h-5 rounded-full bg-background shadow transition-transform ${vf.abbreviate ? "translate-x-6" : "translate-x-1"}`} />
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground block mb-1.5">Decimal Places</label>
+                    <div className="flex gap-2">
+                      {[0, 1, 2, 3].map(d => (
+                        <button
+                          key={d}
+                          onClick={() => updateVf({ decimals: d })}
+                          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                            (vf.decimals ?? 0) === d ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                          }`}
+                        >
+                          {d}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg bg-secondary/60 px-3 py-2.5">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Live Preview</p>
+                    <p className="text-base font-bold text-foreground tabular-nums mt-0.5">
+                      {formatValue(sampleRaw, vf)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Raw value: {sampleRaw.toLocaleString()}</p>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div>
               <label className="text-sm font-medium text-foreground block mb-2">Theme</label>

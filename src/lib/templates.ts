@@ -1,4 +1,5 @@
 import { Template } from "./types";
+import { DEFAULT_VALUE_FORMAT } from "./valueFormat";
 import {
   GDP_SAMPLE,
   FOOTBALL_SAMPLE,
@@ -344,3 +345,36 @@ TEMPLATES.push(
     },
   },
 );
+
+// Apply sensible default value formats per template so videos look polished out of the box.
+const VALUE_FORMAT_BY_TEMPLATE: Record<string, Partial<typeof DEFAULT_VALUE_FORMAT> & { unitType: string }> = {
+  "viral-bar-race": { unitType: "currency", currencySymbol: "$", currencyPosition: "before", abbreviate: true, decimals: 1 },
+  "economic-growth": { unitType: "currency", currencySymbol: "$", currencyPosition: "before", abbreviate: true, decimals: 1 },
+  "top10-gdp": { unitType: "currency", currencySymbol: "$", currencyPosition: "before", abbreviate: true, decimals: 1 },
+  "educational-timeline": { unitType: "population", populationScale: "million", decimals: 1 },
+  "timeline-population": { unitType: "population", populationScale: "million", decimals: 1 },
+  "sports-battle": { unitType: "custom", suffix: "Goals", abbreviate: false, decimals: 0 },
+  "comparison-football": { unitType: "custom", suffix: "Goals", abbreviate: false, decimals: 0 },
+  "nba-ranking": { unitType: "custom", suffix: "pts", abbreviate: false, decimals: 0 },
+  "crypto-race": { unitType: "currency", currencySymbol: "$", abbreviate: true, decimals: 1 },
+  "top10-crypto": { unitType: "currency", currencySymbol: "$", abbreviate: true, decimals: 1 },
+  "companies-marketcap": { unitType: "currency", currencySymbol: "$", abbreviate: true, decimals: 1 },
+  "top10-companies": { unitType: "currency", currencySymbol: "$", abbreviate: true, decimals: 1 },
+  "youtube-subscribers": { unitType: "custom", suffix: "Subscribers", abbreviate: true, decimals: 1 },
+  "timeline-youtube": { unitType: "custom", suffix: "Subscribers", abbreviate: true, decimals: 1 },
+  "streaming-subs": { unitType: "custom", suffix: "Subscribers", abbreviate: true, decimals: 1 },
+  "olympics-medals": { unitType: "custom", suffix: "Medals", abbreviate: false, decimals: 0 },
+  "f1-champions": { unitType: "custom", suffix: "Titles", abbreviate: false, decimals: 0 },
+  "comparison-f1": { unitType: "custom", suffix: "Titles", abbreviate: false, decimals: 0 },
+  "military-spending": { unitType: "currency", currencySymbol: "$", abbreviate: true, decimals: 1 },
+};
+
+TEMPLATES.forEach(t => {
+  const vf = VALUE_FORMAT_BY_TEMPLATE[t.id];
+  if (vf) {
+    t.settings = {
+      ...t.settings,
+      valueFormat: { ...DEFAULT_VALUE_FORMAT, ...(vf as any) },
+    };
+  }
+});

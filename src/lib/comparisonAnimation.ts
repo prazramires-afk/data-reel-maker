@@ -1,5 +1,6 @@
 import { DataRow, ProjectSettings, BAR_COLORS, ThemeType } from "./types";
 import { processData, AnimationController, getFittedTitleFontSize } from "./animationEngine";
+import { formatValue } from "./valueFormat";
 
 function getThemeColors(theme: ThemeType) {
   switch (theme) {
@@ -183,7 +184,7 @@ export function createComparisonAnimation(
         ctx.font = `500 ${Math.round(w * 0.025)}px system-ui, sans-serif`;
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
-        ctx.fillText(Math.round(animValues[labelA]).toLocaleString(), sidePad + imgSize + 14, y + 14 + w * 0.035);
+        ctx.fillText(formatValue(animValues[labelA], settings.valueFormat), sidePad + imgSize + 14, y + 14 + w * 0.035);
       }
 
       // Images & Labels - Right
@@ -212,7 +213,7 @@ export function createComparisonAnimation(
         ctx.font = `500 ${Math.round(w * 0.025)}px system-ui, sans-serif`;
         ctx.textAlign = "right";
         ctx.textBaseline = "top";
-        ctx.fillText(Math.round(animValues[labelB]).toLocaleString(), w - sidePad - imgSize - 14, y + 14 + w * 0.035);
+        ctx.fillText(formatValue(animValues[labelB], settings.valueFormat), w - sidePad - imgSize - 14, y + 14 + w * 0.035);
       }
     });
 

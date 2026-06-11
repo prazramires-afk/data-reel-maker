@@ -1,5 +1,6 @@
 import { DataRow, ProjectSettings, BAR_COLORS, ThemeType } from "./types";
 import { processData, AnimationController, getFittedTitleFontSize } from "./animationEngine";
+import { formatValue } from "./valueFormat";
 
 function getThemeColors(theme: ThemeType) {
   switch (theme) {
@@ -146,7 +147,7 @@ export function createTop10Animation(
           ctx.font = `500 ${Math.round(w * 0.028)}px system-ui, sans-serif`;
           ctx.textAlign = "right";
           ctx.textBaseline = "middle";
-          ctx.fillText(Math.round(item.value).toLocaleString(), w - sidePad - 14, y + cardH / 2);
+          ctx.fillText(formatValue(item.value, settings.valueFormat), w - sidePad - 14, y + cardH / 2);
         }
       } else {
         // Unrevealed placeholder

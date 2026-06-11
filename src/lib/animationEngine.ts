@@ -1,4 +1,5 @@
 import { DataRow, ProjectSettings, BAR_COLORS, ThemeType } from "./types";
+import { formatValue } from "./valueFormat";
 
 interface BarState {
   label: string;
@@ -310,7 +311,7 @@ export function createBarRaceAnimation(
         ctx.font = `500 ${Math.round(w * 0.028)}px system-ui, sans-serif`;
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        ctx.fillText(Math.round(bar.value).toLocaleString(), x + bar.width + 8, bar.y + barHeight / 2);
+        ctx.fillText(formatValue(bar.value, settings.valueFormat), x + bar.width + 8, bar.y + barHeight / 2);
       }
     });
 
