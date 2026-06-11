@@ -10,7 +10,7 @@ import {
 import { TEMPLATES } from "@/lib/templates";
 import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE, NBA_SAMPLE, CRYPTO_SAMPLE, COMPANIES_SAMPLE } from "@/lib/sampleData";
 import { parseCSV } from "@/lib/parseCSV";
-import { saveProject, getProjectById, generateId, setProjectPublic, publishProject, isValidProjectId } from "@/lib/storage";
+import { saveProject, getProjectById, generateId, publishProject, isValidProjectId } from "@/lib/storage";
 import { communityUrl, copyToClipboard } from "@/lib/share";
 import { createBarRaceAnimation, AnimationController } from "@/lib/animationEngine";
 import { createTimelineAnimation } from "@/lib/timelineAnimation";
