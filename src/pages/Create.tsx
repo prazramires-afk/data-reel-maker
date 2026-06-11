@@ -10,7 +10,7 @@ import {
 import { TEMPLATES } from "@/lib/templates";
 import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE, NBA_SAMPLE, CRYPTO_SAMPLE, COMPANIES_SAMPLE } from "@/lib/sampleData";
 import { parseCSV } from "@/lib/parseCSV";
-import { saveProject, getProjectById, generateId, setProjectPublic } from "@/lib/storage";
+import { saveProject, getProjectById, generateId, setProjectPublic, publishProject } from "@/lib/storage";
 import { communityUrl, copyToClipboard } from "@/lib/share";
 import { createBarRaceAnimation, AnimationController } from "@/lib/animationEngine";
 import { createTimelineAnimation } from "@/lib/timelineAnimation";
@@ -376,10 +376,12 @@ const Create = () => {
 
     try {
       const savedProject = await handleSave();
-      const published = await setProjectPublic(savedProject.id, true, savedProject.authorName || undefined);
-
+      // Upsert the full project with public flags in one call so the row is
+      // guaranteed to exist (handles cases where the prior save failed or
+      // only persisted locally).
+      const published = await publishProject(savedProject, savedProject.authorName || undefined);
       if (!published) {
-        toast.error("Could not publish to Community. Please try again.");
+        toast.error("Could not publish to Community. Please make sure you're signed in and try again.");
         return;
       }
 
