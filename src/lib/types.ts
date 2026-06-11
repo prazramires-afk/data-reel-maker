@@ -4,6 +4,9 @@ export type ThemeType = "dark" | "light" | "neon" | "greenscreen";
 
 export type SpeedType = "slow" | "medium" | "fast";
 
+import type { ValueFormat } from "./valueFormat";
+import { DEFAULT_VALUE_FORMAT } from "./valueFormat";
+
 export interface DataRow {
   label: string;
   value: number;
@@ -40,6 +43,8 @@ export interface ProjectSettings {
   titleAutoFit?: boolean;
   /** Safe margin used for auto-fitting title text, expressed as a 0-1 width ratio. */
   titleSafeMargin?: number;
+  /** Display formatting for numeric values (units, prefixes, suffixes, abbreviations). */
+  valueFormat?: ValueFormat;
 }
 
 export interface Project {
@@ -80,6 +85,7 @@ export const DEFAULT_SETTINGS: ProjectSettings = {
   titleScale: 1,
   titleAutoFit: true,
   titleSafeMargin: 0.08,
+  valueFormat: { ...DEFAULT_VALUE_FORMAT },
 };
 
 export const VIDEO_TYPES: { type: VideoType; label: string; description: string; available: boolean }[] = [
