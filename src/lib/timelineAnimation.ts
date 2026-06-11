@@ -1,5 +1,6 @@
 import { DataRow, ProjectSettings, BAR_COLORS, ThemeType } from "./types";
 import { processData, AnimationController, getFittedTitleFontSize } from "./animationEngine";
+import { formatValue } from "./valueFormat";
 
 function getThemeColors(theme: ThemeType) {
   switch (theme) {
@@ -197,7 +198,7 @@ export function createTimelineAnimation(
         ctx.font = `500 ${Math.round(w * 0.022)}px system-ui, sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "bottom";
-        ctx.fillText(Math.round(val).toLocaleString(), x + cardWidth / 2, cardTop + cardH - 10);
+        ctx.fillText(formatValue(val, settings.valueFormat), x + cardWidth / 2, cardTop + cardH - 10);
       }
     });
 
