@@ -152,6 +152,44 @@ export async function setProjectPublic(
   return true;
 }
 
+/**
+ * Publish a full project to the community in a single upsert.
+ * Use this from the Create flow where the row may not yet exist in the DB
+ * (e.g. previous save failed or only persisted to localStorage).
+ */
+export async function publishProject(
+  project: Project,
+  authorName?: string,
+): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    console.error("publishProject: not signed in");
+    return false;
+  }
+  const payload = {
+    id: project.id,
+    user_id: user.id,
+    name: project.name || project.settings?.title || "Untitled",
+    type: project.type,
+    data: project.data as any,
+    settings: project.settings as any,
+    label_images: project.labelImages as any,
+    is_public: true,
+    published_at: new Date().toISOString(),
+    ...(authorName ? { author_name: authorName.slice(0, 60) } : {}),
+  };
+  const { data, error } = await supabase
+    .from("projects")
+    .upsert(payload, { onConflict: "id" })
+    .select("id")
+    .maybeSingle();
+  if (error || !data) {
+    console.error("publishProject error", error);
+    return false;
+  }
+  return true;
+}
+
 /** Public — fetch most recently published community projects. */
 export async function getCommunityProjects(limit = 12): Promise<Project[]> {
   const { data, error } = await supabase
