@@ -45,6 +45,8 @@ export interface ProjectSettings {
   titleSafeMargin?: number;
   /** Display formatting for numeric values (units, prefixes, suffixes, abbreviations). */
   valueFormat?: ValueFormat;
+  /** Custom hex color per data label. Falls back to BAR_COLORS palette when missing. */
+  labelColors?: Record<string, string>;
 }
 
 export interface Project {
@@ -86,6 +88,7 @@ export const DEFAULT_SETTINGS: ProjectSettings = {
   titleAutoFit: true,
   titleSafeMargin: 0.08,
   valueFormat: { ...DEFAULT_VALUE_FORMAT },
+  labelColors: {},
 };
 
 export const VIDEO_TYPES: { type: VideoType; label: string; description: string; available: boolean }[] = [
