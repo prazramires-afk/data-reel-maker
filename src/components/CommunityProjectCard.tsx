@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Project, DataRow } from "@/lib/types";
+import { formatValue } from "@/lib/valueFormat";
 
 const COLORS = ["#7c5cfc", "#3b9dff", "#f97316", "#22c55e", "#ef4444", "#eab308"];
 const BG = "#0f0f17";
@@ -55,7 +56,7 @@ function draw(ctx: CanvasRenderingContext2D, t: number, w: number, h: number, pr
     ctx.fillText(r.label.slice(0, 12), padX + 44, y + (rowH - 6) / 2);
     ctx.textAlign = "left";
     ctx.fillStyle = SUB;
-    ctx.fillText(Math.round(r.value).toString(), padX + 52 + bw, y + (rowH - 6) / 2);
+    ctx.fillText(formatValue(r.value, project.settings?.valueFormat), padX + 52 + bw, y + (rowH - 6) / 2);
   });
   ctx.fillStyle = TEXT;
   ctx.font = "700 10px ui-sans-serif, system-ui";
