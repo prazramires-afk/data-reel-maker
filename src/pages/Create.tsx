@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import {
   VideoType, DataRow, ProjectSettings, Project, DEFAULT_SETTINGS,
-  VIDEO_TYPES, ThemeType, SpeedType,
+  VIDEO_TYPES, ThemeType, SpeedType, BAR_COLORS,
 } from "@/lib/types";
 import { TEMPLATES } from "@/lib/templates";
 import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE, NBA_SAMPLE, CRYPTO_SAMPLE, COMPANIES_SAMPLE } from "@/lib/sampleData";
