@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import {
   VideoType, DataRow, ProjectSettings, Project, DEFAULT_SETTINGS,
-  VIDEO_TYPES, ThemeType, SpeedType,
+  VIDEO_TYPES, ThemeType, SpeedType, BAR_COLORS,
 } from "@/lib/types";
 import { TEMPLATES } from "@/lib/templates";
 import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE, NBA_SAMPLE, CRYPTO_SAMPLE, COMPANIES_SAMPLE } from "@/lib/sampleData";
@@ -673,6 +673,67 @@ const Create = () => {
                 </p>
               )}
             </div>
+
+            {/* Element Colors Section */}
+            {uniqueLabels.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-foreground mb-3">Element Colors</h3>
+                <div className="rounded-xl bg-card border border-border p-3 mb-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground">Apply one color to all</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Quickly unify your chart palette.</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <input
+                      type="color"
+                      value={(() => {
+                        const vals = Object.values(settings.labelColors ?? {});
+                        return vals.length && vals.every(v => v === vals[0]) ? vals[0] : "#7c5cfc";
+                      })()}
+                      onChange={(e) => {
+                        const c = e.target.value;
+                        const next: Record<string, string> = {};
+                        uniqueLabels.forEach(l => (next[l] = c));
+                        setSettings({ ...settings, labelColors: next });
+                      }}
+                      className="w-9 h-9 rounded-lg bg-transparent border border-border cursor-pointer"
+                      aria-label="Apply color to all elements"
+                    />
+                    <button
+                      onClick={() => setSettings({ ...settings, labelColors: {} })}
+                      className="text-[11px] px-2.5 py-1.5 rounded-lg bg-secondary text-muted-foreground font-semibold active:scale-95 transition-transform"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {uniqueLabels.map((label, i) => {
+                    const current = settings.labelColors?.[label] ?? BAR_COLORS[i % BAR_COLORS.length];
+                    return (
+                      <label
+                        key={label}
+                        className="flex items-center gap-2.5 bg-secondary rounded-xl p-3 cursor-pointer overflow-hidden"
+                      >
+                        <input
+                          type="color"
+                          value={current}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              labelColors: { ...(settings.labelColors ?? {}), [label]: e.target.value },
+                            })
+                          }
+                          className="w-9 h-9 rounded-full border-0 bg-transparent cursor-pointer shrink-0 p-0"
+                          aria-label={`Color for ${label}`}
+                        />
+                        <span className="text-xs font-medium text-foreground truncate">{label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

@@ -52,7 +52,7 @@ export function createTimelineAnimation(
   const { years, labels, valueMap } = processData(data);
   const theme = getThemeColors(settings.theme);
   const colorMap: Record<string, string> = {};
-  labels.forEach((l, i) => (colorMap[l] = BAR_COLORS[i % BAR_COLORS.length]));
+  labels.forEach((l, i) => (colorMap[l] = settings.labelColors?.[l] ?? BAR_COLORS[i % BAR_COLORS.length]));
 
   const baseDuration = 15;
   const speedMultiplier = settings.speed === "slow" ? 0.7 : settings.speed === "fast" ? 1.5 : 1;

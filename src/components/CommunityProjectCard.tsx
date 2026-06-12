@@ -37,8 +37,9 @@ function draw(ctx: CanvasRenderingContext2D, t: number, w: number, h: number, pr
   const { years, labels, vm } = process(data);
   const cycle = t % 1;
   const cy = years[0] + (years[years.length - 1] - years[0]) * cycle;
+  const labelColors = project.settings?.labelColors ?? {};
   const rows = labels
-    .map((l, i) => ({ label: l, value: interp(vm[l] || {}, years, cy), color: COLORS[i % COLORS.length] }))
+    .map((l, i) => ({ label: l, value: interp(vm[l] || {}, years, cy), color: labelColors[l] || COLORS[i % COLORS.length] }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 5);
   const max = Math.max(...rows.map((r) => r.value), 1);
