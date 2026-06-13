@@ -14,48 +14,155 @@ export type Database = {
   }
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          tiktok_url: string | null
+          twitter_url: string | null
+          updated_at: string
+          username: string
+          website_url: string | null
+          youtube_url: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          tiktok_url?: string | null
+          twitter_url?: string | null
+          updated_at?: string
+          username: string
+          website_url?: string | null
+          youtube_url?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          tiktok_url?: string | null
+          twitter_url?: string | null
+          updated_at?: string
+          username?: string
+          website_url?: string | null
+          youtube_url?: string | null
+        }
+        Relationships: []
+      }
+      project_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          owner_id: string
+          project_id: string
+          referrer: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          owner_id: string
+          project_id: string
+          referrer?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          owner_id?: string
+          project_id?: string
+          referrer?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
+          allow_download: boolean
+          allow_embed: boolean
+          allow_remix: boolean
           author_name: string | null
           created_at: string
           data: Json
+          description: string | null
+          download_count: number
           id: string
           is_public: boolean
           label_images: Json
+          like_count: number
           name: string
           published_at: string | null
           settings: Json
+          share_count: number
+          thumbnail_url: string | null
           type: string
           updated_at: string
           user_id: string
+          view_count: number
         }
         Insert: {
+          allow_download?: boolean
+          allow_embed?: boolean
+          allow_remix?: boolean
           author_name?: string | null
           created_at?: string
           data?: Json
+          description?: string | null
+          download_count?: number
           id?: string
           is_public?: boolean
           label_images?: Json
+          like_count?: number
           name?: string
           published_at?: string | null
           settings?: Json
+          share_count?: number
+          thumbnail_url?: string | null
           type: string
           updated_at?: string
           user_id: string
+          view_count?: number
         }
         Update: {
+          allow_download?: boolean
+          allow_embed?: boolean
+          allow_remix?: boolean
           author_name?: string | null
           created_at?: string
           data?: Json
+          description?: string | null
+          download_count?: number
           id?: string
           is_public?: boolean
           label_images?: Json
+          like_count?: number
           name?: string
           published_at?: string | null
           settings?: Json
+          share_count?: number
+          thumbnail_url?: string | null
           type?: string
           updated_at?: string
           user_id?: string
+          view_count?: number
         }
         Relationships: []
       }
@@ -149,6 +256,26 @@ export type Database = {
           tokens_remaining: number
         }[]
       }
+      generate_username: { Args: { _email: string }; Returns: string }
+      get_profile_by_username: {
+        Args: { _username: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          created_at: string
+          display_name: string
+          id: string
+          tiktok_url: string
+          total_likes: number
+          total_shares: number
+          total_videos: number
+          total_views: number
+          twitter_url: string
+          username: string
+          website_url: string
+          youtube_url: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -157,6 +284,15 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      record_project_event: {
+        Args: {
+          _event_type: string
+          _project_id: string
+          _referrer?: string
+          _visitor_id?: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
