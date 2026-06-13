@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Video, Eye, Heart, Share2, Download, Plus, ExternalLink } from "lucide-react";
+import { Video, Eye, Heart, Share2, Download, Plus, ExternalLink, Globe } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { getMyProfile, Profile } from "@/lib/profile";
 import { supabase } from "@/integrations/supabase/client";
@@ -163,8 +163,5 @@ const Dashboard = () => {
     </>
   );
 };
-
-// Local icon import to avoid name clash above
-import { Globe } from "lucide-react";
 
 export default Dashboard;
