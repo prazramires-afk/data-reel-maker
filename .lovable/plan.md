@@ -1,124 +1,49 @@
-# Plan: SEO-Optimized Creator Platform Transformation
+# Creator Platform — Phased Plan
 
-Transform "Data to Video" into a content-rich, SEO-optimized creator platform while preserving the existing app flow (Home buttons, Create, Projects, Templates, Admin, Auth).
+This is too large to ship in one pass without it breaking. I'd like to confirm scope and split it into 3 phases so each one lands solid.
 
-## Scope strategy
+## Phase 1 — Foundation (recommended to ship first)
 
-The request is huge. To ship something coherent in one pass (rather than 30 half-done pages), I'll prioritize **high-SEO-value foundations** and **scaffold** the rest with real but lighter content. Everything will be wired up, indexable, and internally linked.
+**Database**
+- `profiles` table: `id` (FK auth.users), `username` (unique, lowercase, 3–24 chars), `display_name`, `bio`, `avatar_url`, `website_url`, `twitter_url`, `youtube_url`, `tiktok_url`, timestamps. RLS: anyone can read, owner can update, trigger auto-creates row on signup.
+- Extend `projects`: `description`, `thumbnail_url`, `view_count`, `like_count`, `share_count`, `download_count`, `allow_remix`, `allow_download`, `allow_embed`. View counts updated via RPC.
+- `project_events` table (view/like/share/download) for analytics, with daily rollup query.
+- Storage bucket `avatars` (public read, owner write).
 
-## 1. Landing page (Home.tsx) — expand, don't replace
+**Routes / UI**
+- `/u/:username` — public creator profile (avatar, name, bio, social links, stats, grid of public videos). Full SEO meta + ProfilePage JSON-LD.
+- `/dashboard` — shell with sidebar (Overview, My Videos, Drafts, Published, Analytics, Profile, Account).
+- `/dashboard/profile` — edit avatar, display name, username, bio, social URLs with live preview.
+- Onboarding: prompt for username on first login if missing.
 
-Keep the existing hero buttons (Create / Projects / Templates / Admin / Upgrade) intact at the top. Add SEO content sections **below**:
+## Phase 2 — Video management
 
-- **Hero polish**: H1 "Create Viral Data Videos Online", subtitle, primary CTA "Start Creating Free" → /create, secondary "Watch Demo" → /templates
-- **Features grid** (6 cards): Bar Chart Race, TikTok/Reels Export, Data Storytelling, Sports Stats, Economic Visualization, Educational Timelines
-- **Use cases grid** (7 blocks with placeholder thumbnails + CTAs)
-- **How it works** (3 steps)
-- **Testimonials** (3 placeholder cards, clearly styled as social proof)
-- **FAQ accordion** (6 Q&As, with FAQPage JSON-LD)
-- **Footer** with internal links to all key pages
+- Dashboard pages: Overview cards, My Videos (all), Drafts (not yet published), Published (public only).
+- Per-video actions: Edit, Duplicate, Download, Publish/Unpublish, Delete (with confirm dialog).
+- Edit metadata modal: title, description, thumbnail upload, visibility toggles (public/private, allow remix/download/embed).
+- Wire delete to cascade: removes from `/community`, profile, and public URL.
+- Auto-generate thumbnail from first canvas frame on export if user doesn't upload one.
 
-Uses semantic `<header>`, `<main>`, `<section>`, `<article>`, `<footer>`.
+## Phase 3 — Analytics + Account
 
-## 2. Programmatic SEO template pages
+- Track events client-side → `project_events` insert (anonymous + authed).
+- Analytics page: daily/weekly/monthly chart (recharts), top videos table, traffic sources from `referrer`.
+- Account settings: change email (Supabase `updateUser`), change password, export data (JSON download of profile + projects), delete account (RPC that deletes profile, projects, events).
+- "Follow Creator" UI stub (button only, no backend) marked future-ready.
 
-New route `/templates/:slug` rendered by a single `TemplateLanding.tsx` page. Content driven by a `templateContent.ts` map keyed by slug:
+## Out of scope (would need separate asks)
 
-- bar-chart-race
-- gdp-race
-- football-stats
-- population-growth
-- top-10
-- economic-growth
+- Real follow/notification system (DB + feeds)
+- Remix flow (cloning another user's project as a starting point)
+- Embed iframe + embed code generator
+- Comment system, likes from non-authed users
+- Push notifications, email digests
 
-Each entry: unique H1, SEO title/description, 2–3 keyword paragraphs, feature list, FAQ (with FAQ JSON-LD), live preview hooked to existing canvas engine via the matching template from `TEMPLATES`, CTA → `/create?template=<id>`.
+## Questions before I start
 
-The existing `/templates` listing page gets updated cards that link to these landing pages (instead of jumping straight to `/create`), with a small "Use template" shortcut preserved.
+1. **Username collisions**: anyone whose email is already in `auth.users` won't have a username yet. OK to force a one-time "pick a username" modal on next login?
+2. **Existing community videos** were published without a username/profile. OK to auto-derive a username from email (e.g. `user_a3f2`) so existing `/community/...` links keep an author?
+3. **Phase 1 only now**, then we ship 2 and 3 in follow-ups? Or do you want all three back-to-back (longer single change, higher risk)?
+4. **Analytics**: track view events from any visitor (anonymous OK) or only logged-in viewers? Anonymous gives realistic numbers but means anyone can inflate counts — usually fine for a creator product.
 
-## 3. Blog / Learn hub
-
-- `/blog` — listing page with 5 article cards
-- `/blog/:slug` — article page from a `blogPosts.ts` data file
-
-Articles (semantic, ~600–900 words each — real readable content, not lorem):
-- how-to-make-viral-bar-chart-race-videos
-- best-tiktok-data-visualization-ideas
-- how-football-channels-use-statistics-videos
-- why-bar-chart-races-go-viral
-- best-data-formats-for-animated-videos
-
-Each has Article JSON-LD, internal links to templates, related posts.
-
-## 4. Trust pages
-
-Lightweight but real:
-- `/about`
-- `/contact` (mailto + simple form, no backend)
-- `/privacy`
-- `/terms`
-
-## 5. Public share pages (viral)
-
-- Route `/watch/:slug` — minimal "share" landing showing a project preview placeholder, "Made with Data to Video" branding, social share buttons (Web Share API + copy link), CTA "Create your own". Schema: VideoObject JSON-LD.
-- Wired as a route now; full data binding can come later. For seeded demo slugs (`gdp-race-usa-vs-china`, etc.) we'll render hard-coded preview metadata so the page is real and shareable.
-
-## 6. Reusable SEO infrastructure
-
-- `Seo.tsx` already exists — extend to accept optional `jsonLd` and `ogImage` props.
-- Add `<Footer />` component used across all public pages.
-- Add `<SiteHeader />` lightweight nav for non-Home pages (Home keeps current look).
-- All new pages call `<Seo>` with full keyword-rich metadata.
-
-## 7. Sitemap + robots
-
-Update `public/sitemap.xml` to include every new URL: home, create, templates, /templates/{6 slugs}, /blog, /blog/{5 slugs}, /about, /contact, /privacy, /terms, /watch/{demo slugs}. Robots stays as-is (already correct).
-
-## 8. Routing changes (App.tsx)
-
-Add routes:
-- `/templates/:slug` → TemplateLanding
-- `/blog` → Blog
-- `/blog/:slug` → BlogPost
-- `/about`, `/contact`, `/privacy`, `/terms`
-- `/watch/:slug` → Watch
-
-## Technical notes
-
-- Use existing design tokens (`bg-card`, `text-foreground`, etc.) — no new colors.
-- Use existing `accordion` shadcn component for FAQs.
-- Lazy-load route components via `React.lazy` to keep initial bundle lean.
-- JSON-LD injected via `<Helmet>` with `<script type="application/ld+json">`.
-- All images are CSS gradients / icons (no external assets needed) to keep this shippable in one pass.
-- Keep `Home.tsx` button section unchanged at top; SEO content appended below in new semantic sections.
-
-## What's intentionally deferred
-
-- Real article content beyond the 5 seeded posts (programmatic blog generation).
-- Persisting public share pages from actual user projects (currently demo slugs only).
-- Real testimonials (placeholders only, clearly generic).
-
-## Files to create
-
-- `src/components/Footer.tsx`
-- `src/components/SiteHeader.tsx`
-- `src/components/FaqSection.tsx`
-- `src/pages/TemplateLanding.tsx`
-- `src/pages/Blog.tsx`
-- `src/pages/BlogPost.tsx`
-- `src/pages/About.tsx`
-- `src/pages/Contact.tsx`
-- `src/pages/Privacy.tsx`
-- `src/pages/Terms.tsx`
-- `src/pages/Watch.tsx`
-- `src/lib/seoContent/templateLandings.ts`
-- `src/lib/seoContent/blogPosts.ts`
-- `src/lib/seoContent/faqs.ts`
-
-## Files to edit
-
-- `src/App.tsx` (add routes)
-- `src/pages/Home.tsx` (append SEO sections + footer)
-- `src/pages/Templates.tsx` (link to landings)
-- `src/components/Seo.tsx` (jsonLd support)
-- `public/sitemap.xml` (full URL set)
-- `index.html` (improve sitewide JSON-LD)
+Reply with answers and I'll start Phase 1 (DB migration + `/u/:username` + dashboard shell + profile editor).
