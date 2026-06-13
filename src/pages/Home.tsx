@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Play, FolderOpen, Layout, LogIn, LogOut, Sparkles, Coins, Shield, BarChart3, Trophy, Globe2, GraduationCap, TrendingUp, Film, ArrowRight, Quote } from "lucide-react";
+import { Play, FolderOpen, Layout, LogIn, LogOut, Sparkles, Coins, Shield, BarChart3, Trophy, Globe2, GraduationCap, TrendingUp, Film, ArrowRight, Quote, LayoutDashboard } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Seo } from "@/components/Seo";
 import { Footer } from "@/components/Footer";
@@ -126,6 +126,14 @@ const Home = () => {
         </div>
 
         <div className="mt-6 flex flex-wrap gap-2 justify-center">
+          {user && (
+            <>
+              <Link to="/dashboard" className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
+                <LayoutDashboard className="w-3 h-3" /> Dashboard
+              </Link>
+              <span className="text-muted-foreground/40">·</span>
+            </>
+          )}
           <Link to="/projects" className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
             <FolderOpen className="w-3 h-3" /> My projects
           </Link>

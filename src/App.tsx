@@ -26,6 +26,11 @@ const Tools = lazy(() => import("./pages/Tools"));
 const ToolPage = lazy(() => import("./pages/ToolPage"));
 const Community = lazy(() => import("./pages/Community"));
 const CommunityProject = lazy(() => import("./pages/CommunityProject"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const DashboardProfile = lazy(() => import("./pages/DashboardProfile"));
+const DashboardComingSoon = lazy(() => import("./pages/DashboardComingSoon"));
+const DashboardLayout = lazy(() => import("./components/DashboardLayout"));
+const UserProfile = lazy(() => import("./pages/UserProfile"));
 import { AuthProvider } from "./hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -57,6 +62,31 @@ const App = () => (
           <Route path="/tools/:slug" element={<ToolPage />} />
           <Route path="/community" element={<Community />} />
           <Route path="/community/:id" element={<CommunityProject />} />
+          <Route path="/u/:username" element={<UserProfile />} />
+          <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="profile" element={<DashboardProfile />} />
+            <Route
+              path="videos"
+              element={<DashboardComingSoon title="My Videos" description="All your videos, in one place." path="/dashboard/videos" />}
+            />
+            <Route
+              path="drafts"
+              element={<DashboardComingSoon title="Drafts" description="Unfinished projects you can return to." path="/dashboard/drafts" />}
+            />
+            <Route
+              path="published"
+              element={<DashboardComingSoon title="Published Videos" description="Manage your public community videos." path="/dashboard/published" />}
+            />
+            <Route
+              path="analytics"
+              element={<DashboardComingSoon title="Analytics" description="Views, likes, and traffic over time." path="/dashboard/analytics" />}
+            />
+            <Route
+              path="account"
+              element={<DashboardComingSoon title="Account Settings" description="Email, password, export and delete your account." path="/dashboard/account" />}
+            />
+          </Route>
           <Route path="/auth" element={<Auth />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="*" element={<NotFound />} />
