@@ -384,12 +384,12 @@ const Create = () => {
       // guaranteed to exist (handles cases where the prior save failed or
       // only persisted locally).
       const published = await publishProject(savedProject, savedProject.authorName || undefined);
-      if (!published) {
+      if (!published.ok) {
         toast.error("Could not publish to Community. Please make sure you're signed in and try again.");
         return;
       }
 
-      const url = communityUrl(savedProject.id);
+      const url = communityUrl(published.slug || savedProject.id);
       setCommunityShareUrl(url);
       const copied = await copyToClipboard(url);
 
