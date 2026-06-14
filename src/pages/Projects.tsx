@@ -37,8 +37,8 @@ const Projects = () => {
       }
       authorName = input.trim().slice(0, 60) || undefined;
     }
-    const ok = await setProjectPublic(project.id, next, authorName);
-    if (!ok) {
+    const res = await setProjectPublic(project.id, next, authorName);
+    if (!res.ok) {
       toast({ title: next ? "Could not publish to community" : "Could not unpublish" });
       setBusyId(null);
       return;
@@ -48,14 +48,15 @@ const Projects = () => {
     setBusyId(null);
   };
 
-  const handleCopyLink = async (id: string) => {
-    const ok = await copyToClipboard(communityUrl(id));
+  const handleCopyLink = async (project: Project) => {
+    const slugOrId = project.slug || project.id;
+    const ok = await copyToClipboard(communityUrl(slugOrId));
     if (ok) {
-      setCopiedId(id);
+      setCopiedId(project.id);
       toast({ title: "Community link copied" });
-      setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 2000);
+      setTimeout(() => setCopiedId((c) => (c === project.id ? null : c)), 2000);
     } else {
-      window.open(communityUrl(id), "_blank", "noopener,noreferrer");
+      window.open(communityUrl(slugOrId), "_blank", "noopener,noreferrer");
     }
   };
 
