@@ -25,6 +25,7 @@ interface PublicVideo {
   description: string | null;
   view_count: number;
   published_at: string;
+  slug: string | null;
 }
 
 const SITE = "https://data-reel-maker.lovable.app";
@@ -45,7 +46,7 @@ const UserProfile = () => {
       if (p) {
         const { data } = await supabase
           .from("projects")
-          .select("id,name,description,view_count,published_at")
+          .select("id,name,description,view_count,published_at,slug")
           .eq("user_id", p.id)
           .eq("is_public", true)
           .order("published_at", { ascending: false });
@@ -188,7 +189,7 @@ const UserProfile = () => {
             {videos.map((v) => (
               <Link
                 key={v.id}
-                to={`/community/${v.id}`}
+                to={`/community/${v.slug || v.id}`}
                 className="bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/50 transition-colors"
               >
                 <div className="font-semibold text-foreground truncate">{v.name}</div>

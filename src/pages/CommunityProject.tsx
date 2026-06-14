@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Copy, Check, Twitter, Facebook, MessageCircle, Send, Linkedin } from "lucide-react";
 import { Project } from "@/lib/types";
-import { getProjectById } from "@/lib/storage";
+import { getCommunityProjectByParam } from "@/lib/storage";
 import { Seo } from "@/components/Seo";
 import { Footer } from "@/components/Footer";
 import { CommunityProjectCard } from "@/components/CommunityProjectCard";
@@ -11,17 +11,16 @@ import { toast } from "@/hooks/use-toast";
 
 const CommunityProject = () => {
   const navigate = useNavigate();
-  const { id = "" } = useParams();
+  const { id: param = "" } = useParams();
   const [project, setProject] = useState<Project | null | undefined>(undefined);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    getProjectById(id).then((p) => {
-      // Only show if actually public
+    getCommunityProjectByParam(param).then((p) => {
       if (p && p.isPublic) setProject(p);
       else setProject(null);
     });
-  }, [id]);
+  }, [param]);
 
   if (project === undefined) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
@@ -36,7 +35,7 @@ const CommunityProject = () => {
     );
   }
 
-  const url = communityUrl(project.id);
+  const url = communityUrl(project.slug || project.id);
   const text = `${project.settings?.title || project.name} — animated data video built with Data to Video`;
   const links = shareLinks(url, text);
 
@@ -54,7 +53,7 @@ const CommunityProject = () => {
       <Seo
         title={`${project.settings?.title || project.name} — Community Data Video`}
         description={`Animated data video by ${project.authorName || "a Data to Video creator"}.`}
-        path={`/community/${project.id}`}
+        path={`/community/${project.slug || project.id}`}
       />
       <div className="max-w-3xl mx-auto px-5 py-6 w-full flex-1">
         <button onClick={() => navigate("/community")} className="flex items-center gap-2 text-muted-foreground mb-6 active:scale-95 transition-transform">

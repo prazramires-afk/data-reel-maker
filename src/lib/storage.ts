@@ -75,6 +75,7 @@ function rowToProject(r: any): Project {
     isPublic: r.is_public ?? false,
     publishedAt: r.published_at ?? null,
     authorName: r.author_name ?? null,
+    slug: r.slug ?? null,
   };
 }
 
@@ -135,6 +136,27 @@ export async function getProjectById(id: string): Promise<Project | null> {
   return rowToProject(data);
 }
 
+/** Public — fetch a community project by slug. */
+export async function getProjectBySlug(slug: string): Promise<Project | null> {
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("slug", slug)
+    .eq("is_public", true)
+    .maybeSingle();
+  if (error || !data) return null;
+  return rowToProject(data);
+}
+
+/** Resolve a community URL param that may be a slug or a legacy UUID. */
+export async function getCommunityProjectByParam(param: string): Promise<Project | null> {
+  if (isValidProjectId(param)) {
+    const p = await getProjectById(param);
+    if (p && p.isPublic) return p;
+  }
+  return getProjectBySlug(param);
+}
+
 /** Admin-only: fetch all projects belonging to a target user. */
 export async function getProjectsByUser(userId: string): Promise<Project[]> {
   const { data, error } = await supabase
@@ -151,18 +173,48 @@ export async function setProjectPublic(
   id: string,
   isPublic: boolean,
   authorName?: string,
-): Promise<boolean> {
+): Promise<{ ok: boolean; slug?: string | null }> {
+  let slug: string | null = null;
+  if (isPublic) {
+    // Look up the title so we can generate/refresh a readable slug.
+    const { data: existing } = await supabase
+      .from("projects")
+      .select("name,settings,slug")
+      .eq("id", id)
+      .maybeSingle();
+    const title =
+      (existing?.settings as any)?.title || existing?.name || "Untitled";
+    if (!existing?.slug) {
+      try {
+        const { data: slugData } = await supabase.rpc("generate_project_slug", {
+          _title: title,
+          _id: id,
+        });
+        if (typeof slugData === "string" && slugData.length > 0) slug = slugData;
+      } catch (e) {
+        console.warn("generate_project_slug failed", e);
+      }
+    } else {
+      slug = existing.slug;
+    }
+  }
   const patch = {
     is_public: isPublic,
     published_at: isPublic ? new Date().toISOString() : null,
     ...(isPublic && authorName ? { author_name: authorName.slice(0, 60) } : {}),
+    ...(isPublic && slug ? { slug } : {}),
   };
-  const { data, error } = await supabase.from("projects").update(patch as any).eq("id", id).select("id").maybeSingle();
+  const { data, error } = await supabase
+    .from("projects")
+    .update(patch as any)
+    .eq("id", id)
+    .select("id,slug")
+    .maybeSingle();
   if (error || !data) {
     console.error("setProjectPublic error", error);
-    return false;
+    return { ok: false };
   }
-  return true;
+  return { ok: true, slug: (data as any).slug ?? slug };
 }
 
 /**
@@ -173,11 +225,22 @@ export async function setProjectPublic(
 export async function publishProject(
   project: Project,
   authorName?: string,
-): Promise<boolean> {
+): Promise<{ ok: boolean; slug?: string | null }> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     console.error("publishProject: not signed in");
-    return false;
+    return { ok: false };
+  }
+  const title = project.settings?.title || project.name || "Untitled";
+  let slug: string | null = null;
+  try {
+    const { data: slugData } = await supabase.rpc("generate_project_slug", {
+      _title: title,
+      _id: project.id,
+    });
+    if (typeof slugData === "string" && slugData.length > 0) slug = slugData;
+  } catch (e) {
+    console.warn("generate_project_slug failed, falling back", e);
   }
   const payload = {
     id: project.id,
@@ -189,18 +252,19 @@ export async function publishProject(
     label_images: project.labelImages as any,
     is_public: true,
     published_at: new Date().toISOString(),
+    ...(slug ? { slug } : {}),
     ...(authorName ? { author_name: authorName.slice(0, 60) } : {}),
   };
   const { data, error } = await supabase
     .from("projects")
     .upsert(payload, { onConflict: "id" })
-    .select("id")
+    .select("id,slug")
     .maybeSingle();
   if (error || !data) {
     console.error("publishProject error", error);
-    return false;
+    return { ok: false };
   }
-  return true;
+  return { ok: true, slug: (data as any).slug ?? slug };
 }
 
 /** Public — fetch most recently published community projects. */

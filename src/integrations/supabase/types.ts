@@ -112,6 +112,7 @@ export type Database = {
           published_at: string | null
           settings: Json
           share_count: number
+          slug: string | null
           thumbnail_url: string | null
           type: string
           updated_at: string
@@ -135,6 +136,7 @@ export type Database = {
           published_at?: string | null
           settings?: Json
           share_count?: number
+          slug?: string | null
           thumbnail_url?: string | null
           type: string
           updated_at?: string
@@ -158,6 +160,7 @@ export type Database = {
           published_at?: string | null
           settings?: Json
           share_count?: number
+          slug?: string | null
           thumbnail_url?: string | null
           type?: string
           updated_at?: string
@@ -255,6 +258,10 @@ export type Database = {
           success: boolean
           tokens_remaining: number
         }[]
+      }
+      generate_project_slug: {
+        Args: { _id: string; _title: string }
+        Returns: string
       }
       generate_username: { Args: { _email: string }; Returns: string }
       get_profile_by_username: {
