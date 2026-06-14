@@ -139,13 +139,13 @@ const Projects = () => {
                 {project.isPublic && (
                   <>
                     <Link
-                      to={`/community/${project.id}`}
+                      to={`/community/${project.slug || project.id}`}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-xs font-semibold active:scale-95 transition-transform"
                     >
                       <Share2 className="w-3 h-3" /> Open share page
                     </Link>
                     <button
-                      onClick={() => handleCopyLink(project.id)}
+                      onClick={() => handleCopyLink(project)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-xs font-semibold active:scale-95 transition-transform"
                     >
                       {copiedId === project.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
