@@ -60,10 +60,25 @@ function draw(ctx: CanvasRenderingContext2D, t: number, w: number, h: number, pr
     ctx.fillText(formatValue(r.value, project.settings?.valueFormat), padX + 52 + bw, y + (rowH - 6) / 2);
   });
   ctx.fillStyle = TEXT;
-  ctx.font = "700 10px ui-sans-serif, system-ui";
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.fillText((project.settings?.title || project.name).slice(0, 28), padX, 6);
+  const fullTitle = project.settings?.title || project.name || "";
+  const yearW = 32;
+  const maxTitleW = w - padX * 2 - yearW;
+  let fontSize = 10;
+  ctx.font = `700 ${fontSize}px ui-sans-serif, system-ui`;
+  while (fontSize > 6 && ctx.measureText(fullTitle).width > maxTitleW) {
+    fontSize -= 0.5;
+    ctx.font = `700 ${fontSize}px ui-sans-serif, system-ui`;
+  }
+  let drawTitle = fullTitle;
+  if (ctx.measureText(drawTitle).width > maxTitleW) {
+    while (drawTitle.length > 1 && ctx.measureText(drawTitle + "…").width > maxTitleW) {
+      drawTitle = drawTitle.slice(0, -1);
+    }
+    drawTitle += "…";
+  }
+  ctx.fillText(drawTitle, padX, 6);
   ctx.textAlign = "right";
   ctx.fillStyle = "#7c5cfc";
   ctx.font = "800 12px ui-sans-serif, system-ui";
@@ -139,7 +154,7 @@ export function CommunityProjectCard({ project }: { project: Project }) {
 
   return (
     <Link
-      to={`/community/${project.id}`}
+      to={`/community/${project.slug || project.id}`}
       className="block bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/40 transition-colors"
     >
       <div ref={wrapRef} style={{ width: "100%", aspectRatio: "16 / 9", background: BG }} aria-hidden>
