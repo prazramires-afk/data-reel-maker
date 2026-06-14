@@ -189,7 +189,7 @@ const UserProfile = () => {
             {videos.map((v) => (
               <Link
                 key={v.id}
-                to={`/community/${v.id}`}
+                to={`/community/${v.slug || v.id}`}
                 className="bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/50 transition-colors"
               >
                 <div className="font-semibold text-foreground truncate">{v.name}</div>
