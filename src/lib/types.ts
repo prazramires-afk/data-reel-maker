@@ -61,6 +61,7 @@ export interface Project {
   isPublic?: boolean;
   publishedAt?: string | null;
   authorName?: string | null;
+  slug?: string | null;
 }
 
 export interface Template {
