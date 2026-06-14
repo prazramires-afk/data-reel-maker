@@ -1286,7 +1286,10 @@ const Create = () => {
                 </p>
                 {communityShareUrl && (
                   <button
-                    onClick={() => navigate(`/community/${projectId}`)}
+                    onClick={() => {
+                      const u = new URL(communityShareUrl);
+                      navigate(u.pathname);
+                    }}
                     className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-primary/15 text-primary text-sm font-semibold active:scale-95 transition-transform"
                   >
                     <Globe2 className="w-4 h-4" /> Open Community Video
