@@ -24,16 +24,16 @@ import { AuthorCard } from "@/components/article/AuthorCard";
 import { breadcrumbLd, datasetLd, faqLd, videoObjectLd } from "@/lib/seo/jsonLd";
 
 const CommunityProject = () => {
-  const navigate = useNavigate();
   const { id: param = "" } = useParams();
   if (isCategorySlug(param)) {
     const cat = getCategory(param)!;
     return <CommunityCategory category={cat} />;
   }
-  return <CommunityArticle param={param} navigate={navigate} />;
+  return <CommunityArticle param={param} />;
 };
 
-function CommunityArticle({ param, navigate }: { param: string; navigate: (to: string) => void }) {
+function CommunityArticle({ param }: { param: string }) {
+  const navigate = useNavigate();
   const [project, setProject] = useState<Project | null | undefined>(undefined);
   const [author, setAuthor] = useState<{ username: string; display_name: string | null; avatar_url: string | null } | null>(null);
   const [related, setRelated] = useState<Project[]>([]);
