@@ -277,6 +277,9 @@ export async function publishProject(
     console.error("publishProject error", error);
     return { ok: false };
   }
+  supabase.functions
+    .invoke("generate-video-seo", { body: { project_id: project.id } })
+    .catch((e) => console.warn("generate-video-seo invoke failed", e));
   return { ok: true, slug: (data as any).slug ?? slug };
 }
 
