@@ -6,6 +6,7 @@ import { getCommunityProjects } from "@/lib/storage";
 import { Seo } from "@/components/Seo";
 import { Footer } from "@/components/Footer";
 import { CommunityProjectCard } from "@/components/CommunityProjectCard";
+import { CATEGORIES } from "@/lib/seo/categories";
 
 const Community = () => {
   const navigate = useNavigate();
@@ -30,6 +31,13 @@ const Community = () => {
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-extrabold text-foreground">Community data videos</h1>
           <p className="text-muted-foreground mt-3 max-w-2xl">Real charts published by Data to Video creators. Open any one to preview, share, or remix it.</p>
+          <nav className="mt-5 flex flex-wrap gap-2" aria-label="Browse community categories">
+            {CATEGORIES.filter((c) => c.slug !== "other").map((c) => (
+              <Link key={c.slug} to={`/community/${c.slug}`} className="px-3 py-1.5 rounded-full text-xs font-semibold bg-secondary text-secondary-foreground border border-border hover:border-primary/40">
+                {c.name}
+              </Link>
+            ))}
+          </nav>
         </div>
 
         {projects === null ? (
@@ -48,7 +56,13 @@ const Community = () => {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {projects.map((p) => (
-              <CommunityProjectCard key={p.id} project={p} />
+              <Link key={p.id} to={`/community/${p.slug || p.id}`} className="block">
+                <CommunityProjectCard project={p} />
+                <p className="text-sm text-foreground font-semibold mt-2 line-clamp-1">
+                  {p.settings?.title || p.name}
+                </p>
+                {p.authorName ? <p className="text-xs text-muted-foreground">by {p.authorName}</p> : null}
+              </Link>
             ))}
           </div>
         )}
