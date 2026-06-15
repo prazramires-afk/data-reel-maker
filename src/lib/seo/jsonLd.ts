@@ -23,7 +23,7 @@ export function datasetLd(project: Project, url: string) {
   const labels = Array.from(new Set((project.data || []).map((r) => r.label)));
   const years = Array.from(new Set((project.data || []).map((r) => r.year))).sort();
   const fmt = project.settings?.valueFormat;
-  const unit = fmt?.unit || fmt?.suffix || fmt?.prefix || undefined;
+  const unit = fmt?.suffix || fmt?.prefix || fmt?.unitType || undefined;
   return {
     "@context": "https://schema.org",
     "@type": "Dataset",
