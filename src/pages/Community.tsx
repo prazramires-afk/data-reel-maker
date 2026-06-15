@@ -56,13 +56,7 @@ const Community = () => {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {projects.map((p) => (
-              <Link key={p.id} to={`/community/${p.slug || p.id}`} className="block">
-                <CommunityProjectCard project={p} />
-                <p className="text-sm text-foreground font-semibold mt-2 line-clamp-1">
-                  {p.settings?.title || p.name}
-                </p>
-                {p.authorName ? <p className="text-xs text-muted-foreground">by {p.authorName}</p> : null}
-              </Link>
+              <CommunityProjectCard key={p.id} project={p} />
             ))}
           </div>
         )}
