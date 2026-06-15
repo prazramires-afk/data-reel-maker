@@ -76,6 +76,14 @@ function rowToProject(r: any): Project {
     publishedAt: r.published_at ?? null,
     authorName: r.author_name ?? null,
     slug: r.slug ?? null,
+    userId: r.user_id ?? null,
+    category: r.category ?? null,
+    seoTitle: r.seo_title ?? null,
+    metaDescription: r.meta_description ?? null,
+    summary: r.summary ?? null,
+    insights: Array.isArray(r.insights) ? r.insights : null,
+    faqs: Array.isArray(r.faqs) ? r.faqs : null,
+    seoGeneratedAt: r.seo_generated_at ?? null,
   };
 }
 
