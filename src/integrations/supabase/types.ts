@@ -100,19 +100,26 @@ export type Database = {
           allow_embed: boolean
           allow_remix: boolean
           author_name: string | null
+          category: string | null
           created_at: string
           data: Json
           description: string | null
           download_count: number
+          faqs: Json | null
           id: string
+          insights: Json | null
           is_public: boolean
           label_images: Json
           like_count: number
+          meta_description: string | null
           name: string
           published_at: string | null
+          seo_generated_at: string | null
+          seo_title: string | null
           settings: Json
           share_count: number
           slug: string | null
+          summary: string | null
           thumbnail_url: string | null
           type: string
           updated_at: string
@@ -124,19 +131,26 @@ export type Database = {
           allow_embed?: boolean
           allow_remix?: boolean
           author_name?: string | null
+          category?: string | null
           created_at?: string
           data?: Json
           description?: string | null
           download_count?: number
+          faqs?: Json | null
           id?: string
+          insights?: Json | null
           is_public?: boolean
           label_images?: Json
           like_count?: number
+          meta_description?: string | null
           name?: string
           published_at?: string | null
+          seo_generated_at?: string | null
+          seo_title?: string | null
           settings?: Json
           share_count?: number
           slug?: string | null
+          summary?: string | null
           thumbnail_url?: string | null
           type: string
           updated_at?: string
@@ -148,19 +162,26 @@ export type Database = {
           allow_embed?: boolean
           allow_remix?: boolean
           author_name?: string | null
+          category?: string | null
           created_at?: string
           data?: Json
           description?: string | null
           download_count?: number
+          faqs?: Json | null
           id?: string
+          insights?: Json | null
           is_public?: boolean
           label_images?: Json
           like_count?: number
+          meta_description?: string | null
           name?: string
           published_at?: string | null
+          seo_generated_at?: string | null
+          seo_title?: string | null
           settings?: Json
           share_count?: number
           slug?: string | null
+          summary?: string | null
           thumbnail_url?: string | null
           type?: string
           updated_at?: string
