@@ -297,3 +297,65 @@ export async function getCommunityProjects(limit = 12): Promise<Project[]> {
   }
   return (data ?? []).map(rowToProject);
 }
+
+/** Public — fetch community projects filtered by category slug. */
+export async function getCommunityProjectsByCategory(
+  category: string,
+  limit = 48,
+): Promise<Project[]> {
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("is_public", true)
+    .eq("category", category)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error("getCommunityProjectsByCategory error", error);
+    return [];
+  }
+  return (data ?? []).map(rowToProject);
+}
+
+/** Public — related videos: same category, exclude current id. */
+export async function getRelatedCommunityProjects(
+  excludeId: string,
+  category: string | null | undefined,
+  limit = 6,
+): Promise<Project[]> {
+  let q = supabase
+    .from("projects")
+    .select("*")
+    .eq("is_public", true)
+    .neq("id", excludeId)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+  if (category) q = q.eq("category", category);
+  const { data, error } = await q;
+  if (error || !data) return [];
+  // If the category filter returned nothing, fall back to latest community.
+  if (data.length === 0 && category) {
+    const fb = await supabase
+      .from("projects")
+      .select("*")
+      .eq("is_public", true)
+      .neq("id", excludeId)
+      .order("published_at", { ascending: false })
+      .limit(limit);
+    return (fb.data ?? []).map(rowToProject);
+  }
+  return data.map(rowToProject);
+}
+
+/** Public — fetch a profile row (username, display_name, avatar_url) by auth user id. */
+export async function getProfileByUserId(
+  userId: string,
+): Promise<{ username: string; display_name: string | null; avatar_url: string | null } | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("username,display_name,avatar_url")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data as any;
+}
