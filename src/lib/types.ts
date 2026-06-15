@@ -62,6 +62,15 @@ export interface Project {
   publishedAt?: string | null;
   authorName?: string | null;
   slug?: string | null;
+  // SEO/content fields populated by the generate-video-seo edge function.
+  category?: string | null;
+  seoTitle?: string | null;
+  metaDescription?: string | null;
+  summary?: string | null;
+  insights?: string[] | null;
+  faqs?: { q: string; a: string }[] | null;
+  seoGeneratedAt?: string | null;
+  userId?: string | null;
 }
 
 export interface Template {
