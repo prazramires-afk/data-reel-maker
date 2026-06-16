@@ -84,6 +84,17 @@ function rowToProject(r: any): Project {
     insights: Array.isArray(r.insights) ? r.insights : null,
     faqs: Array.isArray(r.faqs) ? r.faqs : null,
     seoGeneratedAt: r.seo_generated_at ?? null,
+    tags: Array.isArray(r.tags) ? r.tags : [],
+    remixOf: r.remix_of ?? null,
+    hidden: r.hidden ?? false,
+    remixCount: r.remix_count ?? 0,
+    viewCount: r.view_count ?? 0,
+    likeCount: r.like_count ?? 0,
+    shareCount: r.share_count ?? 0,
+    downloadCount: r.download_count ?? 0,
+    description: r.description ?? null,
+    allowRemix: r.allow_remix ?? true,
+    allowDownload: r.allow_download ?? true,
   };
 }
 
