@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Copy, Check, Twitter, Facebook, MessageCircle, Send, Linkedin } from "lucide-react";
+import { ArrowLeft, Copy, Check, Twitter, Facebook, MessageCircle, Send, Linkedin, Eye, Download as DownloadIcon, Repeat2 } from "lucide-react";
 import { Project } from "@/lib/types";
 import {
   getCommunityProjectByParam,
   getProfileByUserId,
   getRelatedCommunityProjects,
 } from "@/lib/storage";
+import { recordProjectEvent } from "@/lib/profile";
 import { Seo } from "@/components/Seo";
 import { Footer } from "@/components/Footer";
 import { CommunityProjectCard } from "@/components/CommunityProjectCard";
@@ -22,6 +23,9 @@ import { RelatedVideos } from "@/components/article/RelatedVideos";
 import { RelatedDatasets } from "@/components/article/RelatedDatasets";
 import { AuthorCard } from "@/components/article/AuthorCard";
 import { breadcrumbLd, datasetLd, faqLd, videoObjectLd } from "@/lib/seo/jsonLd";
+import { LikeButton } from "@/components/community/LikeButton";
+import { RemixButton } from "@/components/community/RemixButton";
+import { TagChips } from "@/components/community/TagChips";
 
 const CommunityProject = () => {
   const { id: param = "" } = useParams();
@@ -55,6 +59,7 @@ function CommunityArticle({ param }: { param: string }) {
     if (!project) return;
     if (project.userId) getProfileByUserId(project.userId).then(setAuthor);
     getRelatedCommunityProjects(project.id, project.category, 6).then(setRelated);
+    recordProjectEvent(project.id, "view");
   }, [project]);
 
   if (project === undefined) {
@@ -137,6 +142,36 @@ function CommunityArticle({ param }: { param: string }) {
         <div className="mt-5">
           <CommunityProjectCard project={project} />
         </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <LikeButton projectId={project.id} initialCount={project.likeCount ?? 0} />
+          {project.allowRemix !== false && (
+            <RemixButton projectId={project.id} />
+          )}
+          <div className="flex items-center gap-3 text-xs text-muted-foreground ml-1">
+            <span className="inline-flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> {(project.viewCount ?? 0).toLocaleString()} views</span>
+            <span className="inline-flex items-center gap-1"><DownloadIcon className="w-3.5 h-3.5" /> {(project.downloadCount ?? 0).toLocaleString()}</span>
+            {(project.remixCount ?? 0) > 0 && (
+              <span className="inline-flex items-center gap-1"><Repeat2 className="w-3.5 h-3.5" /> {project.remixCount}</span>
+            )}
+          </div>
+        </div>
+
+        {project.remixOf && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Inspired by <Link to={`/community/${project.remixOf}`} className="text-primary font-semibold">the original video</Link>
+          </p>
+        )}
+
+        {project.tags && project.tags.length > 0 && (
+          <div className="mt-4">
+            <TagChips tags={project.tags} max={10} />
+          </div>
+        )}
+
+        {project.description && (
+          <p className="mt-5 text-foreground/90 whitespace-pre-line">{project.description}</p>
+        )}
 
         <div className="mt-5 bg-card rounded-2xl p-4 border border-border">
           <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-2">Share</p>

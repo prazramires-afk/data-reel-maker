@@ -67,7 +67,7 @@ for (const c of CATEGORIES) {
   entries.push({ path: `/community/${c.slug}`, changefreq: "weekly", priority: "0.7", lastmod: today });
 }
 
-async function fetchPublicProjects(): Promise<{ slug: string; published_at: string | null }[]> {
+async function fetchPublicProjects(): Promise<{ slug: string; published_at: string | null; tags: string[] }[]> {
   const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
   const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
   if (!url || !key) {
@@ -75,15 +75,15 @@ async function fetchPublicProjects(): Promise<{ slug: string; published_at: stri
     return [];
   }
   try {
-    const r = await fetch(`${url}/rest/v1/projects?is_public=eq.true&select=slug,id,published_at&order=published_at.desc&limit=5000`, {
+    const r = await fetch(`${url}/rest/v1/projects?is_public=eq.true&hidden=eq.false&select=slug,id,published_at,tags&order=published_at.desc&limit=5000`, {
       headers: { apikey: key, Authorization: `Bearer ${key}` },
     });
     if (!r.ok) {
       console.warn("sitemap: fetch projects failed", r.status);
       return [];
     }
-    const rows = (await r.json()) as { slug: string | null; id: string; published_at: string | null }[];
-    return rows.map((x) => ({ slug: x.slug || x.id, published_at: x.published_at }));
+    const rows = (await r.json()) as { slug: string | null; id: string; published_at: string | null; tags: string[] | null }[];
+    return rows.map((x) => ({ slug: x.slug || x.id, published_at: x.published_at, tags: x.tags || [] }));
   } catch (e) {
     console.warn("sitemap: error fetching projects", e);
     return [];
@@ -91,12 +91,43 @@ async function fetchPublicProjects(): Promise<{ slug: string; published_at: stri
 }
 
 const publicProjects = await fetchPublicProjects();
+const tagSet = new Set<string>();
 for (const p of publicProjects) {
   entries.push({
     path: `/community/${p.slug}`,
     changefreq: "weekly",
     priority: "0.6",
     lastmod: p.published_at ? p.published_at.split("T")[0] : today,
+  });
+  for (const t of p.tags) tagSet.add(t);
+}
+for (const t of tagSet) {
+  entries.push({ path: `/tag/${t}`, changefreq: "weekly", priority: "0.5", lastmod: today });
+}
+
+async function fetchPublicCollections(): Promise<{ username: string; slug: string; updated_at: string }[]> {
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) return [];
+  try {
+    const r = await fetch(`${url}/rest/v1/collections?is_public=eq.true&select=slug,updated_at,profiles!collections_user_id_fkey(username)&limit=2000`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+    if (!r.ok) return [];
+    const rows = (await r.json()) as { slug: string; updated_at: string; profiles: { username: string } | null }[];
+    return rows
+      .filter((x) => x.profiles?.username)
+      .map((x) => ({ username: x.profiles!.username, slug: x.slug, updated_at: x.updated_at }));
+  } catch { return []; }
+}
+
+const publicCollections = await fetchPublicCollections();
+for (const c of publicCollections) {
+  entries.push({
+    path: `/u/${c.username}/c/${c.slug}`,
+    changefreq: "weekly",
+    priority: "0.5",
+    lastmod: c.updated_at ? c.updated_at.split("T")[0] : today,
   });
 }
 
