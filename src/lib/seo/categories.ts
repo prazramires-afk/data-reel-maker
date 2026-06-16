@@ -4,6 +4,10 @@ export type CommunityCategory =
   | "population"
   | "sports"
   | "technology"
+  | "history"
+  | "education"
+  | "politics"
+  | "business"
   | "entertainment"
   | "other";
 
@@ -69,6 +73,38 @@ export const CATEGORIES: CategoryMeta[] = [
       "Box office, streaming, music charts and entertainment industry rankings as animated bar chart races.",
     intro:
       "Box office, streaming, music charts and entertainment rankings — animated for short-form video.",
+  },
+  {
+    slug: "history",
+    name: "History",
+    title: "History Data Videos — Empires, Events & Timelines",
+    description:
+      "Historical rankings, empire timelines, wars and centuries of data visualized as animated charts.",
+    intro: "Empires, wars, eras and centuries of human history — animated as data videos.",
+  },
+  {
+    slug: "education",
+    name: "Education",
+    title: "Education Data Videos — Schools, Literacy & Rankings",
+    description:
+      "Education statistics: literacy, schools, university rankings and enrollment animated as data videos.",
+    intro: "Education data: literacy, university rankings, school enrollment and learning outcomes.",
+  },
+  {
+    slug: "politics",
+    name: "Politics",
+    title: "Politics Data Videos — Elections, Polls & Power",
+    description:
+      "Elections, polls, leadership and political rankings visualized as animated charts.",
+    intro: "Elections, polls, leadership tenures and political rankings across time.",
+  },
+  {
+    slug: "business",
+    name: "Business",
+    title: "Business Data Videos — Companies, Brands & Industry",
+    description:
+      "Company revenues, brand value, market share and industry rankings as animated comparisons.",
+    intro: "Companies, brands, market share and industry rankings rendered as short-form data videos.",
   },
   {
     slug: "other",

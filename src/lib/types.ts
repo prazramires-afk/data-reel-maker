@@ -71,6 +71,18 @@ export interface Project {
   faqs?: { q: string; a: string }[] | null;
   seoGeneratedAt?: string | null;
   userId?: string | null;
+  // Community: tags, remix lineage, moderation, counters
+  tags?: string[] | null;
+  remixOf?: string | null;
+  hidden?: boolean | null;
+  remixCount?: number | null;
+  viewCount?: number | null;
+  likeCount?: number | null;
+  shareCount?: number | null;
+  downloadCount?: number | null;
+  description?: string | null;
+  allowRemix?: boolean | null;
+  allowDownload?: boolean | null;
 }
 
 export interface Template {
