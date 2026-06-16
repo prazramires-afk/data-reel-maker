@@ -14,6 +14,86 @@ export type Database = {
   }
   public: {
     Tables: {
+      collection_items: {
+        Row: {
+          collection_id: string
+          created_at: string
+          position: number
+          project_id: string
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string
+          position?: number
+          project_id: string
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string
+          position?: number
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_items_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collections: {
+        Row: {
+          cover_project_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          name: string
+          slug: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cover_project_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name: string
+          slug: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cover_project_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name?: string
+          slug?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collections_cover_project_id_fkey"
+            columns: ["cover_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -94,6 +174,32 @@ export type Database = {
           },
         ]
       }
+      project_likes: {
+        Row: {
+          created_at: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_likes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           allow_download: boolean
@@ -106,6 +212,7 @@ export type Database = {
           description: string | null
           download_count: number
           faqs: Json | null
+          hidden: boolean
           id: string
           insights: Json | null
           is_public: boolean
@@ -114,12 +221,15 @@ export type Database = {
           meta_description: string | null
           name: string
           published_at: string | null
+          remix_count: number
+          remix_of: string | null
           seo_generated_at: string | null
           seo_title: string | null
           settings: Json
           share_count: number
           slug: string | null
           summary: string | null
+          tags: string[]
           thumbnail_url: string | null
           type: string
           updated_at: string
@@ -137,6 +247,7 @@ export type Database = {
           description?: string | null
           download_count?: number
           faqs?: Json | null
+          hidden?: boolean
           id?: string
           insights?: Json | null
           is_public?: boolean
@@ -145,12 +256,15 @@ export type Database = {
           meta_description?: string | null
           name?: string
           published_at?: string | null
+          remix_count?: number
+          remix_of?: string | null
           seo_generated_at?: string | null
           seo_title?: string | null
           settings?: Json
           share_count?: number
           slug?: string | null
           summary?: string | null
+          tags?: string[]
           thumbnail_url?: string | null
           type: string
           updated_at?: string
@@ -168,6 +282,7 @@ export type Database = {
           description?: string | null
           download_count?: number
           faqs?: Json | null
+          hidden?: boolean
           id?: string
           insights?: Json | null
           is_public?: boolean
@@ -176,19 +291,30 @@ export type Database = {
           meta_description?: string | null
           name?: string
           published_at?: string | null
+          remix_count?: number
+          remix_of?: string | null
           seo_generated_at?: string | null
           seo_title?: string | null
           settings?: Json
           share_count?: number
           slug?: string | null
           summary?: string | null
+          tags?: string[]
           thumbnail_url?: string | null
           type?: string
           updated_at?: string
           user_id?: string
           view_count?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_remix_of_fkey"
+            columns: ["remix_of"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_credits: {
         Row: {
@@ -285,6 +411,22 @@ export type Database = {
         Returns: string
       }
       generate_username: { Args: { _email: string }; Returns: string }
+      get_collection_by_slug: {
+        Args: { _slug: string; _username: string }
+        Returns: {
+          cover_project_id: string
+          created_at: string
+          description: string
+          id: string
+          is_public: boolean
+          name: string
+          owner_display_name: string
+          owner_username: string
+          slug: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       get_profile_by_username: {
         Args: { _username: string }
         Returns: {
@@ -304,6 +446,50 @@ export type Database = {
           youtube_url: string
         }[]
       }
+      get_trending: {
+        Args: { _limit?: number; _window?: string }
+        Returns: {
+          allow_download: boolean
+          allow_embed: boolean
+          allow_remix: boolean
+          author_name: string | null
+          category: string | null
+          created_at: string
+          data: Json
+          description: string | null
+          download_count: number
+          faqs: Json | null
+          hidden: boolean
+          id: string
+          insights: Json | null
+          is_public: boolean
+          label_images: Json
+          like_count: number
+          meta_description: string | null
+          name: string
+          published_at: string | null
+          remix_count: number
+          remix_of: string | null
+          seo_generated_at: string | null
+          seo_title: string | null
+          settings: Json
+          share_count: number
+          slug: string | null
+          summary: string | null
+          tags: string[]
+          thumbnail_url: string | null
+          type: string
+          updated_at: string
+          user_id: string
+          view_count: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "projects"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -312,6 +498,19 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      list_user_collections: {
+        Args: { _username: string }
+        Returns: {
+          cover_project_id: string
+          description: string
+          id: string
+          is_public: boolean
+          item_count: number
+          name: string
+          slug: string
+          updated_at: string
+        }[]
+      }
       record_project_event: {
         Args: {
           _event_type: string
@@ -321,6 +520,61 @@ export type Database = {
         }
         Returns: undefined
       }
+      remix_project: { Args: { _source_id: string }; Returns: string }
+      search_community: {
+        Args: {
+          _category?: string
+          _limit?: number
+          _offset?: number
+          _q?: string
+          _sort?: string
+          _tag?: string
+          _window?: string
+        }
+        Returns: {
+          allow_download: boolean
+          allow_embed: boolean
+          allow_remix: boolean
+          author_name: string | null
+          category: string | null
+          created_at: string
+          data: Json
+          description: string | null
+          download_count: number
+          faqs: Json | null
+          hidden: boolean
+          id: string
+          insights: Json | null
+          is_public: boolean
+          label_images: Json
+          like_count: number
+          meta_description: string | null
+          name: string
+          published_at: string | null
+          remix_count: number
+          remix_of: string | null
+          seo_generated_at: string | null
+          seo_title: string | null
+          settings: Json
+          share_count: number
+          slug: string | null
+          summary: string | null
+          tags: string[]
+          thumbnail_url: string | null
+          type: string
+          updated_at: string
+          user_id: string
+          view_count: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "projects"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      slugify_token: { Args: { _s: string }; Returns: string }
+      toggle_project_like: { Args: { _project_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"

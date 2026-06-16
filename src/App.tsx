@@ -31,6 +31,10 @@ const DashboardProfile = lazy(() => import("./pages/DashboardProfile"));
 const DashboardComingSoon = lazy(() => import("./pages/DashboardComingSoon"));
 const DashboardLayout = lazy(() => import("./components/DashboardLayout"));
 const UserProfile = lazy(() => import("./pages/UserProfile"));
+const TagPage = lazy(() => import("./pages/TagPage"));
+const CollectionPage = lazy(() => import("./pages/CollectionPage"));
+const DashboardVideos = lazy(() => import("./pages/DashboardVideos"));
+const DashboardCollections = lazy(() => import("./pages/DashboardCollections"));
 import { AuthProvider } from "./hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -62,14 +66,14 @@ const App = () => (
           <Route path="/tools/:slug" element={<ToolPage />} />
           <Route path="/community" element={<Community />} />
           <Route path="/community/:id" element={<CommunityProject />} />
+          <Route path="/tag/:slug" element={<TagPage />} />
           <Route path="/u/:username" element={<UserProfile />} />
+          <Route path="/u/:username/c/:slug" element={<CollectionPage />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="profile" element={<DashboardProfile />} />
-            <Route
-              path="videos"
-              element={<DashboardComingSoon title="My Videos" description="All your videos, in one place." path="/dashboard/videos" />}
-            />
+            <Route path="videos" element={<DashboardVideos />} />
+            <Route path="collections" element={<DashboardCollections />} />
             <Route
               path="drafts"
               element={<DashboardComingSoon title="Drafts" description="Unfinished projects you can return to." path="/dashboard/drafts" />}

@@ -84,6 +84,17 @@ function rowToProject(r: any): Project {
     insights: Array.isArray(r.insights) ? r.insights : null,
     faqs: Array.isArray(r.faqs) ? r.faqs : null,
     seoGeneratedAt: r.seo_generated_at ?? null,
+    tags: Array.isArray(r.tags) ? r.tags : [],
+    remixOf: r.remix_of ?? null,
+    hidden: r.hidden ?? false,
+    remixCount: r.remix_count ?? 0,
+    viewCount: r.view_count ?? 0,
+    likeCount: r.like_count ?? 0,
+    shareCount: r.share_count ?? 0,
+    downloadCount: r.download_count ?? 0,
+    description: r.description ?? null,
+    allowRemix: r.allow_remix ?? true,
+    allowDownload: r.allow_download ?? true,
   };
 }
 
@@ -350,4 +361,210 @@ export async function getProfileByUserId(
     .maybeSingle();
   if (error || !data) return null;
   return data as any;
+}
+
+// ============================================================
+// Community: search, trending, tags, likes, remix, collections
+// ============================================================
+
+export type CommunitySort = "latest" | "trending" | "views" | "likes" | "remixed" | "downloads";
+export type CommunityWindow = "24h" | "7d" | "30d" | "all";
+
+export interface CommunityQuery {
+  q?: string;
+  tag?: string;
+  category?: string;
+  sort?: CommunitySort;
+  window?: CommunityWindow;
+  limit?: number;
+  offset?: number;
+}
+
+export async function searchCommunity(params: CommunityQuery = {}): Promise<Project[]> {
+  const { data, error } = await (supabase as any).rpc("search_community", {
+    _q: params.q ?? null,
+    _tag: params.tag ?? null,
+    _category: params.category ?? null,
+    _sort: params.sort ?? "latest",
+    _window: params.window ?? "all",
+    _limit: params.limit ?? 24,
+    _offset: params.offset ?? 0,
+  });
+  if (error) { console.error("searchCommunity", error); return []; }
+  return (data ?? []).map(rowToProject);
+}
+
+export async function getTrendingProjects(window: CommunityWindow = "7d", limit = 12): Promise<Project[]> {
+  const { data, error } = await (supabase as any).rpc("get_trending", { _window: window, _limit: limit });
+  if (error) { console.error("getTrending", error); return []; }
+  return (data ?? []).map(rowToProject);
+}
+
+export async function toggleProjectLike(projectId: string): Promise<boolean | null> {
+  const { data, error } = await (supabase as any).rpc("toggle_project_like", { _project_id: projectId });
+  if (error) { console.error("toggleProjectLike", error); return null; }
+  return data === true;
+}
+
+export async function hasLikedProject(projectId: string): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+  const { data } = await supabase
+    .from("project_likes")
+    .select("project_id")
+    .eq("project_id", projectId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  return !!data;
+}
+
+export async function remixProject(sourceId: string): Promise<string | null> {
+  const { data, error } = await (supabase as any).rpc("remix_project", { _source_id: sourceId });
+  if (error) { console.error("remixProject", error); return null; }
+  return data as string;
+}
+
+export async function updateProjectMetadata(
+  id: string,
+  patch: {
+    description?: string | null;
+    tags?: string[] | null;
+    category?: string | null;
+    allowRemix?: boolean;
+    allowDownload?: boolean;
+    hidden?: boolean;
+    isPublic?: boolean;
+    title?: string;
+  },
+): Promise<boolean> {
+  const row: any = {};
+  if (patch.description !== undefined) row.description = patch.description;
+  if (patch.tags !== undefined) row.tags = patch.tags ?? [];
+  if (patch.category !== undefined) row.category = patch.category;
+  if (patch.allowRemix !== undefined) row.allow_remix = patch.allowRemix;
+  if (patch.allowDownload !== undefined) row.allow_download = patch.allowDownload;
+  if (patch.hidden !== undefined) row.hidden = patch.hidden;
+  if (patch.isPublic !== undefined) {
+    row.is_public = patch.isPublic;
+    if (patch.isPublic) row.published_at = new Date().toISOString();
+  }
+  if (patch.title !== undefined) {
+    const { data: cur } = await supabase.from("projects").select("settings,name").eq("id", id).maybeSingle();
+    const settings = { ...((cur?.settings as any) ?? {}), title: patch.title };
+    row.settings = settings;
+    if (!cur?.name || cur.name === "Untitled") row.name = patch.title;
+  }
+  const { error } = await supabase.from("projects").update(row).eq("id", id);
+  if (error) { console.error("updateProjectMetadata", error); return false; }
+  return true;
+}
+
+// Collections
+export interface CollectionSummary {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  is_public: boolean;
+  cover_project_id: string | null;
+  item_count: number;
+  updated_at: string;
+}
+
+export interface CollectionDetail extends CollectionSummary {
+  user_id: string;
+  owner_username: string;
+  owner_display_name: string | null;
+  created_at: string;
+}
+
+function slugifyTitle(s: string): string {
+  return s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/(^-+|-+$)/g, "").slice(0, 60) || "collection";
+}
+
+export async function listMyCollections(): Promise<CollectionSummary[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from("collections")
+    .select("id,slug,name,description,is_public,cover_project_id,updated_at,collection_items(count)")
+    .eq("user_id", user.id)
+    .order("updated_at", { ascending: false });
+  if (error) return [];
+  return (data ?? []).map((r: any) => ({
+    id: r.id, slug: r.slug, name: r.name, description: r.description,
+    is_public: r.is_public, cover_project_id: r.cover_project_id,
+    item_count: Number(r.collection_items?.[0]?.count ?? 0), updated_at: r.updated_at,
+  }));
+}
+
+export async function listUserCollections(username: string): Promise<CollectionSummary[]> {
+  const { data, error } = await (supabase as any).rpc("list_user_collections", { _username: username.toLowerCase() });
+  if (error) return [];
+  return (data ?? []).map((r: any) => ({
+    id: r.id, slug: r.slug, name: r.name, description: r.description,
+    is_public: r.is_public, cover_project_id: r.cover_project_id,
+    item_count: Number(r.item_count ?? 0), updated_at: r.updated_at,
+  }));
+}
+
+export async function getCollectionBySlug(username: string, slug: string): Promise<{ collection: CollectionDetail; items: Project[] } | null> {
+  const { data, error } = await (supabase as any).rpc("get_collection_by_slug", {
+    _username: username.toLowerCase(), _slug: slug,
+  });
+  if (error) return null;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null;
+  const detail: CollectionDetail = {
+    id: row.id, user_id: row.user_id, slug: row.slug, name: row.name, description: row.description,
+    is_public: row.is_public, cover_project_id: row.cover_project_id, item_count: 0,
+    created_at: row.created_at, updated_at: row.updated_at,
+    owner_username: row.owner_username, owner_display_name: row.owner_display_name,
+  };
+  const { data: items } = await supabase
+    .from("collection_items")
+    .select("position,projects(*)")
+    .eq("collection_id", detail.id)
+    .order("position", { ascending: true });
+  const projects = (items ?? [])
+    .map((r: any) => r.projects)
+    .filter((p: any) => p && p.is_public && !p.hidden)
+    .map(rowToProject);
+  detail.item_count = projects.length;
+  return { collection: detail, items: projects };
+}
+
+export async function createCollection(name: string, isPublic = true): Promise<string | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const base = slugifyTitle(name);
+  for (let i = 0; i < 5; i++) {
+    const probe = i === 0 ? base : `${base}-${Math.floor(Math.random() * 9999)}`;
+    const { error } = await supabase.from("collections").insert({
+      user_id: user.id, slug: probe, name: name.slice(0, 80), is_public: isPublic,
+    });
+    if (!error) return probe;
+    if (!String(error.message).includes("duplicate")) { console.error(error); return null; }
+  }
+  return null;
+}
+
+export async function deleteCollection(id: string): Promise<boolean> {
+  const { error } = await supabase.from("collections").delete().eq("id", id);
+  return !error;
+}
+
+export async function setCollectionVisibility(id: string, isPublic: boolean): Promise<boolean> {
+  const { error } = await supabase.from("collections").update({ is_public: isPublic }).eq("id", id);
+  return !error;
+}
+
+export async function addToCollection(collectionId: string, projectId: string): Promise<boolean> {
+  const { error } = await supabase.from("collection_items").insert({ collection_id: collectionId, project_id: projectId });
+  return !error;
+}
+
+export async function removeFromCollection(collectionId: string, projectId: string): Promise<boolean> {
+  const { error } = await supabase.from("collection_items").delete().eq("collection_id", collectionId).eq("project_id", projectId);
+  return !error;
 }

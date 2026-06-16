@@ -9,6 +9,7 @@ import {
   Settings,
   LogOut,
   ArrowLeft,
+  FolderHeart,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
@@ -16,6 +17,7 @@ import { useEffect } from "react";
 const navItems = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard, end: true },
   { to: "/dashboard/videos", label: "My Videos", icon: Video },
+  { to: "/dashboard/collections", label: "Collections", icon: FolderHeart },
   { to: "/dashboard/drafts", label: "Drafts", icon: FileText },
   { to: "/dashboard/published", label: "Published", icon: Globe },
   { to: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },

@@ -18,12 +18,14 @@ import { getPublicProfileByUsername, PublicProfile } from "@/lib/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { copyToClipboard } from "@/lib/share";
 import { toast } from "@/hooks/use-toast";
+import { CollectionSummary, listUserCollections } from "@/lib/storage";
 
 interface PublicVideo {
   id: string;
   name: string;
   description: string | null;
   view_count: number;
+  like_count: number;
   published_at: string;
   slug: string | null;
 }
@@ -36,6 +38,8 @@ const UserProfile = () => {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [videos, setVideos] = useState<PublicVideo[]>([]);
+  const [collections, setCollections] = useState<CollectionSummary[]>([]);
+  const [tab, setTab] = useState<"latest" | "viewed" | "liked">("latest");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -46,11 +50,13 @@ const UserProfile = () => {
       if (p) {
         const { data } = await supabase
           .from("projects")
-          .select("id,name,description,view_count,published_at,slug")
+          .select("id,name,description,view_count,like_count,published_at,slug")
           .eq("user_id", p.id)
           .eq("is_public", true)
+          .eq("hidden", false)
           .order("published_at", { ascending: false });
         setVideos((data ?? []) as PublicVideo[]);
+        listUserCollections(p.username).then(setCollections);
       }
       setLoading(false);
     });
@@ -179,14 +185,27 @@ const UserProfile = () => {
 
       {/* Videos */}
       <section>
-        <h2 className="text-lg font-semibold text-foreground mb-3">Videos</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-foreground">Videos</h2>
+          <div className="flex gap-1">
+            {(["latest", "viewed", "liked"] as const).map((k) => (
+              <button key={k} onClick={() => setTab(k)} className={"px-2.5 py-1 rounded-md text-xs font-semibold " + (tab === k ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-secondary")}>
+                {k === "latest" ? "Latest" : k === "viewed" ? "Most viewed" : "Most liked"}
+              </button>
+            ))}
+          </div>
+        </div>
         {videos.length === 0 ? (
           <div className="bg-card rounded-2xl p-8 text-center border border-border/50 text-muted-foreground text-sm">
             No public videos yet.
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 gap-3">
-            {videos.map((v) => (
+            {[...videos].sort((a, b) => {
+              if (tab === "viewed") return (b.view_count || 0) - (a.view_count || 0);
+              if (tab === "liked") return (b.like_count || 0) - (a.like_count || 0);
+              return +new Date(b.published_at) - +new Date(a.published_at);
+            }).map((v) => (
               <Link
                 key={v.id}
                 to={`/community/${v.slug || v.id}`}
@@ -198,6 +217,7 @@ const UserProfile = () => {
                 )}
                 <div className="flex items-center gap-3 text-xs text-muted-foreground mt-3">
                   <span className="inline-flex items-center gap-1"><Eye className="w-3 h-3" /> {(v.view_count || 0).toLocaleString()}</span>
+                  <span className="inline-flex items-center gap-1"><Heart className="w-3 h-3" /> {(v.like_count || 0).toLocaleString()}</span>
                   <span>·</span>
                   <span>{new Date(v.published_at).toLocaleDateString()}</span>
                 </div>
@@ -206,6 +226,20 @@ const UserProfile = () => {
           </div>
         )}
       </section>
+
+      {collections.length > 0 && (
+        <section className="mt-8">
+          <h2 className="text-lg font-semibold text-foreground mb-3">Collections</h2>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {collections.map((c) => (
+              <Link key={c.id} to={`/u/${profile.username}/c/${c.slug}`} className="bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/50 transition-colors">
+                <div className="font-semibold text-foreground truncate">{c.name}</div>
+                <div className="text-xs text-muted-foreground mt-1">{c.item_count} item{c.item_count === 1 ? "" : "s"}</div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 };
