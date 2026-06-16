@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Copy, Check, Twitter, Facebook, MessageCircle, Send, Linkedin, Sparkles } from "lucide-react";
+import { ArrowLeft, Copy, Check, Twitter, Facebook, MessageCircle, Send, Linkedin } from "lucide-react";
 import { Project } from "@/lib/types";
 import {
   getCommunityProjectByParam,
@@ -105,8 +105,6 @@ function CommunityArticle({ param }: { param: string }) {
 
   const labels = Array.from(new Set((project.data || []).map((r) => r.label)));
   const relatedKeywords = [title, ...labels.slice(0, 6)];
-  const isPending = !project.seoGeneratedAt;
-
   return (
     <div className="min-h-screen flex flex-col">
       <Seo title={seoTitle} description={metaDesc} path={`/community/${slugOrId}`} jsonLd={jsonLd} />
@@ -169,16 +167,6 @@ function CommunityArticle({ param }: { param: string }) {
             <h2 className="text-xl font-bold text-foreground mb-3">About this video</h2>
             <div className="prose prose-invert max-w-none text-muted-foreground leading-relaxed whitespace-pre-line text-[15px]">
               {project.summary}
-            </div>
-          </section>
-        ) : isPending ? (
-          <section className="mt-8 bg-card border border-border rounded-2xl p-5 flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-            <div>
-              <p className="text-foreground font-semibold">AI summary on the way</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                We're writing an article-style summary, key insights and FAQs for this video. Refresh in a minute.
-              </p>
             </div>
           </section>
         ) : null}
