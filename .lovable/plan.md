@@ -1,117 +1,84 @@
-# Community Videos → SEO Content Pages
+## Goal
 
-Make every public video rank like an article: crawlable HTML, AI-written narrative grounded in the actual dataset, structured data, internal linking, and topic/category pages.
+Turn Data to Video into a community platform: discovery, search, tags, categories, likes, remixes, downloads, collections, trending — all SEO-friendly, zero AI APIs.
 
-## Scope decisions (please confirm)
+## Scope decisions (please confirm or adjust)
 
-A few choices change the size of this work. I'll proceed with the defaults below unless you say otherwise.
+1. **URL strategy** — Keep `/community/:slug` for individual videos (already live, already indexed, slug-based). Add new sibling routes:
+   - `/community` — discovery hub (rebuild)
+   - `/community/category/:slug` — category pages (move off bare `/community/:slug` to avoid collision with video slugs that happen to match a category name)
+   - `/tag/:slug` — tag pages
+   - `/collections/:slug` — collection pages
+   - `/u/:username` — already exists, extend it
+2. **Tags source** — Tags are auto-derived from each video's data labels + title keywords (no AI, pure string processing) on publish. Users can edit them later from the dashboard. Alternative: fully manual tag entry only.
+3. **Remix** — Clones the project (data, settings, title prefixed "Remix of …") into the current user's account with an `inspired_by` FK back to the original. Requires sign-in.
+4. **Trending score** — `views + 3*likes + 5*remixes + 2*downloads`, decayed by `1 / (hours_since_publish + 2)^1.5`. Computed on read (SQL), no cron.
+5. **Collections** — User-owned, can be public or private. Many-to-many with projects.
+6. **Moderation** — Hide / unpublish / delete / edit metadata all from the existing dashboard. Public profile only lists `is_public AND NOT hidden`.
 
-1. **URL strategy.** `/watch/:slug` already powers the existing SEO landing pages (`watchPages.ts`). Keeping two `/watch` systems will collide. Default: keep community videos on `/community/:slug` (already slugified last turn) and upgrade that page into the rich article. If you prefer the literal `/watch/:slug` for community, I'll namespace the existing pages to `/explore/:slug`.
+## Database migration
 
-2. **AI generation cost model.** Default: generate once on publish and cache in DB (cheap, indexable immediately, no per-view cost). Alternative: generate on first view. Pre-generation is recommended for SEO so Googlebot sees the text on the very first crawl.
+New columns on `projects`:
+- `tags text[]` (gin-indexed)
+- `remix_of uuid REFERENCES projects(id)` (nullable, ON DELETE SET NULL)
+- `hidden boolean NOT NULL DEFAULT false`
+- `remix_count int NOT NULL DEFAULT 0`
+- `description text` (user-editable, also used in OG/Helmet)
 
-3. **Categories.** Default: a fixed taxonomy (`economy`, `finance`, `population`, `sports`, `technology`, `entertainment`, `other`) auto-assigned by AI on publish, with a manual override in the publish dialog. Alternative: free-form tags only.
+New tables (all with GRANTs + RLS):
+- `project_likes(user_id, project_id, created_at)` — unique pair; increments/decrements `projects.like_count` via trigger.
+- `collections(id, user_id, slug, name, description, is_public, cover_project_id, created_at, updated_at)` — unique `(user_id, slug)`.
+- `collection_items(collection_id, project_id, position, created_at)` — unique pair.
 
-4. **Pre-rendering.** Default: client-rendered with `react-helmet-async` + JSON-LD (Googlebot executes JS; LinkedIn/Slack/Facebook do not). True per-page social previews need SSR/static prerender, which is a separate, bigger lift. I'll flag this honestly in copy and keep social fallback meta in `index.html`.
+New RPCs:
+- `toggle_project_like(_project_id uuid) returns boolean` — insert/delete + counter update, returns new liked state.
+- `remix_project(_source_id uuid) returns uuid` — copies row to current user, sets `remix_of`, increments source `remix_count`, returns new project id.
+- `search_community(_q text, _tag text, _category text, _sort text, _window text, _limit int, _offset int) returns setof projects` — single endpoint powering /community filters/search/tag/category.
+- `get_trending(_window text, _limit int) returns setof projects` — score formula above, filters by `published_at` window.
+- `get_collection_by_slug(_username text, _slug text) returns table(...)` and `list_user_collections(_username text)`.
 
-## What every community video page will contain
+Tag derivation:
+- `derive_project_tags(_id uuid) returns void` — trigger on insert/update: slugify each `data.label` + significant title tokens, store unique array (max 12).
 
-`/community/:slug` becomes a long-form article with this structure, in order:
+Storage GRANTs follow the standard public-readable-when-published pattern; likes/collections require `auth.uid()`.
 
-1. Breadcrumb (Home › Community › Category › Title)
-2. H1 = video title
-3. Animated canvas player (existing component) + Share controls
-4. **Crawlable dataset table** rendered as real `<table>` HTML (not canvas) with caption, units, source
-5. AI summary (2–3 paragraphs introducing the topic and the dataset)
-6. Key insights (3–6 bullets grounded in real values — top mover, leader, gap, trend)
-7. FAQ accordion (5 topic-specific Q&As)
-8. Author card linking to `/u/:username`
-9. Related videos (same category, by view count)
-10. Related datasets (from existing `datasets.ts` matched by keywords)
-11. "Create your own" CTA → `/create`
+## Frontend
 
-Every section is server-friendly markup — no data hidden inside the canvas.
+New routes (all lazy-loaded in `src/App.tsx`):
+- Rebuild `src/pages/Community.tsx` — search input, sort tabs (Trending/Latest/Most Viewed/Most Liked/Most Remixed), time window chips (24h/7d/30d/All), category nav, infinite-scroll grid.
+- `src/pages/CommunityCategory.tsx` — already exists, repath to `/community/category/:slug` and update internal links.
+- `src/pages/TagPage.tsx` — `/tag/:slug`, indexable, CollectionPage JSON-LD.
+- `src/pages/CollectionPage.tsx` — `/collections/:slug` (resolve by current user OR `?u=username`) — actually use `/u/:username/c/:slug` to keep slugs unique per user and avoid global collisions. Indexable when `is_public`.
+- Extend `src/pages/UserProfile.tsx` — add tabs (Latest / Most Viewed / Most Liked) + Collections section.
+- Extend `src/pages/CommunityProject.tsx` — Like button, Remix button, Download counter wiring, Tags chips linking to `/tag/:slug`, "Inspired by @username" when `remix_of` is set.
 
-## AI content generation (Lovable AI Gateway)
+New components:
+- `CommunityCard` (replaces older card) — thumbnail, title, creator chip, views/likes/downloads, Watch/Remix/Share.
+- `LikeButton`, `RemixButton`, `TagChips`, `SortTabs`, `TimeWindowChips`, `SearchBar`, `CollectionGrid`, `AddToCollectionDialog`.
 
-A single edge function `generate-video-seo` takes a project id, reads the dataset, and writes back: `seo_title`, `meta_description`, `summary`, `insights[]`, `faqs[{q,a}]`, `category`. Uses `google/gemini-2.5-flash` with strict JSON tool-calling so we get structured output, then validate before saving. Prompt anchors on the actual numbers ("Top 5 by latest year: …") so the model never invents filler.
+Dashboard additions (`src/pages/DashboardComingSoon.tsx` slot for videos → real page):
+- `DashboardVideos.tsx` — list user's projects with hide/unpublish/delete/edit-metadata (title, description, tags) actions.
+- `DashboardCollections.tsx` — CRUD collections, add/remove items, toggle public.
 
-Triggered:
-- Automatically on publish (in `publishProject` after the row is upserted).
-- Manually from the dashboard via a "Regenerate SEO content" button.
-- Backfill script runs once for the existing public projects.
+SEO:
+- Tag + category + collection pages all get `Seo` with `CollectionPage` + `BreadcrumbList` JSON-LD.
+- Watch page already ships `VideoObject` + `Dataset` + `FAQPage` + `BreadcrumbList` — add tags into `keywords`.
+- `scripts/generate-sitemap.ts` — extend to enumerate public tags, categories, and public collections.
+- `public/robots.txt` already allows everything — confirm.
 
-## Structured data (JSON-LD via react-helmet-async)
+## Out of scope
 
-On each `/community/:slug`:
-- `VideoObject` (name, description, thumbnailUrl, uploadDate, contentUrl, embedUrl)
-- `Dataset` (name, description, creator, distribution=CSV download link, variableMeasured)
-- `FAQPage` (mainEntity = generated FAQs)
-- `BreadcrumbList`
+- Real-time notifications, comments, follows, DMs.
+- AI tag suggestion or AI descriptions (explicitly excluded).
+- Server-side rendering — staying with Helmet + JSON-LD (Googlebot executes JS; social crawlers see static index.html fallback).
+- Paid/featured boosting.
 
-On `/community/:category`: `CollectionPage` + `BreadcrumbList`.
-On `/u/:username`: keep existing `ProfilePage` and add `ItemList` of videos.
+## Rollout
 
-## Category pages
+1. Migration (tables, columns, RPCs, triggers) + GRANTs. Backfill tags for existing public projects.
+2. Storage layer (`src/lib/storage.ts`) helpers + types. Rewire CommunityProject + UserProfile to new fields.
+3. New Community hub + Tag + Collection + Category pages.
+4. Dashboard CRUD (videos + collections).
+5. Sitemap extension + final SEO pass.
 
-New route `/community/:category` (matched before `:slug` via an allowlist of known category slugs to avoid conflicts). Lists every public video in that category, paginated 24 per page, with H1 ("Economy Data Videos"), short intro, and JSON-LD `CollectionPage`. Indexable; included in the sitemap.
-
-## Internal linking
-
-- Each video card links to its slugified URL.
-- Related videos block on the article page links 6 same-category videos.
-- Related datasets block links 3 best-match entries from `datasets.ts`.
-- Creator name on every card and article links to `/u/:username`.
-- Category chip on each card links to `/community/:category`.
-
-## Sitemap & robots
-
-Extend `scripts/generate-sitemap.ts` to fetch all public projects and category slugs and add them to entries. Keep `robots.txt` as-is.
-
-## Per-page metadata
-
-Switch the project to `react-helmet-async` (sitewide `og:*` stays in `index.html` for non-JS crawlers). Each community article ships its own `<title>`, meta description (from AI summary, ≤160 chars), canonical, `og:url`, `og:title`, `og:description`, and `og:image` (we already generate a thumbnail from the first canvas frame — we'll persist it to the `avatars` bucket sibling `thumbnails` and use it here).
-
-## Technical details
-
-**Database migration**
-- `projects`: add `category text`, `seo_title text`, `meta_description text`, `summary text`, `insights jsonb`, `faqs jsonb`, `seo_generated_at timestamptz`.
-- Unique partial index on `category` for fast category-page queries.
-- RLS unchanged (public read on `is_public = true` already exists).
-
-**Edge function** `supabase/functions/generate-video-seo/index.ts`
-- Auth: requires the project owner OR admin (verified via `auth.uid()` + `has_role`).
-- Reads project row → builds a compact dataset prompt → calls Lovable AI Gateway with tool schema → updates row.
-- Returns the generated fields.
-
-**Frontend**
-- New `src/pages/CommunityArticle.tsx` replacing the current `CommunityProject.tsx` body (keeps the same route).
-- New `src/pages/CommunityCategory.tsx`.
-- New `src/components/DatasetTable.tsx`, `FaqAccordion.tsx`, `RelatedVideos.tsx`, `RelatedDatasets.tsx`, `Breadcrumbs.tsx`.
-- New `src/lib/seo/jsonLd.ts` builders for VideoObject / Dataset / FAQPage / BreadcrumbList / CollectionPage.
-- Update `src/lib/storage.ts` `publishProject` to trigger SEO generation (fire-and-forget; the publish call returns immediately).
-- Add `react-helmet-async` and wire `HelmetProvider` in `src/main.tsx`.
-- Backfill script `scripts/backfill-seo.ts` callable once via `bunx tsx`.
-
-**Routing**
-
-```text
-/community                       → existing browse
-/community/:categoryOrSlug       → category page if matches taxonomy, else article
-/u/:username                     → existing, gains ItemList JSON-LD
-```
-
-## Out of scope (call out, don't build)
-
-- True SSR / static prerender of community pages (real per-page social previews).
-- Comments, likes UI, follow system.
-- Video embed iframe for third-party sites.
-- Multi-language SEO.
-
-## Suggested rollout
-
-1. Migration + edge function + backfill (no UI change yet).
-2. Rebuild `/community/:slug` as the article page with helmet + JSON-LD + dataset table + AI sections.
-3. Category pages + sitemap update + internal linking polish.
-
-Reply with answers to the four scope questions (or "go with defaults") and I'll start with step 1.
+Shall I proceed with all five steps, or trim anything first?
