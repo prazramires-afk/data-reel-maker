@@ -95,6 +95,7 @@ function rowToProject(r: any): Project {
     description: r.description ?? null,
     allowRemix: r.allow_remix ?? true,
     allowDownload: r.allow_download ?? true,
+    datasetId: r.dataset_id ?? null,
   };
 }
 
@@ -128,6 +129,7 @@ export async function saveProject(project: Project): Promise<boolean> {
     data: project.data as any,
     settings: project.settings as any,
     label_images: project.labelImages as any,
+    ...(project.datasetId !== undefined ? { dataset_id: project.datasetId } : {}),
   };
   const { error } = await supabase.from("projects").upsert(payload, { onConflict: "id" });
   if (error) {
@@ -273,6 +275,7 @@ export async function publishProject(
     published_at: new Date().toISOString(),
     ...(slug ? { slug } : {}),
     ...(authorName ? { author_name: authorName.slice(0, 60) } : {}),
+    ...(project.datasetId !== undefined ? { dataset_id: project.datasetId } : {}),
   };
   const { data, error } = await supabase
     .from("projects")
