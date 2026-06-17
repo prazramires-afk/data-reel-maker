@@ -21,7 +21,11 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Watch = lazy(() => import("./pages/Watch"));
 const Datasets = lazy(() => import("./pages/Datasets"));
-const DatasetPage = lazy(() => import("./pages/DatasetPage"));
+const DatasetDetail = lazy(() => import("./pages/DatasetDetail"));
+const DatasetCategory = lazy(() => import("./pages/DatasetCategory"));
+const DatasetCollectionPage = lazy(() => import("./pages/DatasetCollectionPage"));
+const DashboardDatasets = lazy(() => import("./pages/DashboardDatasets"));
+const DatasetEditor = lazy(() => import("./pages/DatasetEditor"));
 const Tools = lazy(() => import("./pages/Tools"));
 const ToolPage = lazy(() => import("./pages/ToolPage"));
 const Community = lazy(() => import("./pages/Community"));
@@ -61,7 +65,9 @@ const App = () => (
           <Route path="/terms" element={<Terms />} />
           <Route path="/watch/:slug" element={<Watch />} />
           <Route path="/datasets" element={<Datasets />} />
-          <Route path="/datasets/:slug" element={<DatasetPage />} />
+          <Route path="/datasets/category/:category" element={<DatasetCategory />} />
+          <Route path="/datasets/:slug" element={<DatasetDetail />} />
+          <Route path="/collections/:slug" element={<DatasetCollectionPage />} />
           <Route path="/tools" element={<Tools />} />
           <Route path="/tools/:slug" element={<ToolPage />} />
           <Route path="/community" element={<Community />} />
@@ -74,6 +80,9 @@ const App = () => (
             <Route path="profile" element={<DashboardProfile />} />
             <Route path="videos" element={<DashboardVideos />} />
             <Route path="collections" element={<DashboardCollections />} />
+            <Route path="datasets" element={<DashboardDatasets />} />
+            <Route path="datasets/new" element={<DatasetEditor />} />
+            <Route path="datasets/:id/edit" element={<DatasetEditor />} />
             <Route
               path="drafts"
               element={<DashboardComingSoon title="Drafts" description="Unfinished projects you can return to." path="/dashboard/drafts" />}
