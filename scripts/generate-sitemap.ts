@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { BLOG_POSTS } from "../src/lib/seoContent/blogPosts";
 import { TEMPLATE_LANDINGS } from "../src/lib/seoContent/templateLandings";
 import { TOOLS } from "../src/lib/seoContent/tools";
+import { DATASETS as LEGACY_DATASETS } from "../src/lib/seoContent/datasets";
 import { WATCH_PAGES } from "../src/lib/seoContent/watchPages";
 import { CATEGORIES } from "../src/lib/seo/categories";
 
@@ -29,6 +30,12 @@ const entries: Entry[] = [
     priority: "0.8",
   })),
   { path: "/datasets", changefreq: "weekly", priority: "0.9", lastmod: today },
+  // Legacy seeded dataset slugs — resolved via in-app fallback when not in DB.
+  ...LEGACY_DATASETS.map((d) => ({
+    path: `/datasets/${d.slug}`,
+    changefreq: "monthly" as const,
+    priority: "0.7",
+  })),
   { path: "/tools", changefreq: "weekly", priority: "0.9", lastmod: today },
   ...TOOLS.map((t) => ({
     path: `/tools/${t.slug}`,
