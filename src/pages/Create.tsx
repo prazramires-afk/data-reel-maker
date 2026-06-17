@@ -11,6 +11,7 @@ import { TEMPLATES } from "@/lib/templates";
 import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE, NBA_SAMPLE, CRYPTO_SAMPLE, COMPANIES_SAMPLE } from "@/lib/sampleData";
 import { parseCSV } from "@/lib/parseCSV";
 import { saveProject, getProjectById, generateId, publishProject, isValidProjectId } from "@/lib/storage";
+import { getDatasetBySlug } from "@/lib/datasets";
 import { communityUrl, copyToClipboard } from "@/lib/share";
 import { createBarRaceAnimation, AnimationController } from "@/lib/animationEngine";
 import { createTimelineAnimation } from "@/lib/timelineAnimation";
@@ -85,6 +86,7 @@ const Create = () => {
   const [csvText, setCsvText] = useState("");
   const [dataTab, setDataTab] = useState<"manual" | "csv" | "sample">("manual");
   const [projectId, setProjectId] = useState(() => generateId());
+  const [linkedDatasetId, setLinkedDatasetId] = useState<string | null>(null);
 
   // Label images: label -> base64 data URL
   const [labelImages, setLabelImages] = useState<Record<string, string>>({});
@@ -221,6 +223,16 @@ const Create = () => {
       setData(ds.data);
       setSettings({ ...DEFAULT_SETTINGS, title: ds.title });
       setStep(2);
+    } else if (datasetSlug) {
+      // Try a community/published dataset from the DB.
+      getDatasetBySlug(datasetSlug).then((d) => {
+        if (!d) return;
+        setVideoType("bar_race");
+        setData(d.data);
+        setSettings({ ...DEFAULT_SETTINGS, title: d.title });
+        setLinkedDatasetId(d.id);
+        setStep(2);
+      });
     } else if (editId) {
       getProjectById(editId).then((project) => {
         if (project) {
@@ -229,6 +241,7 @@ const Create = () => {
           setData(project.data);
           setSettings(project.settings);
           if (project.labelImages) setLabelImages(project.labelImages);
+          if (project.datasetId) setLinkedDatasetId(project.datasetId);
           setStep(2);
         }
       });
@@ -294,10 +307,11 @@ const Create = () => {
       labelImages,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      datasetId: linkedDatasetId,
     };
     await saveProject(project);
     return project;
-  }, [projectId, videoType, data, settings, labelImages]);
+  }, [projectId, videoType, data, settings, labelImages, linkedDatasetId]);
 
   const resolutionMap = { "480p": { w: 480, h: 854 }, "720p": { w: 720, h: 1280 }, "1080p": { w: 1080, h: 1920 } };
   const useCustomSize = !!(settings.exportWidth && settings.exportHeight);

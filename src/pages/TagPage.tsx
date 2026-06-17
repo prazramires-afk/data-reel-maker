@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Project } from "@/lib/types";
 import { searchCommunity } from "@/lib/storage";
+import { searchDatasets, type Dataset } from "@/lib/datasets";
+import { DatasetCard } from "@/components/dataset/DatasetCard";
 import { Seo } from "@/components/Seo";
 import { Footer } from "@/components/Footer";
 import { CommunityCard } from "@/components/community/CommunityCard";
@@ -14,11 +16,13 @@ export default function TagPage() {
   const { slug = "" } = useParams<{ slug: string }>();
   const tag = slug.toLowerCase();
   const [projects, setProjects] = useState<Project[] | null>(null);
+  const [datasets, setDatasets] = useState<Dataset[]>([]);
 
   useEffect(() => {
     if (!tag) return;
     setProjects(null);
     searchCommunity({ tag, sort: "trending", limit: 60 }).then(setProjects);
+    searchDatasets({ tag, sort: "most_used", limit: 12 }).then(setDatasets);
   }, [tag]);
 
   const title = `#${tag} — Data Videos`;
@@ -65,6 +69,15 @@ export default function TagPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {projects.map((p) => <CommunityCard key={p.id} project={p} />)}
           </div>
+        )}
+
+        {datasets.length > 0 && (
+          <section className="mt-10">
+            <h2 className="text-xl font-bold text-foreground mb-3">Datasets tagged #{tag}</h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {datasets.map((d) => <DatasetCard key={d.id} dataset={d} />)}
+            </div>
+          </section>
         )}
       </div>
       <Footer />
