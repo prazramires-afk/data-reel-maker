@@ -17,9 +17,59 @@ import {
   type Dataset,
 } from "@/lib/datasets";
 import { breadcrumbLd } from "@/lib/seo/jsonLd";
+import { DATASETS as LEGACY_DATASETS } from "@/lib/seoContent/datasets";
+import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE, NBA_SAMPLE, CRYPTO_SAMPLE, COMPANIES_SAMPLE } from "@/lib/sampleData";
+import type { DataRow } from "@/lib/types";
 import NotFound from "./NotFound";
 
 const SITE = "https://data-reel-maker.lovable.app";
+
+const LEGACY_SAMPLE_MAP: Record<string, DataRow[]> = {
+  "gdp-countries": GDP_SAMPLE,
+  "fifa-goals": FOOTBALL_SAMPLE,
+  "nba-points": NBA_SAMPLE,
+  "population-growth": POPULATION_SAMPLE,
+  "richest-companies": COMPANIES_SAMPLE,
+  "crypto-marketcap": CRYPTO_SAMPLE,
+};
+
+const LEGACY_CATEGORY_MAP: Record<string, Dataset["category"]> = {
+  Economy: "economy",
+  Sports: "sports",
+  Demographics: "population",
+  Business: "business",
+  Tech: "technology",
+  Culture: "other",
+};
+
+function buildLegacyDataset(slug: string): Dataset | null {
+  const meta = LEGACY_DATASETS.find((d) => d.slug === slug);
+  const data = LEGACY_SAMPLE_MAP[slug];
+  if (!meta || !data) return null;
+  const now = new Date().toISOString();
+  return {
+    id: `legacy-${slug}`,
+    userId: null,
+    slug: meta.slug,
+    title: meta.title,
+    description: meta.intro,
+    category: LEGACY_CATEGORY_MAP[meta.category] ?? "other",
+    tags: meta.keywords.map((k) => k.toLowerCase().replace(/[^a-z0-9]+/g, "-")).filter(Boolean).slice(0, 12),
+    sourceName: meta.source,
+    sourceUrl: null,
+    unit: meta.unit,
+    data,
+    isPublic: true,
+    hidden: false,
+    viewCount: 0,
+    downloadCount: 0,
+    useCount: 0,
+    likeCount: 0,
+    createdAt: now,
+    updatedAt: now,
+    publishedAt: now,
+  };
+}
 
 export default function DatasetDetail() {
   const { slug = "" } = useParams<{ slug: string }>();
@@ -32,7 +82,12 @@ export default function DatasetDetail() {
     setDataset(undefined);
     getDatasetBySlug(slug).then((d) => {
       if (!alive) return;
-      setDataset(d);
+      if (d) {
+        setDataset(d);
+      } else {
+        const legacy = buildLegacyDataset(slug);
+        setDataset(legacy ?? null);
+      }
       if (d) {
         recordDatasetEvent(d.id, "view");
         getRelatedDatasets(d, 6).then(setRelated);
