@@ -94,6 +94,155 @@ export type Database = {
           },
         ]
       }
+      dataset_collection_items: {
+        Row: {
+          collection_id: string
+          created_at: string
+          dataset_id: string
+          position: number
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string
+          dataset_id: string
+          position?: number
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string
+          dataset_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dataset_collection_items_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "dataset_collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dataset_collection_items_dataset_id_fkey"
+            columns: ["dataset_id"]
+            isOneToOne: false
+            referencedRelation: "datasets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dataset_collections: {
+        Row: {
+          cover_dataset_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          name: string
+          slug: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          cover_dataset_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name: string
+          slug: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          cover_dataset_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name?: string
+          slug?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dataset_collections_cover_dataset_id_fkey"
+            columns: ["cover_dataset_id"]
+            isOneToOne: false
+            referencedRelation: "datasets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      datasets: {
+        Row: {
+          category: string
+          created_at: string
+          data: Json
+          description: string | null
+          download_count: number
+          hidden: boolean
+          id: string
+          is_public: boolean
+          like_count: number
+          published_at: string
+          slug: string
+          source_name: string | null
+          source_url: string | null
+          tags: string[]
+          title: string
+          unit: string | null
+          updated_at: string
+          use_count: number
+          user_id: string | null
+          view_count: number
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          data?: Json
+          description?: string | null
+          download_count?: number
+          hidden?: boolean
+          id?: string
+          is_public?: boolean
+          like_count?: number
+          published_at?: string
+          slug: string
+          source_name?: string | null
+          source_url?: string | null
+          tags?: string[]
+          title: string
+          unit?: string | null
+          updated_at?: string
+          use_count?: number
+          user_id?: string | null
+          view_count?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          data?: Json
+          description?: string | null
+          download_count?: number
+          hidden?: boolean
+          id?: string
+          is_public?: boolean
+          like_count?: number
+          published_at?: string
+          slug?: string
+          source_name?: string | null
+          source_url?: string | null
+          tags?: string[]
+          title?: string
+          unit?: string | null
+          updated_at?: string
+          use_count?: number
+          user_id?: string | null
+          view_count?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -209,6 +358,7 @@ export type Database = {
           category: string | null
           created_at: string
           data: Json
+          dataset_id: string | null
           description: string | null
           download_count: number
           faqs: Json | null
@@ -244,6 +394,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           data?: Json
+          dataset_id?: string | null
           description?: string | null
           download_count?: number
           faqs?: Json | null
@@ -279,6 +430,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           data?: Json
+          dataset_id?: string | null
           description?: string | null
           download_count?: number
           faqs?: Json | null
@@ -307,6 +459,13 @@ export type Database = {
           view_count?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "projects_dataset_id_fkey"
+            columns: ["dataset_id"]
+            isOneToOne: false
+            referencedRelation: "datasets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "projects_remix_of_fkey"
             columns: ["remix_of"]
@@ -406,6 +565,10 @@ export type Database = {
           tokens_remaining: number
         }[]
       }
+      generate_dataset_slug: {
+        Args: { _id: string; _title: string }
+        Returns: string
+      }
       generate_project_slug: {
         Args: { _id: string; _title: string }
         Returns: string
@@ -425,6 +588,50 @@ export type Database = {
           slug: string
           updated_at: string
           user_id: string
+        }[]
+      }
+      get_dataset_by_slug: {
+        Args: { _slug: string }
+        Returns: {
+          category: string
+          created_at: string
+          data: Json
+          description: string | null
+          download_count: number
+          hidden: boolean
+          id: string
+          is_public: boolean
+          like_count: number
+          published_at: string
+          slug: string
+          source_name: string | null
+          source_url: string | null
+          tags: string[]
+          title: string
+          unit: string | null
+          updated_at: string
+          use_count: number
+          user_id: string | null
+          view_count: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "datasets"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_dataset_collection_by_slug: {
+        Args: { _slug: string }
+        Returns: {
+          cover_dataset_id: string
+          created_at: string
+          description: string
+          id: string
+          item_count: number
+          name: string
+          slug: string
+          updated_at: string
         }[]
       }
       get_profile_by_username: {
@@ -456,6 +663,7 @@ export type Database = {
           category: string | null
           created_at: string
           data: Json
+          dataset_id: string | null
           description: string | null
           download_count: number
           faqs: Json | null
@@ -490,6 +698,37 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_trending_datasets: {
+        Args: { _limit?: number }
+        Returns: {
+          category: string
+          created_at: string
+          data: Json
+          description: string | null
+          download_count: number
+          hidden: boolean
+          id: string
+          is_public: boolean
+          like_count: number
+          published_at: string
+          slug: string
+          source_name: string | null
+          source_url: string | null
+          tags: string[]
+          title: string
+          unit: string | null
+          updated_at: string
+          use_count: number
+          user_id: string | null
+          view_count: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "datasets"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -510,6 +749,10 @@ export type Database = {
           slug: string
           updated_at: string
         }[]
+      }
+      record_dataset_event: {
+        Args: { _dataset_id: string; _event_type: string }
+        Returns: undefined
       }
       record_project_event: {
         Args: {
@@ -539,6 +782,7 @@ export type Database = {
           category: string | null
           created_at: string
           data: Json
+          dataset_id: string | null
           description: string | null
           download_count: number
           faqs: Json | null
@@ -569,6 +813,44 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "projects"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      search_datasets: {
+        Args: {
+          _category?: string
+          _limit?: number
+          _offset?: number
+          _q?: string
+          _sort?: string
+          _tag?: string
+        }
+        Returns: {
+          category: string
+          created_at: string
+          data: Json
+          description: string | null
+          download_count: number
+          hidden: boolean
+          id: string
+          is_public: boolean
+          like_count: number
+          published_at: string
+          slug: string
+          source_name: string | null
+          source_url: string | null
+          tags: string[]
+          title: string
+          unit: string | null
+          updated_at: string
+          use_count: number
+          user_id: string | null
+          view_count: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "datasets"
           isOneToOne: false
           isSetofReturn: true
         }

@@ -26,6 +26,9 @@ import { breadcrumbLd, datasetLd, faqLd, videoObjectLd } from "@/lib/seo/jsonLd"
 import { LikeButton } from "@/components/community/LikeButton";
 import { RemixButton } from "@/components/community/RemixButton";
 import { TagChips } from "@/components/community/TagChips";
+import { useState as useReactState } from "react";
+import { getDatasetById, type Dataset } from "@/lib/datasets";
+import { Database } from "lucide-react";
 
 const CommunityProject = () => {
   const { id: param = "" } = useParams();
@@ -42,6 +45,7 @@ function CommunityArticle({ param }: { param: string }) {
   const [author, setAuthor] = useState<{ username: string; display_name: string | null; avatar_url: string | null } | null>(null);
   const [related, setRelated] = useState<Project[]>([]);
   const [copied, setCopied] = useState(false);
+  const [sourceDataset, setSourceDataset] = useReactState<Dataset | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -60,6 +64,8 @@ function CommunityArticle({ param }: { param: string }) {
     if (project.userId) getProfileByUserId(project.userId).then(setAuthor);
     getRelatedCommunityProjects(project.id, project.category, 6).then(setRelated);
     recordProjectEvent(project.id, "view");
+    if (project.datasetId) getDatasetById(project.datasetId).then(setSourceDataset);
+    else setSourceDataset(null);
   }, [project]);
 
   if (project === undefined) {
@@ -161,6 +167,21 @@ function CommunityArticle({ param }: { param: string }) {
           <p className="mt-3 text-xs text-muted-foreground">
             Inspired by <Link to={`/community/${project.remixOf}`} className="text-primary font-semibold">the original video</Link>
           </p>
+        )}
+
+        {sourceDataset && (
+          <Link
+            to={`/datasets/${sourceDataset.slug}`}
+            className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-card border border-border hover:border-primary/40 transition-colors"
+          >
+            <span className="w-7 h-7 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
+              <Database className="w-4 h-4" />
+            </span>
+            <span className="text-xs">
+              <span className="text-muted-foreground">Dataset used: </span>
+              <span className="font-semibold text-foreground">{sourceDataset.title}</span>
+            </span>
+          </Link>
         )}
 
         {project.tags && project.tags.length > 0 && (

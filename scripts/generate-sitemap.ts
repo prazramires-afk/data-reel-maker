@@ -3,8 +3,8 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { BLOG_POSTS } from "../src/lib/seoContent/blogPosts";
 import { TEMPLATE_LANDINGS } from "../src/lib/seoContent/templateLandings";
-import { DATASETS } from "../src/lib/seoContent/datasets";
 import { TOOLS } from "../src/lib/seoContent/tools";
+import { DATASETS as LEGACY_DATASETS } from "../src/lib/seoContent/datasets";
 import { WATCH_PAGES } from "../src/lib/seoContent/watchPages";
 import { CATEGORIES } from "../src/lib/seo/categories";
 
@@ -30,10 +30,11 @@ const entries: Entry[] = [
     priority: "0.8",
   })),
   { path: "/datasets", changefreq: "weekly", priority: "0.9", lastmod: today },
-  ...DATASETS.map((d) => ({
+  // Legacy seeded dataset slugs — resolved via in-app fallback when not in DB.
+  ...LEGACY_DATASETS.map((d) => ({
     path: `/datasets/${d.slug}`,
     changefreq: "monthly" as const,
-    priority: "0.8",
+    priority: "0.7",
   })),
   { path: "/tools", changefreq: "weekly", priority: "0.9", lastmod: today },
   ...TOOLS.map((t) => ({
@@ -127,6 +128,57 @@ for (const c of publicCollections) {
     path: `/u/${c.username}/c/${c.slug}`,
     changefreq: "weekly",
     priority: "0.5",
+    lastmod: c.updated_at ? c.updated_at.split("T")[0] : today,
+  });
+}
+
+// Dataset network: categories, datasets, curated collections.
+const DATASET_CATEGORIES = ["economy","finance","population","sports","technology","history","business"];
+for (const c of DATASET_CATEGORIES) {
+  entries.push({ path: `/datasets/category/${c}`, changefreq: "weekly", priority: "0.7", lastmod: today });
+}
+
+async function fetchPublicDatasets(): Promise<{ slug: string; updated_at: string | null; tags: string[] }[]> {
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) return [];
+  try {
+    const r = await fetch(`${url}/rest/v1/datasets?is_public=eq.true&hidden=eq.false&select=slug,updated_at,tags&order=updated_at.desc&limit=5000`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+    if (!r.ok) return [];
+    return (await r.json()) as any[];
+  } catch { return []; }
+}
+const publicDatasets = await fetchPublicDatasets();
+for (const d of publicDatasets) {
+  entries.push({
+    path: `/datasets/${d.slug}`,
+    changefreq: "weekly",
+    priority: "0.7",
+    lastmod: d.updated_at ? d.updated_at.split("T")[0] : today,
+  });
+  for (const t of (d.tags || [])) tagSet.add(t);
+}
+
+async function fetchPublicDatasetCollections(): Promise<{ slug: string; updated_at: string }[]> {
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) return [];
+  try {
+    const r = await fetch(`${url}/rest/v1/dataset_collections?is_public=eq.true&select=slug,updated_at&limit=2000`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+    if (!r.ok) return [];
+    return (await r.json()) as any[];
+  } catch { return []; }
+}
+const publicDatasetCollections = await fetchPublicDatasetCollections();
+for (const c of publicDatasetCollections) {
+  entries.push({
+    path: `/collections/${c.slug}`,
+    changefreq: "weekly",
+    priority: "0.6",
     lastmod: c.updated_at ? c.updated_at.split("T")[0] : today,
   });
 }

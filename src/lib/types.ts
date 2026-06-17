@@ -83,6 +83,8 @@ export interface Project {
   description?: string | null;
   allowRemix?: boolean | null;
   allowDownload?: boolean | null;
+  /** Dataset this video was built from (optional). */
+  datasetId?: string | null;
 }
 
 export interface Template {

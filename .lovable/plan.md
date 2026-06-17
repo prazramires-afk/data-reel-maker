@@ -1,84 +1,92 @@
-## Goal
+## Dataset Network System
 
-Turn Data to Video into a community platform: discovery, search, tags, categories, likes, remixes, downloads, collections, trending — all SEO-friendly, zero AI APIs.
+Build a user-publishable dataset platform tightly linked to community videos. Zero AI APIs — pure DB + UGC.
 
-## Scope decisions (please confirm or adjust)
+### 1. Database (one migration)
 
-1. **URL strategy** — Keep `/community/:slug` for individual videos (already live, already indexed, slug-based). Add new sibling routes:
-   - `/community` — discovery hub (rebuild)
-   - `/community/category/:slug` — category pages (move off bare `/community/:slug` to avoid collision with video slugs that happen to match a category name)
-   - `/tag/:slug` — tag pages
-   - `/collections/:slug` — collection pages
-   - `/u/:username` — already exists, extend it
-2. **Tags source** — Tags are auto-derived from each video's data labels + title keywords (no AI, pure string processing) on publish. Users can edit them later from the dashboard. Alternative: fully manual tag entry only.
-3. **Remix** — Clones the project (data, settings, title prefixed "Remix of …") into the current user's account with an `inspired_by` FK back to the original. Requires sign-in.
-4. **Trending score** — `views + 3*likes + 5*remixes + 2*downloads`, decayed by `1 / (hours_since_publish + 2)^1.5`. Computed on read (SQL), no cron.
-5. **Collections** — User-owned, can be public or private. Many-to-many with projects.
-6. **Moderation** — Hide / unpublish / delete / edit metadata all from the existing dashboard. Public profile only lists `is_public AND NOT hidden`.
+**New table `public.datasets`:**
+- `id uuid pk`, `user_id uuid` (nullable for seeded), `slug text unique`, `title text`, `description text`
+- `category text` (enum-checked: economy, finance, population, sports, technology, history, business, other)
+- `tags text[]` (gin index)
+- `source_name text`, `source_url text`
+- `unit text` (e.g. "USD billions")
+- `data jsonb` — `[{label, year, value}]` (same shape as projects.data)
+- `is_public boolean default true`, `hidden boolean default false`
+- `view_count`, `download_count`, `use_count` (videos created from it), `like_count` int defaults 0
+- `created_at`, `updated_at`, `published_at`
 
-## Database migration
+**New table `public.dataset_collections`:** `id, user_id, slug unique, name, description, cover_dataset_id, is_public, created_at, updated_at`
+**New table `public.dataset_collection_items`:** `collection_id, dataset_id, position`
 
-New columns on `projects`:
-- `tags text[]` (gin-indexed)
-- `remix_of uuid REFERENCES projects(id)` (nullable, ON DELETE SET NULL)
-- `hidden boolean NOT NULL DEFAULT false`
-- `remix_count int NOT NULL DEFAULT 0`
-- `description text` (user-editable, also used in OG/Helmet)
+**Extend `public.projects`:** add `dataset_id uuid references datasets(id) on delete set null` so watch pages can link "Dataset Used".
 
-New tables (all with GRANTs + RLS):
-- `project_likes(user_id, project_id, created_at)` — unique pair; increments/decrements `projects.like_count` via trigger.
-- `collections(id, user_id, slug, name, description, is_public, cover_project_id, created_at, updated_at)` — unique `(user_id, slug)`.
-- `collection_items(collection_id, project_id, position, created_at)` — unique pair.
+**Triggers:**
+- `derive_dataset_tags()` — same logic as projects, auto-tag from labels+title if user left tags empty
+- Bump `datasets.use_count` when a project with `dataset_id` is inserted/published
+- `updated_at` touch
 
-New RPCs:
-- `toggle_project_like(_project_id uuid) returns boolean` — insert/delete + counter update, returns new liked state.
-- `remix_project(_source_id uuid) returns uuid` — copies row to current user, sets `remix_of`, increments source `remix_count`, returns new project id.
-- `search_community(_q text, _tag text, _category text, _sort text, _window text, _limit int, _offset int) returns setof projects` — single endpoint powering /community filters/search/tag/category.
-- `get_trending(_window text, _limit int) returns setof projects` — score formula above, filters by `published_at` window.
-- `get_collection_by_slug(_username text, _slug text) returns table(...)` and `list_user_collections(_username text)`.
+**RPCs:**
+- `search_datasets(_q, _tag, _category, _sort, _limit, _offset)` — sort: latest/most_used/most_downloaded/most_viewed
+- `get_trending_datasets(_window, _limit)` — score: `views + 3*uses + 2*downloads` decayed by age
+- `record_dataset_event(_id, 'view'|'download')` — increments counter
+- `create_dataset_from_project(_project_id)` — convenience: copies project.data into a new dataset row owned by caller
 
-Tag derivation:
-- `derive_project_tags(_id uuid) returns void` — trigger on insert/update: slugify each `data.label` + significant title tokens, store unique array (max 12).
+**Grants + RLS:** public read for `is_public AND NOT hidden`; owner full control; service_role all.
 
-Storage GRANTs follow the standard public-readable-when-published pattern; likes/collections require `auth.uid()`.
+### 2. Storage layer (`src/lib/storage.ts`)
 
-## Frontend
+Add helpers: `listDatasets`, `getDatasetBySlug`, `getDatasetsByCategory`, `getDatasetsByTag`, `getTrendingDatasets`, `createDataset`, `updateDataset`, `deleteDataset`, `recordDatasetEvent`, `attachDatasetToProject`, `listDatasetCollections`, `getDatasetCollectionBySlug`.
 
-New routes (all lazy-loaded in `src/App.tsx`):
-- Rebuild `src/pages/Community.tsx` — search input, sort tabs (Trending/Latest/Most Viewed/Most Liked/Most Remixed), time window chips (24h/7d/30d/All), category nav, infinite-scroll grid.
-- `src/pages/CommunityCategory.tsx` — already exists, repath to `/community/category/:slug` and update internal links.
-- `src/pages/TagPage.tsx` — `/tag/:slug`, indexable, CollectionPage JSON-LD.
-- `src/pages/CollectionPage.tsx` — `/collections/:slug` (resolve by current user OR `?u=username`) — actually use `/u/:username/c/:slug` to keep slugs unique per user and avoid global collisions. Indexable when `is_public`.
-- Extend `src/pages/UserProfile.tsx` — add tabs (Latest / Most Viewed / Most Liked) + Collections section.
-- Extend `src/pages/CommunityProject.tsx` — Like button, Remix button, Download counter wiring, Tags chips linking to `/tag/:slug`, "Inspired by @username" when `remix_of` is set.
+Add `Dataset` type to `src/lib/types.ts`.
 
-New components:
-- `CommunityCard` (replaces older card) — thumbnail, title, creator chip, views/likes/downloads, Watch/Remix/Share.
-- `LikeButton`, `RemixButton`, `TagChips`, `SortTabs`, `TimeWindowChips`, `SearchBar`, `CollectionGrid`, `AddToCollectionDialog`.
+### 3. Routes & pages
 
-Dashboard additions (`src/pages/DashboardComingSoon.tsx` slot for videos → real page):
-- `DashboardVideos.tsx` — list user's projects with hide/unpublish/delete/edit-metadata (title, description, tags) actions.
-- `DashboardCollections.tsx` — CRUD collections, add/remove items, toggle public.
+| Route | Page | Purpose |
+|---|---|---|
+| `/datasets` | `Datasets.tsx` (replace existing static page) | Search + sort tabs (Trending / Most Used / Most Downloaded / Most Viewed / Latest) + category nav + grid |
+| `/datasets/:slug` | `DatasetDetail.tsx` (new) | H1, description, interactive chart (Recharts), full HTML table, stats card, tags, source, CSV download, share, **Create Video** (→ `/create?dataset=:slug`), Related videos (projects with this `dataset_id`), Related datasets (same category/tags) |
+| `/datasets/category/:category` | `DatasetCategory.tsx` | Filtered grid + category JSON-LD |
+| `/tag/:slug` | already exists — extend to also show datasets with that tag below videos |
+| `/collections/:slug` | `DatasetCollection.tsx` | Curated dataset list |
+| `/dashboard/datasets` | `DashboardDatasets.tsx` | User CRUD: create/edit/delete, upload CSV via existing `parseCSV.ts`, set public/private |
+| `/dashboard/datasets/new` and `/edit/:id` | `DatasetEditor.tsx` | Form: title, description, category select, tags input, source name/url, unit, CSV paste/upload, public toggle |
 
-SEO:
-- Tag + category + collection pages all get `Seo` with `CollectionPage` + `BreadcrumbList` JSON-LD.
-- Watch page already ships `VideoObject` + `Dataset` + `FAQPage` + `BreadcrumbList` — add tags into `keywords`.
-- `scripts/generate-sitemap.ts` — extend to enumerate public tags, categories, and public collections.
-- `public/robots.txt` already allows everything — confirm.
+### 4. Components
 
-## Out of scope
+- `components/dataset/DatasetCard.tsx` — card with category, use_count, download_count, view_count
+- `components/dataset/DatasetChart.tsx` — Recharts line/bar (auto-pick based on years)
+- `components/dataset/DatasetTable.tsx` — promote/reuse `article/DatasetTable.tsx` shape, indexable
+- `components/dataset/DatasetStats.tsx` — min/max/avg/range/entries
+- `components/dataset/DatasetActions.tsx` — Download CSV, Share, Create Video
+- `components/dataset/RelatedDatasets.tsx` and `RelatedDatasetVideos.tsx`
 
-- Real-time notifications, comments, follows, DMs.
-- AI tag suggestion or AI descriptions (explicitly excluded).
-- Server-side rendering — staying with Helmet + JSON-LD (Googlebot executes JS; social crawlers see static index.html fallback).
-- Paid/featured boosting.
+### 5. Watch page link-back
 
-## Rollout
+`CommunityProject.tsx`: if `project.dataset_id`, show "Dataset used: <Link to /datasets/:slug>".
 
-1. Migration (tables, columns, RPCs, triggers) + GRANTs. Backfill tags for existing public projects.
-2. Storage layer (`src/lib/storage.ts`) helpers + types. Rewire CommunityProject + UserProfile to new fields.
-3. New Community hub + Tag + Collection + Category pages.
-4. Dashboard CRUD (videos + collections).
-5. Sitemap extension + final SEO pass.
+`Create.tsx`: read `?dataset=slug` param → preload dataset rows into the editor, store `dataset_id` on save.
 
-Shall I proceed with all five steps, or trim anything first?
+### 6. SEO
+
+- JSON-LD `Dataset` (schema.org) on `/datasets/:slug` with `name`, `description`, `keywords`, `creator`, `distribution` (CSV), `temporalCoverage`, `variableMeasured`
+- `BreadcrumbList` on every dataset/category/collection page
+- `CollectionPage` on `/datasets`, `/datasets/category/*`, `/collections/*`
+- Canonical + OG per page via `Seo` component
+- Extend `scripts/generate-sitemap.ts` to enumerate public datasets, dataset categories, and dataset collections
+
+### 7. Out of scope
+
+- AI dataset descriptions / auto categorization
+- Live data feeds (API integrations)
+- Dataset versioning / diffs
+- Paid / gated datasets
+- Comments and reviews
+
+### Rollout
+
+1. Migration (datasets + collections + projects.dataset_id + RPCs + triggers + grants/RLS)
+2. Types + storage helpers
+3. Public read pages (`/datasets`, `/datasets/:slug`, category, collection)
+4. Dashboard CRUD + editor
+5. Watch + Create integration (dataset link-back, ?dataset= preload)
+6. Sitemap + JSON-LD pass
