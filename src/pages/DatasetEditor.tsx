@@ -235,3 +235,81 @@ function Field({ label, children, hint, required }: { label: string; children: R
     </div>
   );
 }
+
+function CsvFeedback({ validation }: { validation: ReturnType<typeof validateCSV> }) {
+  const errors = validation.issues.filter((i) => i.level === "error");
+  const warnings = validation.issues.filter((i) => i.level === "warning");
+  const previewRows = validation.preview.slice(0, 8);
+
+  return (
+    <div className="mt-3 space-y-3">
+      <div
+        className={`flex items-start gap-2 rounded-xl border p-3 text-xs ${
+          errors.length
+            ? "border-destructive/40 bg-destructive/10 text-destructive"
+            : warnings.length
+              ? "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+        }`}
+      >
+        {errors.length ? <XCircle className="w-4 h-4 mt-0.5 shrink-0" /> : warnings.length ? <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /> : <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />}
+        <div className="space-y-1">
+          <p className="font-semibold">
+            {errors.length
+              ? `${errors.length} error${errors.length === 1 ? "" : "s"} — fix before publishing.`
+              : warnings.length
+                ? `${warnings.length} warning${warnings.length === 1 ? "" : "s"} — review below.`
+                : "CSV looks good."}
+          </p>
+          {!!validation.issues.length && (
+            <ul className="list-disc pl-4 space-y-0.5 max-h-32 overflow-auto">
+              {validation.issues.slice(0, 20).map((i, idx) => (
+                <li key={idx}>
+                  {i.line !== undefined && <span className="opacity-70">Line {i.line}: </span>}
+                  {i.message}
+                </li>
+              ))}
+              {validation.issues.length > 20 && <li className="opacity-70">…and {validation.issues.length - 20} more.</li>}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      {validation.headers.length > 1 && previewRows.length > 0 && (
+        <div className="rounded-xl border border-border overflow-hidden">
+          <div className="px-3 py-2 text-[11px] uppercase tracking-wider text-muted-foreground bg-muted/40 font-semibold">
+            Row mapping preview (first {previewRows.length} of {validation.preview.length})
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-t border-border">
+                  <th className="text-left px-3 py-2 text-muted-foreground font-medium">Line</th>
+                  <th className="text-left px-3 py-2 text-muted-foreground font-medium">Year</th>
+                  {validation.labels.map((l) => (
+                    <th key={l} className="text-left px-3 py-2 text-muted-foreground font-medium">{l || <span className="italic opacity-60">empty</span>}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {previewRows.map((row) => (
+                  <tr key={row.line} className="border-t border-border">
+                    <td className="px-3 py-1.5 text-muted-foreground">{row.line}</td>
+                    <td className={`px-3 py-1.5 ${row.year === null ? "text-destructive" : "text-foreground"}`}>
+                      {row.year ?? "—"}
+                    </td>
+                    {row.values.map((v, idx) => (
+                      <td key={idx} className={`px-3 py-1.5 ${v === null ? "text-destructive/70" : "text-foreground"}`}>
+                        {v === null ? "—" : v}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
