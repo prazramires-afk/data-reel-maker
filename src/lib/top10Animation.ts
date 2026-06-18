@@ -203,7 +203,7 @@ export function createTop10Animation(
       if (audioStream) {
         audioStream.getAudioTracks().forEach(t => stream.addTrack(t));
       }
-      const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 5_000_000 });
+      const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 12_000_000 });
       const chunks: Blob[] = [];
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
       return new Promise<Blob>((resolve, reject) => {
