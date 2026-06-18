@@ -191,8 +191,9 @@ export default function DatasetEditor() {
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) onCsvFile(f); }}
               />
             </label>
-            <span>{parsedRows.length} rows parsed</span>
+            <span>{parsedRows.length} values · {validation.years.length} year(s) · {validation.labels.length} label(s)</span>
           </div>
+          <CsvFeedback validation={validation} />
         </Field>
 
         <Field label="">
