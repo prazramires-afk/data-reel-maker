@@ -385,11 +385,12 @@ export function createBarRaceAnimation(
       elapsed = 0;
       startTime = 0;
       showHook = true;
-      const resetTop = getTopPadding(canvas.height);
+      const rm = metrics(canvas.width);
+      const resetTop = getTopPadding(canvas.width, canvas.height);
       bars.forEach((b) => {
         b.value = 0;
         b.width = 0;
-        b.y = resetTop + labels.indexOf(b.label) * (barHeight + barGap);
+        b.y = resetTop + labels.indexOf(b.label) * (rm.barHeight + rm.barGap);
       });
       render(0);
     },
@@ -405,11 +406,12 @@ export function createBarRaceAnimation(
       elapsed = 0;
       startTime = 0;
       showHook = true;
-      const recTop = getTopPadding(canvas.height);
+      const rm = metrics(canvas.width);
+      const recTop = getTopPadding(canvas.width, canvas.height);
       bars.forEach((b) => {
         b.value = 0;
         b.width = 0;
-        b.y = recTop + labels.indexOf(b.label) * (barHeight + barGap);
+        b.y = recTop + labels.indexOf(b.label) * (rm.barHeight + rm.barGap);
       });
 
       const fps = 30;
@@ -427,7 +429,8 @@ export function createBarRaceAnimation(
       }
       const recorder = new MediaRecorder(stream, {
         mimeType,
-        videoBitsPerSecond: 5_000_000,
+        // Higher bitrate so portrait HD exports stay crisp for social media.
+        videoBitsPerSecond: 12_000_000,
       });
 
       const chunks: Blob[] = [];
@@ -467,13 +470,15 @@ export function createBarRaceAnimation(
               barData.sort((a, b) => b.value - a.value);
               const visible = barData.slice(0, maxBars);
               const maxVal = Math.max(...visible.map((b) => b.value), 1);
-              const barAreaWidth = canvas.width - sidePadding - rightPadding - 100;
+              const recM = metrics(canvas.width);
+              const valueGutter = Math.round(canvas.width * 0.14);
+              const barAreaWidth = canvas.width - recM.sidePadding - recM.rightPadding - valueGutter;
 
-              const recTopPad = getTopPadding(canvas.height);
+              const recTopPad = getTopPadding(canvas.width, canvas.height);
               visible.forEach((bd, i) => {
                 const bar = bars.find((b) => b.label === bd.label)!;
                 bar.targetValue = bd.value;
-                bar.targetY = recTopPad + i * (barHeight + barGap);
+                bar.targetY = recTopPad + i * (recM.barHeight + recM.barGap);
                 bar.targetWidth = (bd.value / maxVal) * barAreaWidth;
               });
 
