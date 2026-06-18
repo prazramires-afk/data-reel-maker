@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import {
@@ -8,7 +8,7 @@ import {
   createDataset, getDatasetById, updateDataset,
   type DatasetCategory,
 } from "@/lib/datasets";
-import { parseCSV } from "@/lib/parseCSV";
+import { validateCSV } from "@/lib/validateCSV";
 import type { DataRow } from "@/lib/types";
 
 const EMPTY_CSV = `Year,Label A,Label B,Label C
@@ -63,18 +63,40 @@ export default function DatasetEditor() {
     });
   }, [editing, id, navigate]);
 
-  const parsedRows: DataRow[] = useMemo(() => {
-    try { return parseCSV(csvText); } catch { return []; }
+  const validation = useMemo(() => {
+    try { return validateCSV(csvText); }
+    catch (e: any) {
+      return {
+        headers: [], labels: [], rows: [] as DataRow[], preview: [], years: [],
+        issues: [{ level: "error" as const, message: e?.message || "Could not parse CSV." }],
+        hasErrors: true,
+      };
+    }
   }, [csvText]);
+  const parsedRows = validation.rows;
 
   const onCsvFile = (file: File) => {
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("CSV file is larger than 2 MB.");
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = () => setCsvText(String(reader.result || ""));
+    reader.onload = () => {
+      const text = String(reader.result || "");
+      setCsvText(text);
+      const v = validateCSV(text);
+      if (v.hasErrors) toast.error(`CSV uploaded with ${v.issues.filter((i) => i.level === "error").length} error(s).`);
+      else toast.success(`CSV parsed: ${v.rows.length} values across ${v.years.length} year(s).`);
+    };
     reader.readAsText(file);
   };
 
   const submit = async () => {
     if (!title.trim()) { toast.error("Please add a title"); return; }
+    if (validation.hasErrors) {
+      toast.error("Fix the CSV errors before publishing.");
+      return;
+    }
     if (parsedRows.length < 2) { toast.error("Need at least one row of data"); return; }
     setLoading(true);
     const tags = tagsInput.split(",").map((t) => t.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-")).filter(Boolean).slice(0, 20);
