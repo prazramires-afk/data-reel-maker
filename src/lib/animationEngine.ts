@@ -127,18 +127,23 @@ export function createBarRaceAnimation(
   const totalMs = (baseDuration / speedMultiplier) * 1000;
 
   const maxBars = Math.min(labels.length, 10);
-  const barHeight = 36;
-  const barGap = 10;
-  const sidePadding = 20;
-  const rightPadding = 20;
-  const bottomPadding = 40;
+  // Sizes scale with canvas width so portrait 720/1080 exports look like the preview.
+  function metrics(w: number) {
+    return {
+      barHeight: Math.round(w * 0.08),
+      barGap: Math.round(w * 0.018),
+      sidePadding: Math.round(w * 0.035),
+      rightPadding: Math.round(w * 0.035),
+    };
+  }
 
   // Compute topPadding dynamically so chart is vertically centered
-  function getTopPadding(canvasHeight: number) {
-    const totalBarsHeight = maxBars * barHeight + (maxBars - 1) * barGap;
-    const titleSpace = 60; // space for title above bars
+  function getTopPadding(canvasWidth: number, canvasHeight: number) {
+    const m = metrics(canvasWidth);
+    const totalBarsHeight = maxBars * m.barHeight + (maxBars - 1) * m.barGap;
+    const titleSpace = Math.round(canvasWidth * 0.12);
     const contentHeight = titleSpace + totalBarsHeight;
-    return Math.max(80, (canvasHeight - contentHeight) / 2);
+    return Math.max(Math.round(canvasWidth * 0.1), (canvasHeight - contentHeight) / 2);
   }
 
   let playing = false;
@@ -151,13 +156,14 @@ export function createBarRaceAnimation(
     ? `${settings.title} — #1 will shock you`
     : "Top rankings — #1 will shock you";
 
-  const initTop = getTopPadding(canvas.height);
+  const initMetrics = metrics(canvas.width);
+  const initTop = getTopPadding(canvas.width, canvas.height);
   const bars: BarState[] = labels.map((label, i) => ({
     label,
     value: 0,
     targetValue: 0,
-    y: initTop + i * (barHeight + barGap),
-    targetY: initTop + i * (barHeight + barGap),
+    y: initTop + i * (initMetrics.barHeight + initMetrics.barGap),
+    targetY: initTop + i * (initMetrics.barHeight + initMetrics.barGap),
     color: colorMap[label],
     width: 0,
     targetWidth: 0,
@@ -170,6 +176,7 @@ export function createBarRaceAnimation(
   function render(progress: number) {
     const w = canvas.width;
     const h = canvas.height;
+    const { barHeight, barGap, sidePadding, rightPadding } = metrics(w);
 
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
@@ -210,10 +217,11 @@ export function createBarRaceAnimation(
     barData.sort((a, b) => b.value - a.value);
     const visible = barData.slice(0, maxBars);
     const maxVal = Math.max(...visible.map((b) => b.value), 1);
-    const barAreaWidth = w - sidePadding - rightPadding - 100;
+    const valueGutter = Math.round(w * 0.14);
+    const barAreaWidth = w - sidePadding - rightPadding - valueGutter;
 
     // Update targets
-    const topPad = getTopPadding(h);
+    const topPad = getTopPadding(w, h);
     visible.forEach((bd, i) => {
       const bar = bars.find((b) => b.label === bd.label)!;
       bar.targetValue = bd.value;
@@ -229,18 +237,25 @@ export function createBarRaceAnimation(
       bar.width = lerp(bar.width, bar.targetWidth, lerpSpeed);
     });
 
-    // Year display (draggable)
-    const yp = settings.yearPos ?? { x: 0.85, y: 0.92 };
+    // Big background year — clamped inside canvas so it never gets cut off in portrait exports.
+    const yp = settings.yearPos ?? { x: 0.5, y: 0.78 };
+    const yearStr = Math.round(currentYear).toString();
+    const yearFontSize = Math.round(w * 0.22);
     ctx.fillStyle = theme.sub;
     ctx.globalAlpha = 0.15;
-    ctx.font = `bold ${Math.round(w * 0.18)}px system-ui, sans-serif`;
+    ctx.font = `bold ${yearFontSize}px system-ui, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(Math.round(currentYear).toString(), w * yp.x, h * yp.y);
+    const yearWidth = ctx.measureText(yearStr).width;
+    const yearHalfW = yearWidth / 2 + sidePadding;
+    const yearHalfH = yearFontSize / 2 + sidePadding;
+    const yearX = Math.min(Math.max(w * yp.x, yearHalfW), w - yearHalfW);
+    const yearY = Math.min(Math.max(h * yp.y, yearHalfH), h - yearHalfH);
+    ctx.fillText(yearStr, yearX, yearY);
     ctx.globalAlpha = 1;
 
     // Title — positioned above the bars area
-    const titleY = topPad - 50;
+    const titleY = Math.max(sidePadding, topPad - Math.round(w * 0.09));
     if (settings.title) {
       ctx.fillStyle = theme.text;
       const titleMaxWidth = w - sidePadding - rightPadding - w * 0.16;
@@ -271,8 +286,8 @@ export function createBarRaceAnimation(
       if (!visibleLabels.has(bar.label)) return;
 
       const x = sidePadding;
-      const roundRadius = 6;
-      const imgSize = barHeight - 4;
+      const roundRadius = Math.round(barHeight * 0.18);
+      const imgSize = barHeight - Math.round(barHeight * 0.12);
 
       // Bar
       ctx.fillStyle = bar.color;
@@ -280,11 +295,10 @@ export function createBarRaceAnimation(
       ctx.roundRect(x, bar.y, Math.max(bar.width, 2), barHeight, [0, roundRadius, roundRadius, 0]);
       ctx.fill();
 
-      // Label image (at the start of the bar, left side)
       const img = labelImages?.[bar.label];
       if (img && img.complete && img.naturalWidth > 0) {
-        const imgX = x + 4;
-        const imgY = bar.y + 2;
+        const imgX = x + Math.round(barHeight * 0.06);
+        const imgY = bar.y + Math.round(barHeight * 0.06);
         ctx.save();
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";
@@ -371,11 +385,12 @@ export function createBarRaceAnimation(
       elapsed = 0;
       startTime = 0;
       showHook = true;
-      const resetTop = getTopPadding(canvas.height);
+      const rm = metrics(canvas.width);
+      const resetTop = getTopPadding(canvas.width, canvas.height);
       bars.forEach((b) => {
         b.value = 0;
         b.width = 0;
-        b.y = resetTop + labels.indexOf(b.label) * (barHeight + barGap);
+        b.y = resetTop + labels.indexOf(b.label) * (rm.barHeight + rm.barGap);
       });
       render(0);
     },
@@ -391,11 +406,12 @@ export function createBarRaceAnimation(
       elapsed = 0;
       startTime = 0;
       showHook = true;
-      const recTop = getTopPadding(canvas.height);
+      const rm = metrics(canvas.width);
+      const recTop = getTopPadding(canvas.width, canvas.height);
       bars.forEach((b) => {
         b.value = 0;
         b.width = 0;
-        b.y = recTop + labels.indexOf(b.label) * (barHeight + barGap);
+        b.y = recTop + labels.indexOf(b.label) * (rm.barHeight + rm.barGap);
       });
 
       const fps = 30;
@@ -413,7 +429,8 @@ export function createBarRaceAnimation(
       }
       const recorder = new MediaRecorder(stream, {
         mimeType,
-        videoBitsPerSecond: 5_000_000,
+        // Higher bitrate so portrait HD exports stay crisp for social media.
+        videoBitsPerSecond: 12_000_000,
       });
 
       const chunks: Blob[] = [];
@@ -453,13 +470,15 @@ export function createBarRaceAnimation(
               barData.sort((a, b) => b.value - a.value);
               const visible = barData.slice(0, maxBars);
               const maxVal = Math.max(...visible.map((b) => b.value), 1);
-              const barAreaWidth = canvas.width - sidePadding - rightPadding - 100;
+              const recM = metrics(canvas.width);
+              const valueGutter = Math.round(canvas.width * 0.14);
+              const barAreaWidth = canvas.width - recM.sidePadding - recM.rightPadding - valueGutter;
 
-              const recTopPad = getTopPadding(canvas.height);
+              const recTopPad = getTopPadding(canvas.width, canvas.height);
               visible.forEach((bd, i) => {
                 const bar = bars.find((b) => b.label === bd.label)!;
                 bar.targetValue = bd.value;
-                bar.targetY = recTopPad + i * (barHeight + barGap);
+                bar.targetY = recTopPad + i * (recM.barHeight + recM.barGap);
                 bar.targetWidth = (bd.value / maxVal) * barAreaWidth;
               });
 
