@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import {
@@ -8,7 +8,7 @@ import {
   createDataset, getDatasetById, updateDataset,
   type DatasetCategory,
 } from "@/lib/datasets";
-import { parseCSV } from "@/lib/parseCSV";
+import { validateCSV } from "@/lib/validateCSV";
 import type { DataRow } from "@/lib/types";
 
 const EMPTY_CSV = `Year,Label A,Label B,Label C
@@ -63,18 +63,40 @@ export default function DatasetEditor() {
     });
   }, [editing, id, navigate]);
 
-  const parsedRows: DataRow[] = useMemo(() => {
-    try { return parseCSV(csvText); } catch { return []; }
+  const validation = useMemo(() => {
+    try { return validateCSV(csvText); }
+    catch (e: any) {
+      return {
+        headers: [], labels: [], rows: [] as DataRow[], preview: [], years: [],
+        issues: [{ level: "error" as const, message: e?.message || "Could not parse CSV." }],
+        hasErrors: true,
+      };
+    }
   }, [csvText]);
+  const parsedRows = validation.rows;
 
   const onCsvFile = (file: File) => {
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("CSV file is larger than 2 MB.");
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = () => setCsvText(String(reader.result || ""));
+    reader.onload = () => {
+      const text = String(reader.result || "");
+      setCsvText(text);
+      const v = validateCSV(text);
+      if (v.hasErrors) toast.error(`CSV uploaded with ${v.issues.filter((i) => i.level === "error").length} error(s).`);
+      else toast.success(`CSV parsed: ${v.rows.length} values across ${v.years.length} year(s).`);
+    };
     reader.readAsText(file);
   };
 
   const submit = async () => {
     if (!title.trim()) { toast.error("Please add a title"); return; }
+    if (validation.hasErrors) {
+      toast.error("Fix the CSV errors before publishing.");
+      return;
+    }
     if (parsedRows.length < 2) { toast.error("Need at least one row of data"); return; }
     setLoading(true);
     const tags = tagsInput.split(",").map((t) => t.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-")).filter(Boolean).slice(0, 20);
@@ -169,8 +191,9 @@ export default function DatasetEditor() {
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) onCsvFile(f); }}
               />
             </label>
-            <span>{parsedRows.length} rows parsed</span>
+            <span>{parsedRows.length} values · {validation.years.length} year(s) · {validation.labels.length} label(s)</span>
           </div>
+          <CsvFeedback validation={validation} />
         </Field>
 
         <Field label="">
@@ -209,6 +232,84 @@ function Field({ label, children, hint, required }: { label: string; children: R
       )}
       {children}
       {hint && <p className="text-[11px] text-muted-foreground mt-1">{hint}</p>}
+    </div>
+  );
+}
+
+function CsvFeedback({ validation }: { validation: ReturnType<typeof validateCSV> }) {
+  const errors = validation.issues.filter((i) => i.level === "error");
+  const warnings = validation.issues.filter((i) => i.level === "warning");
+  const previewRows = validation.preview.slice(0, 8);
+
+  return (
+    <div className="mt-3 space-y-3">
+      <div
+        className={`flex items-start gap-2 rounded-xl border p-3 text-xs ${
+          errors.length
+            ? "border-destructive/40 bg-destructive/10 text-destructive"
+            : warnings.length
+              ? "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+        }`}
+      >
+        {errors.length ? <XCircle className="w-4 h-4 mt-0.5 shrink-0" /> : warnings.length ? <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /> : <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />}
+        <div className="space-y-1">
+          <p className="font-semibold">
+            {errors.length
+              ? `${errors.length} error${errors.length === 1 ? "" : "s"} — fix before publishing.`
+              : warnings.length
+                ? `${warnings.length} warning${warnings.length === 1 ? "" : "s"} — review below.`
+                : "CSV looks good."}
+          </p>
+          {!!validation.issues.length && (
+            <ul className="list-disc pl-4 space-y-0.5 max-h-32 overflow-auto">
+              {validation.issues.slice(0, 20).map((i, idx) => (
+                <li key={idx}>
+                  {i.line !== undefined && <span className="opacity-70">Line {i.line}: </span>}
+                  {i.message}
+                </li>
+              ))}
+              {validation.issues.length > 20 && <li className="opacity-70">…and {validation.issues.length - 20} more.</li>}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      {validation.headers.length > 1 && previewRows.length > 0 && (
+        <div className="rounded-xl border border-border overflow-hidden">
+          <div className="px-3 py-2 text-[11px] uppercase tracking-wider text-muted-foreground bg-muted/40 font-semibold">
+            Row mapping preview (first {previewRows.length} of {validation.preview.length})
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-t border-border">
+                  <th className="text-left px-3 py-2 text-muted-foreground font-medium">Line</th>
+                  <th className="text-left px-3 py-2 text-muted-foreground font-medium">Year</th>
+                  {validation.labels.map((l) => (
+                    <th key={l} className="text-left px-3 py-2 text-muted-foreground font-medium">{l || <span className="italic opacity-60">empty</span>}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {previewRows.map((row) => (
+                  <tr key={row.line} className="border-t border-border">
+                    <td className="px-3 py-1.5 text-muted-foreground">{row.line}</td>
+                    <td className={`px-3 py-1.5 ${row.year === null ? "text-destructive" : "text-foreground"}`}>
+                      {row.year ?? "—"}
+                    </td>
+                    {row.values.map((v, idx) => (
+                      <td key={idx} className={`px-3 py-1.5 ${v === null ? "text-destructive/70" : "text-foreground"}`}>
+                        {v === null ? "—" : v}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
