@@ -10,6 +10,12 @@ interface BarState {
   color: string;
   width: number;
   targetWidth: number;
+  // Spring velocities — drives momentum, inertia, slight overshoot, smooth settling.
+  vValue: number;
+  vY: number;
+  vWidth: number;
+  // Leader spotlight scale (0..1 -> 1.0..1.08 visually).
+  spotlight: number;
 }
 
 function getThemeColors(theme: ThemeType) {
@@ -154,6 +160,22 @@ export function createBarRaceAnimation(
   let animFrame = 0;
   let showHook = true;
 
+  // Cinematic state — drives leader spotlight, NEW KING flash, and year pop.
+  let prevTopLabel: string | null = null;
+  let kingFlashAt = -1; // ms timestamp of last new-leader event
+  let kingFlashLabel: string | null = null;
+  let lastWholeYear = Number.NaN;
+  let yearPopAt = -1;
+  // Slow-drifting background particles, seeded deterministically.
+  const particles = Array.from({ length: 14 }, (_, i) => ({
+    seed: i,
+    baseX: (i * 137.5) % 100 / 100,
+    baseY: (i * 73.3) % 100 / 100,
+    radius: 0.004 + ((i * 17) % 9) / 1000,
+    speed: 0.15 + ((i * 11) % 7) / 30,
+  }));
+  const cinematic = settings.cinematic !== false;
+
   const hookText = settings.title
     ? `${settings.title} — #1 will shock you`
     : "Top rankings — #1 will shock you";
@@ -169,10 +191,95 @@ export function createBarRaceAnimation(
     color: colorMap[label],
     width: 0,
     targetWidth: 0,
+    vValue: 0,
+    vY: 0,
+    vWidth: 0,
+    spotlight: 0,
   }));
 
   function lerp(a: number, b: number, t: number) {
     return a + (b - a) * Math.min(t, 1);
+  }
+
+  // Critically-near-damped spring step. Produces momentum + slight overshoot + settling.
+  function springStep(current: number, target: number, velocity: number, stiffness = 0.18, damping = 0.74) {
+    const force = (target - current) * stiffness;
+    const newV = (velocity + force) * damping;
+    return { value: current + newV, velocity: newV };
+  }
+
+  // Update spring physics for every bar. Called multiple times per frame during recording.
+  function stepSprings(strength = 1) {
+    const k = cinematic ? 0.18 : 0.22;
+    const d = cinematic ? 0.74 : 0.7;
+    bars.forEach((bar) => {
+      const v = springStep(bar.value, bar.targetValue, bar.vValue, k * strength, d);
+      bar.value = v.value; bar.vValue = v.velocity;
+      const y = springStep(bar.y, bar.targetY, bar.vY, k * strength, d);
+      bar.y = y.value; bar.vY = y.velocity;
+      const w = springStep(bar.width, bar.targetWidth, bar.vWidth, k * strength, d);
+      bar.width = w.value; bar.vWidth = w.velocity;
+    });
+  }
+
+  function hexToRgb(hex: string): [number, number, number] {
+    const h = hex.replace("#", "");
+    const n = parseInt(h.length === 3 ? h.split("").map((c) => c + c).join("") : h, 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+
+  function shadeColor(hex: string, percent: number): string {
+    const [r, g, b] = hexToRgb(hex);
+    const t = percent < 0 ? 0 : 255;
+    const p = Math.abs(percent);
+    const mix = (c: number) => Math.round((t - c) * p + c);
+    return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+  }
+
+  function drawBackground(w: number, h: number, progress: number) {
+    // Layered gradient background — never plain.
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    if (settings.theme === "greenscreen") {
+      ctx.fillStyle = "#00ff00";
+      ctx.fillRect(0, 0, w, h);
+      return;
+    }
+    if (settings.theme === "light") {
+      grad.addColorStop(0, "#ffffff");
+      grad.addColorStop(1, "#eef0f4");
+    } else if (settings.theme === "neon") {
+      grad.addColorStop(0, "#0b0420");
+      grad.addColorStop(1, "#1a0a3a");
+    } else {
+      grad.addColorStop(0, "#0e0e18");
+      grad.addColorStop(1, "#1a1a2e");
+    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    if (!cinematic) return;
+
+    // Slow-drifting glow blobs (the "particles" layer).
+    const t = progress * Math.PI * 2;
+    particles.forEach((p) => {
+      const x = (p.baseX + Math.sin(t * p.speed + p.seed) * 0.06) * w;
+      const y = (p.baseY + Math.cos(t * p.speed * 0.7 + p.seed) * 0.05) * h;
+      const r = p.radius * w * 8;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, settings.theme === "light" ? "rgba(124,92,252,0.10)" : "rgba(124,180,252,0.18)");
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Vignette.
+    const vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.max(w, h) * 0.75);
+    vg.addColorStop(0, "rgba(0,0,0,0)");
+    vg.addColorStop(1, settings.theme === "light" ? "rgba(0,0,0,0.10)" : "rgba(0,0,0,0.55)");
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, w, h);
   }
 
   function render(progress: number) {
@@ -183,9 +290,18 @@ export function createBarRaceAnimation(
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
 
-    // Background
-    ctx.fillStyle = theme.bg;
-    ctx.fillRect(0, 0, w, h);
+    // Layered background (gradient + particles + vignette).
+    drawBackground(w, h, progress);
+
+    // Subtle camera zoom + slight vertical drift (cinematic only).
+    if (cinematic) {
+      const zoom = 1 + 0.025 * Math.sin(progress * Math.PI);
+      const drift = Math.sin(progress * Math.PI * 2) * h * 0.005;
+      ctx.save();
+      ctx.translate(w / 2, h / 2);
+      ctx.scale(zoom, zoom);
+      ctx.translate(-w / 2, -h / 2 + drift);
+    }
 
     // Hook text fade out in first 15%
     if (settings.showIntro && showHook && progress < 0.15) {
@@ -201,7 +317,10 @@ export function createBarRaceAnimation(
         ctx.fillText(line.trim(), w / 2, h / 2 - 10 + i * 28);
       });
       ctx.restore();
-      if (progress < 0.08) return;
+      if (progress < 0.08) {
+        if (cinematic) ctx.restore();
+        return;
+      }
     }
 
     const dataProgress = Math.max(0, (progress - 0.12) / 0.85);
@@ -231,13 +350,23 @@ export function createBarRaceAnimation(
       bar.targetWidth = (bd.value / maxVal) * barAreaWidth;
     });
 
-    // Interpolate
-    const lerpSpeed = settings.smoothAnimation ? 0.12 : 0.3;
-    bars.forEach((bar) => {
-      bar.value = lerp(bar.value, bar.targetValue, lerpSpeed);
-      bar.y = lerp(bar.y, bar.targetY, lerpSpeed);
-      bar.width = lerp(bar.width, bar.targetWidth, lerpSpeed);
-    });
+    // Spring physics step (live playback). Recording calls stepSprings() externally.
+    stepSprings(1);
+
+    // NEW KING detection: trigger when the rank-1 target label changes.
+    const topLabel = visible[0]?.label ?? null;
+    if (topLabel && prevTopLabel && topLabel !== prevTopLabel && progress > 0.15 && progress < 0.95) {
+      kingFlashAt = elapsed;
+      kingFlashLabel = topLabel;
+    }
+    if (topLabel) prevTopLabel = topLabel;
+
+    // Year-pop trigger on integer year change.
+    const wholeYear = Math.round(currentYear);
+    if (wholeYear !== lastWholeYear) {
+      if (!Number.isNaN(lastWholeYear)) yearPopAt = elapsed;
+      lastWholeYear = wholeYear;
+    }
 
     // Title — positioned above the bars area
     const titleY = Math.max(sidePadding, topPad - Math.round(w * 0.09));
@@ -262,32 +391,73 @@ export function createBarRaceAnimation(
     const visibleLabels = new Set(visible.map((v) => v.label));
     const labelFontSize = Math.round(barHeight * 0.42);
     const valueFontSize = Math.round(barHeight * 0.36);
+    const leaderLabel = visible[0]?.label ?? null;
+    const isFinal = progress >= 0.97;
     bars.forEach((bar) => {
       if (!visibleLabels.has(bar.label)) return;
 
+      // Spotlight: leader gets 1.08x bar height + glow + brighter color; others dimmer.
+      const isLeader = bar.label === leaderLabel;
+      const spotlightTarget = isLeader ? 1 : 0;
+      bar.spotlight += (spotlightTarget - bar.spotlight) * 0.12;
+      const scale = cinematic ? 1 + 0.08 * bar.spotlight : 1;
+      const bh = barHeight * scale;
+      const yOffset = (bh - barHeight) / 2;
+      const drawY = bar.y - yOffset;
       const x = barStartX;
-      const roundRadius = Math.round(barHeight * 0.18);
-      const imgSize = barHeight - Math.round(barHeight * 0.12);
+      const roundRadius = Math.round(bh * 0.22);
+      const imgSize = bh - Math.round(bh * 0.12);
+      const dim = cinematic ? 1 - 0.25 * (1 - bar.spotlight) : 1;
 
-      // Static label on the LEFT (outside the bar), animates Y smoothly with the bar
+      // Static label on the LEFT (outside the bar), animates Y smoothly with the bar.
       if (settings.showLabels) {
+        ctx.save();
+        ctx.globalAlpha = dim;
         ctx.fillStyle = theme.text;
-        ctx.font = `700 ${labelFontSize}px system-ui, sans-serif`;
+        const ls = Math.round(labelFontSize * (isLeader && cinematic ? 1.06 : 1));
+        ctx.font = `700 ${ls}px system-ui, sans-serif`;
         ctx.textAlign = "right";
         ctx.textBaseline = "middle";
         ctx.fillText(bar.label, x - Math.round(w * 0.018), bar.y + barHeight / 2);
+        ctx.restore();
       }
 
-      // Bar
-      ctx.fillStyle = bar.color;
+      // Bar with gradient + shadow + leader glow.
+      ctx.save();
+      if (cinematic) {
+        ctx.shadowColor = bar.color;
+        ctx.shadowBlur = isLeader ? bh * 0.55 : bh * 0.18;
+        ctx.shadowOffsetY = bh * 0.05;
+      }
+      const bw = Math.max(bar.width, 2);
+      const bg = ctx.createLinearGradient(x, drawY, x, drawY + bh);
+      bg.addColorStop(0, shadeColor(bar.color, isLeader ? 0.25 : 0.12));
+      bg.addColorStop(1, shadeColor(bar.color, isLeader ? -0.05 : -0.15));
+      ctx.globalAlpha = dim;
+      ctx.fillStyle = bg;
       ctx.beginPath();
-      ctx.roundRect(x, bar.y, Math.max(bar.width, 2), barHeight, [0, roundRadius, roundRadius, 0]);
+      ctx.roundRect(x, drawY, bw, bh, [roundRadius * 0.4, roundRadius, roundRadius, roundRadius * 0.4]);
       ctx.fill();
+      ctx.restore();
+
+      // Soft top highlight for premium feel.
+      if (cinematic) {
+        ctx.save();
+        ctx.globalAlpha = 0.18 * dim;
+        const hg = ctx.createLinearGradient(x, drawY, x, drawY + bh * 0.4);
+        hg.addColorStop(0, "rgba(255,255,255,0.6)");
+        hg.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = hg;
+        ctx.beginPath();
+        ctx.roundRect(x, drawY, bw, bh * 0.4, [roundRadius * 0.4, roundRadius, 0, 0]);
+        ctx.fill();
+        ctx.restore();
+      }
 
       const img = labelImages?.[bar.label];
       if (img && img.complete && img.naturalWidth > 0) {
-        const imgX = x + Math.round(barHeight * 0.06);
-        const imgY = bar.y + Math.round(barHeight * 0.06);
+        const imgX = x + Math.round(bh * 0.06);
+        const imgY = drawY + Math.round(bh * 0.06);
         ctx.save();
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";
@@ -299,32 +469,147 @@ export function createBarRaceAnimation(
         ctx.restore();
       }
 
-      // Value: at end of bar
+      // Crown for the leader (cinematic only).
+      if (cinematic && isLeader) {
+        const cs = bh * 0.5;
+        const cx = x - Math.round(w * 0.018) + Math.round(w * 0.002);
+        const cy = drawY - cs * 0.2;
+        ctx.save();
+        ctx.fillStyle = "#ffd24a";
+        ctx.font = `${Math.round(cs)}px system-ui, "Apple Color Emoji", "Segoe UI Emoji"`;
+        ctx.textAlign = "right";
+        ctx.textBaseline = "bottom";
+        ctx.fillText("👑", cx, cy + cs);
+        ctx.restore();
+      }
+
+      // Value: at end of bar (rolling counter via spring `bar.value`).
       if (settings.showValues) {
+        ctx.save();
+        ctx.globalAlpha = dim;
         ctx.fillStyle = theme.text;
-        ctx.font = `700 ${valueFontSize}px system-ui, sans-serif`;
+        const vs = Math.round(valueFontSize * (isLeader && cinematic ? 1.12 : 1));
+        ctx.font = `800 ${vs}px system-ui, sans-serif`;
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
         ctx.fillText(
           formatValue(bar.value, settings.valueFormat),
-          x + Math.max(bar.width, 2) + Math.round(w * 0.012),
+          x + bw + Math.round(w * 0.012),
           bar.y + barHeight / 2,
         );
+        ctx.restore();
       }
     });
 
-    // Year — sits to the right of the LOWEST (last visible) bar position
+    // Year — large, lives below the lowest bar. Pops on each integer change.
     const lastY = topPad + (maxBars - 1) * (barHeight + barGap);
-    const yearFontSize = Math.round(barHeight * 1.1);
+    const yearFontSize = Math.round(barHeight * 1.25);
+    const yearAge = yearPopAt < 0 ? 999 : (elapsed - yearPopAt) / 1000;
+    const pop = cinematic && yearAge < 0.35 ? 1 + 0.18 * (1 - yearAge / 0.35) : 1;
+    const yearAlpha = cinematic ? 0.92 : 1;
+    const yearY = lastY + barHeight + barGap + yearFontSize / 2 + Math.round(w * 0.01);
+    const yearX = w - rightPadding;
+    ctx.save();
+    ctx.globalAlpha = yearAlpha;
     ctx.fillStyle = theme.text;
-    ctx.font = `900 ${yearFontSize}px system-ui, sans-serif`;
+    ctx.font = `900 ${Math.round(yearFontSize * pop)}px system-ui, sans-serif`;
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
-    ctx.fillText(
-      Math.round(currentYear).toString(),
-      w - rightPadding,
-      lastY + barHeight + barGap + yearFontSize / 2 + Math.round(w * 0.01),
-    );
+    ctx.fillText(Math.round(currentYear).toString(), yearX, yearY);
+    ctx.restore();
+
+    // Progress timeline (bottom).
+    if (cinematic && years.length > 1) {
+      const trackY = h - Math.round(h * 0.06);
+      const trackX1 = sidePadding;
+      const trackX2 = w - rightPadding;
+      const trackW = trackX2 - trackX1;
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.15)";
+      ctx.lineWidth = Math.max(2, Math.round(h * 0.003));
+      ctx.beginPath();
+      ctx.moveTo(trackX1, trackY);
+      ctx.lineTo(trackX2, trackY);
+      ctx.stroke();
+
+      const dotX = trackX1 + trackW * Math.min(dataProgress, 1);
+      ctx.strokeStyle = "rgba(255,255,255,0.7)";
+      ctx.beginPath();
+      ctx.moveTo(trackX1, trackY);
+      ctx.lineTo(dotX, trackY);
+      ctx.stroke();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = "#7c5cfc";
+      ctx.shadowBlur = h * 0.015;
+      ctx.beginPath();
+      ctx.arc(dotX, trackY, Math.max(4, Math.round(h * 0.007)), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.font = `600 ${Math.round(h * 0.018)}px system-ui, sans-serif`;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.fillText(String(years[0]), trackX1, trackY + h * 0.015);
+      ctx.textAlign = "right";
+      ctx.fillText(String(years[years.length - 1]), trackX2, trackY + h * 0.015);
+      ctx.restore();
+    }
+
+    // NEW KING flash overlay.
+    if (cinematic && kingFlashAt >= 0 && kingFlashLabel) {
+      const age = (elapsed - kingFlashAt) / 1000;
+      if (age < 1.0) {
+        const a = age < 0.15 ? age / 0.15 : age > 0.75 ? 1 - (age - 0.75) / 0.25 : 1;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1, a));
+        // Flash veil
+        if (age < 0.1) {
+          ctx.fillStyle = `rgba(255,255,255,${0.18 * (1 - age / 0.1)})`;
+          ctx.fillRect(0, 0, w, h);
+        }
+        // NEW KING text
+        const cx = w / 2;
+        const cy = h * 0.18;
+        const pop2 = 1 + 0.1 * Math.sin(age * Math.PI);
+        ctx.fillStyle = "#ffd24a";
+        ctx.font = `900 ${Math.round(w * 0.055 * pop2)}px system-ui, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.shadowColor = "rgba(0,0,0,0.6)";
+        ctx.shadowBlur = 20;
+        ctx.fillText(`👑 NEW LEADER`, cx, cy);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#ffffff";
+        ctx.font = `700 ${Math.round(w * 0.038)}px system-ui, sans-serif`;
+        ctx.fillText(kingFlashLabel, cx, cy + w * 0.05);
+        ctx.restore();
+      } else {
+        kingFlashAt = -1;
+        kingFlashLabel = null;
+      }
+    }
+
+    // Final scene highlight — winner gets a fat radial glow.
+    if (cinematic && isFinal && leaderLabel) {
+      const leaderBar = bars.find((b) => b.label === leaderLabel);
+      if (leaderBar) {
+        const cx = barStartX + leaderBar.width / 2;
+        const cy = leaderBar.y + barHeight / 2;
+        const rad = Math.max(barHeight * 2, w * 0.15);
+        const fg = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
+        fg.addColorStop(0, `${leaderBar.color}55`);
+        fg.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.fillStyle = fg;
+        ctx.fillRect(0, 0, w, h);
+        ctx.restore();
+      }
+    }
+
+    if (cinematic) ctx.restore(); // close camera transform
 
     // Watermark (draggable) — can be hidden by premium users
     if (!settings.hideWatermark) {
@@ -382,11 +667,17 @@ export function createBarRaceAnimation(
       elapsed = 0;
       startTime = 0;
       showHook = true;
+      prevTopLabel = null;
+      kingFlashAt = -1;
+      kingFlashLabel = null;
+      lastWholeYear = Number.NaN;
+      yearPopAt = -1;
       const rm = metrics(canvas.width, canvas.height);
       const resetTop = getTopPadding(canvas.width, canvas.height);
       bars.forEach((b) => {
         b.value = 0;
         b.width = 0;
+        b.vValue = 0; b.vWidth = 0; b.vY = 0; b.spotlight = 0;
         b.y = resetTop + labels.indexOf(b.label) * (rm.barHeight + rm.barGap);
       });
       render(0);
@@ -403,11 +694,17 @@ export function createBarRaceAnimation(
       elapsed = 0;
       startTime = 0;
       showHook = true;
+      prevTopLabel = null;
+      kingFlashAt = -1;
+      kingFlashLabel = null;
+      lastWholeYear = Number.NaN;
+      yearPopAt = -1;
       const rm = metrics(canvas.width, canvas.height);
       const recTop = getTopPadding(canvas.width, canvas.height);
       bars.forEach((b) => {
         b.value = 0;
         b.width = 0;
+        b.vValue = 0; b.vWidth = 0; b.vY = 0; b.spotlight = 0;
         b.y = recTop + labels.indexOf(b.label) * (rm.barHeight + rm.barGap);
       });
 
@@ -479,15 +776,15 @@ export function createBarRaceAnimation(
                 bar.targetWidth = (bd.value / maxVal) * barAreaWidth;
               });
 
-              // More lerp steps for recording so bars fully converge each frame
-              const lerpSpeed = settings.smoothAnimation ? 0.12 : 0.3;
-              for (let s = 0; s < 12; s++) {
-                bars.forEach((bar) => {
-                  bar.value = lerp(bar.value, bar.targetValue, lerpSpeed);
-                  bar.y = lerp(bar.y, bar.targetY, lerpSpeed);
-                  bar.width = lerp(bar.width, bar.targetWidth, lerpSpeed);
-                });
-              }
+              // Dynamic speed: slow physics during big rank shake-ups to add anticipation.
+              const totalDelta = bars.reduce(
+                (acc, b) => acc + Math.abs(b.targetY - b.y) + Math.abs(b.targetWidth - b.width) * 0.5,
+                0,
+              );
+              const big = totalDelta > canvas.height * 0.4;
+              const strength = big ? 0.7 : 1;
+              // Multiple spring iterations per frame so motion fully converges between frames.
+              for (let s = 0; s < 5; s++) stepSprings(strength);
 
               render(progress);
               track.requestFrame?.();

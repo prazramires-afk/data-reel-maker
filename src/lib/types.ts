@@ -47,6 +47,8 @@ export interface ProjectSettings {
   valueFormat?: ValueFormat;
   /** Custom hex color per data label. Falls back to BAR_COLORS palette when missing. */
   labelColors?: Record<string, string>;
+  /** Cinematic preset: spring physics, leader spotlight, camera motion, particles. */
+  cinematic?: boolean;
 }
 
 export interface Project {
@@ -113,6 +115,7 @@ export const DEFAULT_SETTINGS: ProjectSettings = {
   titleSafeMargin: 0.08,
   valueFormat: { ...DEFAULT_VALUE_FORMAT },
   labelColors: {},
+  cinematic: true,
 };
 
 export const VIDEO_TYPES: { type: VideoType; label: string; description: string; available: boolean }[] = [
