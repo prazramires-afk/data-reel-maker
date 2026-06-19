@@ -10,6 +10,12 @@ interface BarState {
   color: string;
   width: number;
   targetWidth: number;
+  // Spring velocities — drives momentum, inertia, slight overshoot, smooth settling.
+  vValue: number;
+  vY: number;
+  vWidth: number;
+  // Leader spotlight scale (0..1 -> 1.0..1.08 visually).
+  spotlight: number;
 }
 
 function getThemeColors(theme: ThemeType) {
