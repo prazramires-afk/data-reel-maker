@@ -452,7 +452,7 @@ export function createBarRaceAnimation(
         ctx.shadowBlur = isLeader ? bh * 0.55 : bh * 0.18;
         ctx.shadowOffsetY = bh * 0.05;
       }
-      const bw = Math.max(bar.width, 2);
+      const bw = Math.min(Math.max(bar.width, 2), barAreaWidth);
       const bg = ctx.createLinearGradient(x, drawY, x, drawY + bh);
       bg.addColorStop(0, shadeColor(bar.color, isLeader ? 0.25 : 0.12));
       bg.addColorStop(1, shadeColor(bar.color, isLeader ? -0.05 : -0.15));
