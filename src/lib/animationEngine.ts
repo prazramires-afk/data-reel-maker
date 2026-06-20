@@ -139,19 +139,24 @@ export function createBarRaceAnimation(
     const labelGutter = Math.round(w * 0.26); // static left column for "Label  value"
     const sidePadding = Math.round(w * 0.04);
     const rightPadding = Math.round(w * 0.06);
-    // Fit bars to height: maximize bar height so chart fills the frame.
+    // Fit bars to height: maximize bar height so chart fills the frame, BUT
+    // always reserve room at the bottom for the progress timeline + watermark
+    // so nothing gets cut off in exported video.
     const titleSpace = Math.round(w * 0.14);
-    const bottomSpace = Math.round(w * 0.08);
+    const bottomSpace = Math.round(h * 0.13); // timeline + watermark gutter
     const available = h - titleSpace - bottomSpace;
     const barHeight = Math.max(20, Math.floor(available / (maxBars * 1.18)));
     const barGap = Math.round(barHeight * 0.18);
-    return { barHeight, barGap, sidePadding, rightPadding, labelGutter, titleSpace };
+    return { barHeight, barGap, sidePadding, rightPadding, labelGutter, titleSpace, bottomSpace };
   }
 
   function getTopPadding(canvasWidth: number, canvasHeight: number) {
     const m = metrics(canvasWidth, canvasHeight);
     const totalBarsHeight = maxBars * m.barHeight + (maxBars - 1) * m.barGap;
-    return Math.max(m.titleSpace, (canvasHeight - totalBarsHeight) / 2);
+    // Center bars between title space and reserved bottom space.
+    const usable = canvasHeight - m.titleSpace - m.bottomSpace;
+    const extra = Math.max(0, usable - totalBarsHeight);
+    return m.titleSpace + extra / 2;
   }
 
   let playing = false;
