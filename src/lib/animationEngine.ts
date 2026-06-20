@@ -114,6 +114,21 @@ export function getFittedTitleFontSize(
   return Math.round(Math.max(minSize, fittedSize));
 }
 
+function getFittedCanvasFontSize(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  baseSize: number,
+  maxWidth: number,
+  weight = 700,
+  minSize = 12,
+) {
+  let size = Math.max(minSize, baseSize);
+  ctx.font = `${weight} ${Math.round(size)}px system-ui, sans-serif`;
+  const width = ctx.measureText(text).width;
+  if (width > maxWidth) size *= maxWidth / width;
+  return Math.round(Math.max(minSize, size));
+}
+
 export function createBarRaceAnimation(
   canvas: HTMLCanvasElement,
   data: DataRow[],
@@ -136,9 +151,10 @@ export function createBarRaceAnimation(
   // TikTok-viral compact layout: labels sit OUTSIDE the bar on the left (static gutter),
   // year sits to the right of the LOWEST bar, no giant background year.
   function metrics(w: number, h: number) {
-    const labelGutter = Math.round(w * 0.26); // static left column for "Label  value"
-    const sidePadding = Math.round(w * 0.04);
-    const rightPadding = Math.round(w * 0.06);
+    const sidePadding = Math.max(28, Math.round(w * 0.055));
+    const rightPadding = Math.max(40, Math.round(w * 0.07));
+    const labelGutter = Math.round(w * 0.34); // static left column; wide enough for country names
+    const valueGutter = Math.round(w * 0.13); // reserve space so end labels never render past the canvas
     // Fit bars to height: maximize bar height so chart fills the frame, BUT
     // always reserve room at the bottom for the progress timeline + watermark
     // so nothing gets cut off in exported video.
@@ -147,7 +163,7 @@ export function createBarRaceAnimation(
     const available = h - titleSpace - bottomSpace;
     const barHeight = Math.max(20, Math.floor(available / (maxBars * 1.18)));
     const barGap = Math.round(barHeight * 0.18);
-    return { barHeight, barGap, sidePadding, rightPadding, labelGutter, titleSpace, bottomSpace };
+    return { barHeight, barGap, sidePadding, rightPadding, labelGutter, valueGutter, titleSpace, bottomSpace };
   }
 
   function getTopPadding(canvasWidth: number, canvasHeight: number) {
@@ -290,7 +306,7 @@ export function createBarRaceAnimation(
   function render(progress: number) {
     const w = canvas.width;
     const h = canvas.height;
-    const { barHeight, barGap, sidePadding, rightPadding, labelGutter } = metrics(w, h);
+    const { barHeight, barGap, sidePadding, rightPadding, labelGutter, valueGutter } = metrics(w, h);
 
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
@@ -298,15 +314,8 @@ export function createBarRaceAnimation(
     // Layered background (gradient + particles + vignette).
     drawBackground(w, h, progress);
 
-    // Subtle camera zoom + slight vertical drift (cinematic only).
-    if (cinematic) {
-      const zoom = 1 + 0.025 * Math.sin(progress * Math.PI);
-      const drift = Math.sin(progress * Math.PI * 2) * h * 0.005;
-      ctx.save();
-      ctx.translate(w / 2, h / 2);
-      ctx.scale(zoom, zoom);
-      ctx.translate(-w / 2, -h / 2 + drift);
-    }
+    // Keep the data layer locked inside the export safe area. Backgrounds can move,
+    // but scaling foreground content causes MP4/WebM edge clipping on long labels/values.
 
     // Hook text fade out in first 15%
     if (settings.showIntro && showHook && progress < 0.15) {
@@ -323,7 +332,6 @@ export function createBarRaceAnimation(
       });
       ctx.restore();
       if (progress < 0.08) {
-        if (cinematic) ctx.restore();
         return;
       }
     }
@@ -344,7 +352,7 @@ export function createBarRaceAnimation(
     const maxVal = Math.max(...visible.map((b) => b.value), 1);
     // Bars start after the static label gutter on the left.
     const barStartX = sidePadding + labelGutter;
-    const barAreaWidth = w - barStartX - rightPadding;
+    const barAreaWidth = w - barStartX - rightPadding - valueGutter;
 
     // Update targets
     const topPad = getTopPadding(w, h);
@@ -394,8 +402,11 @@ export function createBarRaceAnimation(
 
     // Bars + static left-side labels (TikTok viral style)
     const visibleLabels = new Set(visible.map((v) => v.label));
-    const labelFontSize = Math.round(barHeight * 0.42);
-    const valueFontSize = Math.round(barHeight * 0.36);
+    const labelGap = Math.round(w * 0.018);
+    const labelRightX = barStartX - labelGap;
+    const labelMaxWidth = Math.max(40, labelRightX - sidePadding);
+    const labelFontSize = Math.round(barHeight * 0.36);
+    const valueFontSize = Math.round(barHeight * 0.34);
     const leaderLabel = visible[0]?.label ?? null;
     const isFinal = progress >= 0.97;
     bars.forEach((bar) => {
@@ -419,11 +430,18 @@ export function createBarRaceAnimation(
         ctx.save();
         ctx.globalAlpha = dim;
         ctx.fillStyle = theme.text;
-        const ls = Math.round(labelFontSize * (isLeader && cinematic ? 1.06 : 1));
+        const ls = getFittedCanvasFontSize(
+          ctx,
+          bar.label,
+          labelFontSize * (isLeader && cinematic ? 1.06 : 1),
+          labelMaxWidth,
+          700,
+          Math.max(13, Math.round(w * 0.016)),
+        );
         ctx.font = `700 ${ls}px system-ui, sans-serif`;
         ctx.textAlign = "right";
         ctx.textBaseline = "middle";
-        ctx.fillText(bar.label, x - Math.round(w * 0.018), bar.y + barHeight / 2);
+        ctx.fillText(bar.label, labelRightX, bar.y + barHeight / 2, labelMaxWidth);
         ctx.restore();
       }
 
@@ -434,7 +452,7 @@ export function createBarRaceAnimation(
         ctx.shadowBlur = isLeader ? bh * 0.55 : bh * 0.18;
         ctx.shadowOffsetY = bh * 0.05;
       }
-      const bw = Math.max(bar.width, 2);
+      const bw = Math.min(Math.max(bar.width, 2), barAreaWidth);
       const bg = ctx.createLinearGradient(x, drawY, x, drawY + bh);
       bg.addColorStop(0, shadeColor(bar.color, isLeader ? 0.25 : 0.12));
       bg.addColorStop(1, shadeColor(bar.color, isLeader ? -0.05 : -0.15));
@@ -477,7 +495,7 @@ export function createBarRaceAnimation(
       // Crown for the leader (cinematic only).
       if (cinematic && isLeader) {
         const cs = bh * 0.5;
-        const cx = x - Math.round(w * 0.018) + Math.round(w * 0.002);
+        const cx = labelRightX;
         const cy = drawY - cs * 0.2;
         ctx.save();
         ctx.fillStyle = "#ffd24a";
@@ -493,15 +511,21 @@ export function createBarRaceAnimation(
         ctx.save();
         ctx.globalAlpha = dim;
         ctx.fillStyle = theme.text;
-        const vs = Math.round(valueFontSize * (isLeader && cinematic ? 1.12 : 1));
+        const valueText = formatValue(bar.value, settings.valueFormat);
+        const valueX = x + bw + Math.round(w * 0.012);
+        const valueMaxWidth = Math.max(28, w - rightPadding - valueX);
+        const vs = getFittedCanvasFontSize(
+          ctx,
+          valueText,
+          valueFontSize * (isLeader && cinematic ? 1.12 : 1),
+          valueMaxWidth,
+          800,
+          Math.max(11, Math.round(w * 0.014)),
+        );
         ctx.font = `800 ${vs}px system-ui, sans-serif`;
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        ctx.fillText(
-          formatValue(bar.value, settings.valueFormat),
-          x + bw + Math.round(w * 0.012),
-          bar.y + barHeight / 2,
-        );
+        ctx.fillText(valueText, valueX, bar.y + barHeight / 2, valueMaxWidth);
         ctx.restore();
       }
     });
@@ -617,8 +641,6 @@ export function createBarRaceAnimation(
         ctx.restore();
       }
     }
-
-    if (cinematic) ctx.restore(); // close camera transform
 
     // Watermark (draggable) — can be hidden by premium users
     if (!settings.hideWatermark) {
@@ -775,7 +797,7 @@ export function createBarRaceAnimation(
               const maxVal = Math.max(...visible.map((b) => b.value), 1);
               const recM = metrics(canvas.width, canvas.height);
               const barStartX = recM.sidePadding + recM.labelGutter;
-              const barAreaWidth = canvas.width - barStartX - recM.rightPadding;
+              const barAreaWidth = canvas.width - barStartX - recM.rightPadding - recM.valueGutter;
 
               const recTopPad = getTopPadding(canvas.width, canvas.height);
               visible.forEach((bd, i) => {
