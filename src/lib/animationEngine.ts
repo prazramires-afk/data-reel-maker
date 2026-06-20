@@ -114,6 +114,21 @@ export function getFittedTitleFontSize(
   return Math.round(Math.max(minSize, fittedSize));
 }
 
+function getFittedCanvasFontSize(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  baseSize: number,
+  maxWidth: number,
+  weight = 700,
+  minSize = 12,
+) {
+  let size = Math.max(minSize, baseSize);
+  ctx.font = `${weight} ${Math.round(size)}px system-ui, sans-serif`;
+  const width = ctx.measureText(text).width;
+  if (width > maxWidth) size *= maxWidth / width;
+  return Math.round(Math.max(minSize, size));
+}
+
 export function createBarRaceAnimation(
   canvas: HTMLCanvasElement,
   data: DataRow[],
@@ -136,9 +151,9 @@ export function createBarRaceAnimation(
   // TikTok-viral compact layout: labels sit OUTSIDE the bar on the left (static gutter),
   // year sits to the right of the LOWEST bar, no giant background year.
   function metrics(w: number, h: number) {
-    const labelGutter = Math.round(w * 0.26); // static left column for "Label  value"
-    const sidePadding = Math.round(w * 0.04);
-    const rightPadding = Math.round(w * 0.06);
+    const sidePadding = Math.max(28, Math.round(w * 0.055));
+    const rightPadding = Math.max(40, Math.round(w * 0.07));
+    const labelGutter = Math.round(w * 0.34); // static left column; wide enough for country names
     // Fit bars to height: maximize bar height so chart fills the frame, BUT
     // always reserve room at the bottom for the progress timeline + watermark
     // so nothing gets cut off in exported video.
@@ -298,15 +313,8 @@ export function createBarRaceAnimation(
     // Layered background (gradient + particles + vignette).
     drawBackground(w, h, progress);
 
-    // Subtle camera zoom + slight vertical drift (cinematic only).
-    if (cinematic) {
-      const zoom = 1 + 0.025 * Math.sin(progress * Math.PI);
-      const drift = Math.sin(progress * Math.PI * 2) * h * 0.005;
-      ctx.save();
-      ctx.translate(w / 2, h / 2);
-      ctx.scale(zoom, zoom);
-      ctx.translate(-w / 2, -h / 2 + drift);
-    }
+    // Keep the data layer locked inside the export safe area. Backgrounds can move,
+    // but scaling foreground content causes MP4/WebM edge clipping on long labels/values.
 
     // Hook text fade out in first 15%
     if (settings.showIntro && showHook && progress < 0.15) {
@@ -323,7 +331,6 @@ export function createBarRaceAnimation(
       });
       ctx.restore();
       if (progress < 0.08) {
-        if (cinematic) ctx.restore();
         return;
       }
     }
@@ -394,8 +401,11 @@ export function createBarRaceAnimation(
 
     // Bars + static left-side labels (TikTok viral style)
     const visibleLabels = new Set(visible.map((v) => v.label));
-    const labelFontSize = Math.round(barHeight * 0.42);
-    const valueFontSize = Math.round(barHeight * 0.36);
+    const labelGap = Math.round(w * 0.018);
+    const labelRightX = barStartX - labelGap;
+    const labelMaxWidth = Math.max(40, labelRightX - sidePadding);
+    const labelFontSize = Math.round(barHeight * 0.36);
+    const valueFontSize = Math.round(barHeight * 0.34);
     const leaderLabel = visible[0]?.label ?? null;
     const isFinal = progress >= 0.97;
     bars.forEach((bar) => {
@@ -419,11 +429,18 @@ export function createBarRaceAnimation(
         ctx.save();
         ctx.globalAlpha = dim;
         ctx.fillStyle = theme.text;
-        const ls = Math.round(labelFontSize * (isLeader && cinematic ? 1.06 : 1));
+        const ls = getFittedCanvasFontSize(
+          ctx,
+          bar.label,
+          labelFontSize * (isLeader && cinematic ? 1.06 : 1),
+          labelMaxWidth,
+          700,
+          Math.max(13, Math.round(w * 0.016)),
+        );
         ctx.font = `700 ${ls}px system-ui, sans-serif`;
         ctx.textAlign = "right";
         ctx.textBaseline = "middle";
-        ctx.fillText(bar.label, x - Math.round(w * 0.018), bar.y + barHeight / 2);
+        ctx.fillText(bar.label, labelRightX, bar.y + barHeight / 2, labelMaxWidth);
         ctx.restore();
       }
 
