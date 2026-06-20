@@ -506,13 +506,17 @@ export function createBarRaceAnimation(
       }
     });
 
-    // Year — large, lives below the lowest bar. Pops on each integer change.
-    const lastY = topPad + (maxBars - 1) * (barHeight + barGap);
-    const yearFontSize = Math.round(barHeight * 1.25);
+    // Year — sits inline at the right edge of the lowest bar row.
+    // Pops on each integer change. Sized to fit within the bar row so it
+    // never overflows the canvas in exported video.
+    const visibleCount = Math.min(visible.length, maxBars);
+    const lastIndex = Math.max(0, visibleCount - 1);
+    const lastY = topPad + lastIndex * (barHeight + barGap);
+    const yearFontSize = Math.round(barHeight * 0.95);
     const yearAge = yearPopAt < 0 ? 999 : (elapsed - yearPopAt) / 1000;
     const pop = cinematic && yearAge < 0.35 ? 1 + 0.18 * (1 - yearAge / 0.35) : 1;
     const yearAlpha = cinematic ? 0.92 : 1;
-    const yearY = lastY + barHeight + barGap + yearFontSize / 2 + Math.round(w * 0.01);
+    const yearY = lastY + barHeight / 2;
     const yearX = w - rightPadding;
     ctx.save();
     ctx.globalAlpha = yearAlpha;
