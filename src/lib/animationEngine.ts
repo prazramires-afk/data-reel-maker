@@ -494,7 +494,7 @@ export function createBarRaceAnimation(
       // Crown for the leader (cinematic only).
       if (cinematic && isLeader) {
         const cs = bh * 0.5;
-        const cx = x - Math.round(w * 0.018) + Math.round(w * 0.002);
+        const cx = labelRightX;
         const cy = drawY - cs * 0.2;
         ctx.save();
         ctx.fillStyle = "#ffd24a";
@@ -510,15 +510,21 @@ export function createBarRaceAnimation(
         ctx.save();
         ctx.globalAlpha = dim;
         ctx.fillStyle = theme.text;
-        const vs = Math.round(valueFontSize * (isLeader && cinematic ? 1.12 : 1));
+        const valueText = formatValue(bar.value, settings.valueFormat);
+        const valueX = x + bw + Math.round(w * 0.012);
+        const valueMaxWidth = Math.max(28, w - rightPadding - valueX);
+        const vs = getFittedCanvasFontSize(
+          ctx,
+          valueText,
+          valueFontSize * (isLeader && cinematic ? 1.12 : 1),
+          valueMaxWidth,
+          800,
+          Math.max(11, Math.round(w * 0.014)),
+        );
         ctx.font = `800 ${vs}px system-ui, sans-serif`;
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        ctx.fillText(
-          formatValue(bar.value, settings.valueFormat),
-          x + bw + Math.round(w * 0.012),
-          bar.y + barHeight / 2,
-        );
+        ctx.fillText(valueText, valueX, bar.y + barHeight / 2, valueMaxWidth);
         ctx.restore();
       }
     });
@@ -634,8 +640,6 @@ export function createBarRaceAnimation(
         ctx.restore();
       }
     }
-
-    if (cinematic) ctx.restore(); // close camera transform
 
     // Watermark (draggable) — can be hidden by premium users
     if (!settings.hideWatermark) {
