@@ -154,6 +154,7 @@ export function createBarRaceAnimation(
     const sidePadding = Math.max(28, Math.round(w * 0.055));
     const rightPadding = Math.max(40, Math.round(w * 0.07));
     const labelGutter = Math.round(w * 0.34); // static left column; wide enough for country names
+    const valueGutter = Math.round(w * 0.13); // reserve space so end labels never render past the canvas
     // Fit bars to height: maximize bar height so chart fills the frame, BUT
     // always reserve room at the bottom for the progress timeline + watermark
     // so nothing gets cut off in exported video.
@@ -162,7 +163,7 @@ export function createBarRaceAnimation(
     const available = h - titleSpace - bottomSpace;
     const barHeight = Math.max(20, Math.floor(available / (maxBars * 1.18)));
     const barGap = Math.round(barHeight * 0.18);
-    return { barHeight, barGap, sidePadding, rightPadding, labelGutter, titleSpace, bottomSpace };
+    return { barHeight, barGap, sidePadding, rightPadding, labelGutter, valueGutter, titleSpace, bottomSpace };
   }
 
   function getTopPadding(canvasWidth: number, canvasHeight: number) {
@@ -305,7 +306,7 @@ export function createBarRaceAnimation(
   function render(progress: number) {
     const w = canvas.width;
     const h = canvas.height;
-    const { barHeight, barGap, sidePadding, rightPadding, labelGutter } = metrics(w, h);
+    const { barHeight, barGap, sidePadding, rightPadding, labelGutter, valueGutter } = metrics(w, h);
 
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
@@ -351,7 +352,7 @@ export function createBarRaceAnimation(
     const maxVal = Math.max(...visible.map((b) => b.value), 1);
     // Bars start after the static label gutter on the left.
     const barStartX = sidePadding + labelGutter;
-    const barAreaWidth = w - barStartX - rightPadding;
+    const barAreaWidth = w - barStartX - rightPadding - valueGutter;
 
     // Update targets
     const topPad = getTopPadding(w, h);
@@ -796,7 +797,7 @@ export function createBarRaceAnimation(
               const maxVal = Math.max(...visible.map((b) => b.value), 1);
               const recM = metrics(canvas.width, canvas.height);
               const barStartX = recM.sidePadding + recM.labelGutter;
-              const barAreaWidth = canvas.width - barStartX - recM.rightPadding;
+              const barAreaWidth = canvas.width - barStartX - recM.rightPadding - recM.valueGutter;
 
               const recTopPad = getTopPadding(canvas.width, canvas.height);
               visible.forEach((bd, i) => {
