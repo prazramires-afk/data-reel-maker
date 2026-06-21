@@ -1,5 +1,6 @@
 import { DataRow, ProjectSettings, BAR_COLORS, ThemeType } from "./types";
 import { formatValue } from "./valueFormat";
+import { fitTextToBounds, fitRectToBounds, type FrameBounds } from "./frameBoundsFitter";
 
 interface BarState {
   label: string;
@@ -307,6 +308,11 @@ export function createBarRaceAnimation(
     const w = canvas.width;
     const h = canvas.height;
     const { barHeight, barGap, sidePadding, rightPadding, labelGutter, valueGutter } = metrics(w, h);
+    // Global frame-bounds for the automatic fitter. Every text/graphic drawn
+    // below is run through fitTextToBounds / fitRectToBounds to guarantee
+    // nothing crops against the export canvas edges.
+    const safePad = Math.min(sidePadding, rightPadding) * 0.5;
+    const frame: FrameBounds = { width: w, height: h, padding: safePad };
 
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
@@ -386,7 +392,7 @@ export function createBarRaceAnimation(
     if (settings.title) {
       ctx.fillStyle = theme.text;
       const titleMaxWidth = w - sidePadding - rightPadding - w * 0.16;
-      const titleFontSize = getFittedTitleFontSize(
+      const baseTitleSize = getFittedTitleFontSize(
         ctx,
         settings.title,
         w,
@@ -394,10 +400,21 @@ export function createBarRaceAnimation(
         settings,
         titleMaxWidth,
       );
-      ctx.font = `bold ${titleFontSize}px system-ui, sans-serif`;
+      const fitTitle = fitTextToBounds(ctx, frame, {
+        text: settings.title,
+        x: sidePadding,
+        y: titleY,
+        baseFontSize: baseTitleSize,
+        weight: "bold",
+        align: "left",
+        baseline: "top",
+        maxWidth: titleMaxWidth,
+        minFontSize: Math.max(14, Math.round(w * 0.018)),
+      });
+      ctx.font = fitTitle.font;
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
-      ctx.fillText(settings.title, sidePadding, titleY, titleMaxWidth);
+      ctx.fillText(settings.title, fitTitle.x, fitTitle.y, titleMaxWidth);
     }
 
     // Bars + static left-side labels (TikTok viral style)
@@ -492,17 +509,22 @@ export function createBarRaceAnimation(
         ctx.restore();
       }
 
-      // Crown for the leader (cinematic only).
+      // Crown for the leader (cinematic only). Auto-fitted so it never
+      // crosses the top of the frame on the #1 bar.
       if (cinematic && isLeader) {
         const cs = bh * 0.5;
-        const cx = labelRightX;
-        const cy = drawY - cs * 0.2;
+        const crownRect = fitRectToBounds(frame, {
+          x: labelRightX - cs,
+          y: drawY - cs * 0.2,
+          width: cs,
+          height: cs,
+        });
         ctx.save();
         ctx.fillStyle = "#ffd24a";
-        ctx.font = `${Math.round(cs)}px system-ui, "Apple Color Emoji", "Segoe UI Emoji"`;
-        ctx.textAlign = "right";
-        ctx.textBaseline = "bottom";
-        ctx.fillText("👑", cx, cy + cs);
+        ctx.font = `${Math.round(crownRect.height)}px system-ui, "Apple Color Emoji", "Segoe UI Emoji"`;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillText("👑", crownRect.x, crownRect.y);
         ctx.restore();
       }
 
@@ -531,8 +553,8 @@ export function createBarRaceAnimation(
     });
 
     // Year — sits inline at the right edge of the lowest bar row.
-    // Pops on each integer change. Sized to fit within the bar row so it
-    // never overflows the canvas in exported video.
+    // Pops on each integer change. Auto-fitted so the digits never overflow
+    // either the canvas width OR the bottom timeline area in exports.
     const visibleCount = Math.min(visible.length, maxBars);
     const lastIndex = Math.max(0, visibleCount - 1);
     const lastY = topPad + lastIndex * (barHeight + barGap);
@@ -540,15 +562,26 @@ export function createBarRaceAnimation(
     const yearAge = yearPopAt < 0 ? 999 : (elapsed - yearPopAt) / 1000;
     const pop = cinematic && yearAge < 0.35 ? 1 + 0.18 * (1 - yearAge / 0.35) : 1;
     const yearAlpha = cinematic ? 0.92 : 1;
-    const yearY = lastY + barHeight / 2;
-    const yearX = w - rightPadding;
+    const yearText = Math.round(currentYear).toString();
+    const yearFit = fitTextToBounds(ctx, frame, {
+      text: yearText,
+      x: w - rightPadding,
+      y: lastY + barHeight / 2,
+      baseFontSize: Math.round(yearFontSize * pop),
+      weight: 900,
+      align: "right",
+      baseline: "middle",
+      maxWidth: Math.max(barHeight * 3, w * 0.25),
+      maxHeight: barHeight * 1.1,
+      minFontSize: Math.max(14, Math.round(w * 0.02)),
+    });
     ctx.save();
     ctx.globalAlpha = yearAlpha;
     ctx.fillStyle = theme.text;
-    ctx.font = `900 ${Math.round(yearFontSize * pop)}px system-ui, sans-serif`;
+    ctx.font = yearFit.font;
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
-    ctx.fillText(Math.round(currentYear).toString(), yearX, yearY);
+    ctx.fillText(yearText, yearFit.x, yearFit.y);
     ctx.restore();
 
     // Progress timeline (bottom).
@@ -602,21 +635,42 @@ export function createBarRaceAnimation(
           ctx.fillStyle = `rgba(255,255,255,${0.18 * (1 - age / 0.1)})`;
           ctx.fillRect(0, 0, w, h);
         }
-        // NEW KING text
+        // NEW KING headline + subtitle — both fitted so the overlay never
+        // overflows on narrow / portrait canvases.
         const cx = w / 2;
         const cy = h * 0.18;
         const pop2 = 1 + 0.1 * Math.sin(age * Math.PI);
+        const headFit = fitTextToBounds(ctx, frame, {
+          text: "👑 NEW LEADER",
+          x: cx,
+          y: cy,
+          baseFontSize: Math.round(w * 0.055 * pop2),
+          weight: 900,
+          align: "center",
+          baseline: "middle",
+          minFontSize: Math.max(18, Math.round(w * 0.025)),
+        });
         ctx.fillStyle = "#ffd24a";
-        ctx.font = `900 ${Math.round(w * 0.055 * pop2)}px system-ui, sans-serif`;
+        ctx.font = headFit.font;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.shadowColor = "rgba(0,0,0,0.6)";
         ctx.shadowBlur = 20;
-        ctx.fillText(`👑 NEW LEADER`, cx, cy);
+        ctx.fillText("👑 NEW LEADER", headFit.x, headFit.y);
         ctx.shadowBlur = 0;
+        const subFit = fitTextToBounds(ctx, frame, {
+          text: kingFlashLabel,
+          x: cx,
+          y: cy + w * 0.05,
+          baseFontSize: Math.round(w * 0.038),
+          weight: 700,
+          align: "center",
+          baseline: "middle",
+          minFontSize: Math.max(14, Math.round(w * 0.02)),
+        });
         ctx.fillStyle = "#ffffff";
-        ctx.font = `700 ${Math.round(w * 0.038)}px system-ui, sans-serif`;
-        ctx.fillText(kingFlashLabel, cx, cy + w * 0.05);
+        ctx.font = subFit.font;
+        ctx.fillText(kingFlashLabel, subFit.x, subFit.y);
         ctx.restore();
       } else {
         kingFlashAt = -1;
@@ -642,15 +696,25 @@ export function createBarRaceAnimation(
       }
     }
 
-    // Watermark (draggable) — can be hidden by premium users
+    // Watermark — auto-fitted so user-positioned watermarks never crop.
     if (!settings.hideWatermark) {
       const wp = settings.watermarkPos ?? { x: 0.5, y: 0.97 };
+      const wmFit = fitTextToBounds(ctx, frame, {
+        text: "Made with datatovid.com",
+        x: w * wp.x,
+        y: h * wp.y,
+        baseFontSize: Math.round(w * 0.025),
+        weight: 500,
+        align: "center",
+        baseline: "middle",
+        minFontSize: Math.max(10, Math.round(w * 0.014)),
+      });
       ctx.fillStyle = theme.sub;
       ctx.globalAlpha = 0.4;
-      ctx.font = `500 ${Math.round(w * 0.025)}px system-ui, sans-serif`;
+      ctx.font = wmFit.font;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("Made with datatovid.com", w * wp.x, h * wp.y);
+      ctx.fillText("Made with datatovid.com", wmFit.x, wmFit.y);
       ctx.globalAlpha = 1;
     }
   }
