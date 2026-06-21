@@ -362,9 +362,7 @@ const Create = () => {
     setCommunityShareUrl(null);
 
     try {
-      const { w, h } = useCustomSize
-        ? { w: settings.exportWidth!, h: settings.exportHeight! }
-        : resolutionMap[exportResolution];
+      const { w, h } = resolutionMap[exportResolution];
       const exportCanvas = exportCanvasRef.current!;
       exportCanvas.width = w;
       exportCanvas.height = h;
