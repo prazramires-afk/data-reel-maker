@@ -145,6 +145,7 @@ const Create = () => {
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [exportFormat, setExportFormat] = useState<"webm" | "mp4">("mp4");
   const [exportResolution, setExportResolution] = useState<"480p" | "720p" | "1080p">("1080p");
+  const [exportAspect, setExportAspect] = useState<"portrait" | "landscape" | "square">("portrait");
   const [selectedTrack, setSelectedTrack] = useState("none");
   const [sharingCommunity, setSharingCommunity] = useState(false);
   const [communityShareUrl, setCommunityShareUrl] = useState<string | null>(null);
@@ -313,8 +314,20 @@ const Create = () => {
     return project;
   }, [projectId, videoType, data, settings, labelImages, linkedDatasetId]);
 
-  const resolutionMap = { "480p": { w: 480, h: 854 }, "720p": { w: 720, h: 1280 }, "1080p": { w: 1080, h: 1920 } };
-  const useCustomSize = !!(settings.exportWidth && settings.exportHeight);
+  // Short edge per resolution preset; aspect determines orientation.
+  const shortEdge = { "480p": 480, "720p": 720, "1080p": 1080 } as const;
+  function dimsFor(res: "480p" | "720p" | "1080p", aspect: "portrait" | "landscape" | "square") {
+    const s = shortEdge[res];
+    if (aspect === "square") return { w: s, h: s };
+    // 9:16 video format
+    const long = Math.round((s * 16) / 9);
+    return aspect === "portrait" ? { w: s, h: long } : { w: long, h: s };
+  }
+  const resolutionMap = {
+    "480p": dimsFor("480p", exportAspect),
+    "720p": dimsFor("720p", exportAspect),
+    "1080p": dimsFor("1080p", exportAspect),
+  };
   const fileExt = exportFormat === "mp4" ? "mp4" : "webm";
   const selectedDurationSeconds = Math.round(15 / (settings.speed === "slow" ? 0.7 : settings.speed === "fast" ? 1.5 : 1));
 
@@ -349,9 +362,7 @@ const Create = () => {
     setCommunityShareUrl(null);
 
     try {
-      const { w, h } = useCustomSize
-        ? { w: settings.exportWidth!, h: settings.exportHeight! }
-        : resolutionMap[exportResolution];
+      const { w, h } = resolutionMap[exportResolution];
       const exportCanvas = exportCanvasRef.current!;
       exportCanvas.width = w;
       exportCanvas.height = h;
@@ -1190,6 +1201,37 @@ const Create = () => {
                   )}
                 </div>
 
+                {/* Aspect ratio selector */}
+                <div className="text-left">
+                  <label className="text-sm font-medium text-foreground block mb-2">Aspect Ratio</label>
+                  <div className="flex gap-2">
+                    {([
+                      { id: "portrait", label: "Portrait", hint: "9:16" },
+                      { id: "landscape", label: "Landscape", hint: "16:9" },
+                      { id: "square", label: "Square", hint: "1:1" },
+                    ] as const).map((a) => (
+                      <button
+                        key={a.id}
+                        onClick={() => {
+                          setExportAspect(a.id);
+                          setSettings({ ...settings, exportWidth: undefined, exportHeight: undefined });
+                        }}
+                        className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors active:scale-95 ${
+                          exportAspect === a.id ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                        }`}
+                      >
+                        <span className="block">{a.label}</span>
+                        <span className="block text-[10px] opacity-70 mt-0.5">{a.hint}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    {exportAspect === "portrait" && "Best for TikTok, Reels, Shorts"}
+                    {exportAspect === "landscape" && "Best for YouTube, Twitter, web"}
+                    {exportAspect === "square" && "Best for Instagram feed, LinkedIn"}
+                  </p>
+                </div>
+
                 {/* Resolution selector */}
                 <div className="text-left">
                   <label className="text-sm font-medium text-foreground block mb-2">Resolution</label>
@@ -1202,7 +1244,7 @@ const Create = () => {
                           setSettings({ ...settings, exportWidth: undefined, exportHeight: undefined });
                         }}
                         className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors active:scale-95 ${
-                          !useCustomSize && exportResolution === r ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                          exportResolution === r ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
                         }`}
                       >
                         {r}
@@ -1210,38 +1252,7 @@ const Create = () => {
                     ))}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1.5">
-                    {useCustomSize
-                      ? `Custom: ${settings.exportWidth}×${settings.exportHeight}`
-                      : `${resolutionMap[exportResolution].w}×${resolutionMap[exportResolution].h} vertical`}
-                  </p>
-                </div>
-
-                {/* Custom size */}
-                <div className="text-left">
-                  <label className="text-sm font-medium text-foreground block mb-2">Custom Size (optional)</label>
-                  <div className="flex gap-2 items-center">
-                    <input
-                      type="number"
-                      min={120}
-                      max={3840}
-                      placeholder="Width"
-                      value={settings.exportWidth ?? ""}
-                      onChange={(e) => setSettings({ ...settings, exportWidth: e.target.value ? Number(e.target.value) : undefined })}
-                      className="flex-1 bg-secondary rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
-                    />
-                    <span className="text-muted-foreground">×</span>
-                    <input
-                      type="number"
-                      min={120}
-                      max={3840}
-                      placeholder="Height"
-                      value={settings.exportHeight ?? ""}
-                      onChange={(e) => setSettings({ ...settings, exportHeight: e.target.value ? Number(e.target.value) : undefined })}
-                      className="flex-1 bg-secondary rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1.5">
-                    Set both to crop the video to a custom size. Leave empty to use the preset above.
+                    {`${resolutionMap[exportResolution].w}×${resolutionMap[exportResolution].h}`}
                   </p>
                 </div>
 
