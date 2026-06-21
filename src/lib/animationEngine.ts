@@ -1,5 +1,6 @@
 import { DataRow, ProjectSettings, BAR_COLORS, ThemeType } from "./types";
 import { formatValue } from "./valueFormat";
+import { fitTextToBounds, fitRectToBounds, type FrameBounds } from "./frameBoundsFitter";
 
 interface BarState {
   label: string;
