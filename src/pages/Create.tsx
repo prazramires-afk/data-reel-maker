@@ -314,8 +314,20 @@ const Create = () => {
     return project;
   }, [projectId, videoType, data, settings, labelImages, linkedDatasetId]);
 
-  const resolutionMap = { "480p": { w: 480, h: 854 }, "720p": { w: 720, h: 1280 }, "1080p": { w: 1080, h: 1920 } };
-  const useCustomSize = !!(settings.exportWidth && settings.exportHeight);
+  // Short edge per resolution preset; aspect determines orientation.
+  const shortEdge = { "480p": 480, "720p": 720, "1080p": 1080 } as const;
+  function dimsFor(res: "480p" | "720p" | "1080p", aspect: "portrait" | "landscape" | "square") {
+    const s = shortEdge[res];
+    if (aspect === "square") return { w: s, h: s };
+    // 9:16 video format
+    const long = Math.round((s * 16) / 9);
+    return aspect === "portrait" ? { w: s, h: long } : { w: long, h: s };
+  }
+  const resolutionMap = {
+    "480p": dimsFor("480p", exportAspect),
+    "720p": dimsFor("720p", exportAspect),
+    "1080p": dimsFor("1080p", exportAspect),
+  };
   const fileExt = exportFormat === "mp4" ? "mp4" : "webm";
   const selectedDurationSeconds = Math.round(15 / (settings.speed === "slow" ? 0.7 : settings.speed === "fast" ? 1.5 : 1));
 
