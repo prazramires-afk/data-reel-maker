@@ -17,7 +17,7 @@ import { createBarRaceAnimation, AnimationController } from "@/lib/animationEngi
 import { createTimelineAnimation } from "@/lib/timelineAnimation";
 import { createTop10Animation } from "@/lib/top10Animation";
 import { createComparisonAnimation } from "@/lib/comparisonAnimation";
-import { AUDIO_TRACKS, createAudioStream } from "@/lib/audioTracks";
+import { AUDIO_TRACKS } from "@/lib/audioTracks";
 import { formatValue, UNIT_TYPE_OPTIONS, CURRENCY_PRESETS, DEFAULT_VALUE_FORMAT, ValueFormat, UnitType } from "@/lib/valueFormat";
 import { Seo } from "@/components/Seo";
 
@@ -320,7 +320,7 @@ const Create = () => {
     const s = shortEdge[res];
     if (aspect === "square") return { w: s, h: s };
     // 9:16 video format
-    const long = Math.round((s * 16) / 9);
+    const long = Math.round((s * 16) / 18) * 2;
     return aspect === "portrait" ? { w: s, h: long } : { w: long, h: s };
   }
   const resolutionMap = {
@@ -342,24 +342,12 @@ const Create = () => {
       return;
     }
 
-    // Deduct tokens atomically before rendering
-    let consumed;
-    try {
-      consumed = await consumeTokens(VIDEO_COST);
-    } catch (err) {
-      toast.error("Could not deduct tokens. Try again.");
-      return;
-    }
-    if (!consumed.success) {
-      toast.error(`Not enough tokens — ${consumed.tokens_remaining} left.`);
-      return;
-    }
-
     await handleSave();
     setExporting(true);
     setExportProgress(0);
     setVideoBlob(null);
     setCommunityShareUrl(null);
+    let controller: AnimationController | null = null;
 
     try {
       const { w, h } = resolutionMap[exportResolution];
@@ -371,7 +359,7 @@ const Create = () => {
         : videoType === "top10" ? createTop10Animation
         : videoType === "comparison" ? createComparisonAnimation
         : createBarRaceAnimation;
-      const controller = createAnimation(
+      controller = createAnimation(
         exportCanvas, data, effectiveSettings,
         () => {},
         () => {},
@@ -383,18 +371,22 @@ const Create = () => {
       const speedMultiplier = settings.speed === "slow" ? 0.7 : settings.speed === "fast" ? 1.5 : 1;
       const totalMs = (baseDuration / speedMultiplier) * 1000;
 
-      const audio = createAudioStream(selectedTrack, totalMs);
       const blob = await controller.recordVideo((p) => {
         setExportProgress(Math.round(p * 100));
-      }, audio?.stream);
+      }, { format: exportFormat, fps: 60, audioTrackId: selectedTrack });
 
-      audio?.stop();
-      controller.destroy();
+      const consumed = await consumeTokens(VIDEO_COST);
+      if (!consumed.success) {
+        toast.error(`Not enough tokens — ${consumed.tokens_remaining} left.`);
+        return;
+      }
       setVideoBlob(blob);
       setExported(true);
     } catch (err) {
       console.error("Export failed:", err);
+      toast.error(err instanceof Error ? err.message : "Export failed. No tokens were charged.");
     } finally {
+      controller?.destroy();
       setExporting(false);
     }
   };
@@ -1197,7 +1189,10 @@ const Create = () => {
                     ))}
                   </div>
                   {exportFormat === "mp4" && (
-                    <p className="text-xs text-muted-foreground mt-1.5">Recorded as WebM, saved with .mp4 extension for compatibility</p>
+                    <p className="text-xs text-muted-foreground mt-1.5">True H.264/AAC MP4 at 60 FPS for TikTok, Reels, and Shorts</p>
+                  )}
+                  {exportFormat === "webm" && (
+                    <p className="text-xs text-muted-foreground mt-1.5">WebM is smaller, but MP4 is recommended for social uploads.</p>
                   )}
                 </div>
 
@@ -1267,7 +1262,7 @@ const Create = () => {
 
             {exporting && (
               <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">Rendering at {exportResolution}…</p>
+                <p className="text-sm text-muted-foreground">Rendering {exportFormat.toUpperCase()} at 60 FPS…</p>
                 <div className="h-2 bg-secondary rounded-full overflow-hidden">
                   <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${exportProgress}%` }} />
                 </div>

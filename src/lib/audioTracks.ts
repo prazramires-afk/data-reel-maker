@@ -13,6 +13,116 @@ export const AUDIO_TRACKS: AudioTrack[] = [
   { id: "dramatic-drums", name: "Dramatic Drums", icon: "🥁", description: "Percussive energy" },
 ];
 
+export async function renderAudioBuffer(
+  trackId: string,
+  durationMs: number,
+  sampleRate = 44100,
+  channels = 2,
+): Promise<AudioBuffer> {
+  const durSec = durationMs / 1000;
+  const frameCount = Math.max(1, Math.ceil(durSec * sampleRate));
+  const ctx = new OfflineAudioContext(channels, frameCount, sampleRate);
+  const masterGain = ctx.createGain();
+  masterGain.gain.value = trackId === "none" ? 0 : 0.35;
+  masterGain.connect(ctx.destination);
+
+  if (trackId === "none") return ctx.startRendering();
+
+  masterGain.gain.setValueAtTime(0, 0);
+  masterGain.gain.linearRampToValueAtTime(0.35, Math.min(1.5, durSec));
+  masterGain.gain.setValueAtTime(0.35, Math.max(0, durSec - 2));
+  masterGain.gain.linearRampToValueAtTime(0, durSec);
+
+  const scheduleNote = (type: OscillatorType, freq: number, start: number, duration: number, gain: number) => {
+    if (start >= durSec) return;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(0, start);
+    g.gain.linearRampToValueAtTime(gain, start + 0.02);
+    g.gain.setValueAtTime(gain, Math.max(start + 0.02, start + duration - 0.05));
+    g.gain.linearRampToValueAtTime(0, Math.min(durSec, start + duration));
+    osc.connect(g);
+    g.connect(masterGain);
+    osc.start(start);
+    osc.stop(Math.min(durSec, start + duration));
+  };
+
+  const scheduleNoise = (start: number, duration: number, gain: number) => {
+    if (start >= durSec) return;
+    const length = Math.max(1, Math.ceil(sampleRate * duration));
+    const buffer = ctx.createBuffer(1, length, sampleRate);
+    const data = buffer.getChannelData(0);
+    let seed = Math.max(1, Math.floor((start + duration + gain) * 1_000_000));
+    for (let i = 0; i < length; i++) {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      data[i] = ((seed / 0xffffffff) * 2 - 1) * 0.5;
+    }
+    const source = ctx.createBufferSource();
+    const g = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    source.buffer = buffer;
+    filter.type = "highpass";
+    filter.frequency.value = 8000;
+    g.gain.setValueAtTime(0, start);
+    g.gain.linearRampToValueAtTime(gain, start + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.001, Math.min(durSec, start + duration));
+    source.connect(filter);
+    filter.connect(g);
+    g.connect(masterGain);
+    source.start(start);
+    source.stop(Math.min(durSec, start + duration));
+  };
+
+  if (trackId === "epic-rise") {
+    const chords = [[130.81, 164.81, 196.00], [146.83, 185.00, 220.00], [164.81, 207.65, 246.94], [174.61, 220.00, 261.63]];
+    const beatLen = durSec / (chords.length * 2);
+    for (let rep = 0; rep < 2; rep++) chords.forEach((chord, ci) => chord.forEach((freq) => {
+      const t = (rep * chords.length + ci) * beatLen;
+      scheduleNote("sine", freq * (1 + rep * 0.5), t, beatLen, 0.2);
+      scheduleNote("triangle", freq * 2 * (1 + rep * 0.5), t, beatLen, 0.08);
+    }));
+  } else if (trackId === "chill-beats") {
+    const bpm = 80, beatDur = 60 / bpm, totalBeats = Math.floor(durSec / beatDur);
+    const chordNotes = [[261.63, 329.63, 392.00], [220.00, 277.18, 329.63], [246.94, 311.13, 369.99], [196.00, 246.94, 293.66]];
+    for (let beat = 0; beat < totalBeats; beat++) {
+      const t = beat * beatDur;
+      if (beat % 4 === 0 || beat % 4 === 2) scheduleNote("sine", 55, t, 0.3, 0.4);
+      scheduleNoise(t, 0.08, 0.15);
+      if (beat % 2 === 1) scheduleNoise(t + beatDur * 0.5, 0.05, 0.08);
+      if (beat % 4 === 0) chordNotes[(beat / 4) % chordNotes.length].forEach((freq) => scheduleNote("triangle", freq, t, beatDur * 4, 0.1));
+    }
+  } else if (trackId === "digital-pulse") {
+    const bpm = 128, beatDur = 60 / bpm, totalBeats = Math.floor(durSec / beatDur);
+    const arpNotes = [130.81, 164.81, 196.00, 261.63, 196.00, 164.81];
+    for (let beat = 0; beat < totalBeats; beat++) {
+      const t = beat * beatDur;
+      scheduleNote("sawtooth", arpNotes[beat % arpNotes.length], t, beatDur * 0.7, 0.12);
+      if (beat % 4 === 0) scheduleNote("sine", 65.41, t, beatDur * 2, 0.3);
+      if (beat % 2 === 0) scheduleNoise(t, 0.05, 0.12);
+    }
+  } else if (trackId === "dramatic-drums") {
+    const bpm = 100, beatDur = 60 / bpm, totalBeats = Math.floor(durSec / beatDur);
+    for (let beat = 0; beat < totalBeats; beat++) {
+      const t = beat * beatDur;
+      if (beat % 4 === 0 || beat % 4 === 3) {
+        scheduleNote("sine", 50, t, 0.25, 0.5);
+        scheduleNote("sine", 100, t, 0.1, 0.25);
+      }
+      if (beat % 4 === 2) {
+        scheduleNoise(t, 0.15, 0.3);
+        scheduleNote("triangle", 200, t, 0.1, 0.15);
+      }
+      scheduleNoise(t, 0.04, 0.1);
+      scheduleNoise(t + beatDur * 0.5, 0.03, 0.06);
+      if (beat % 8 === 0) scheduleNote("sawtooth", 73.42, t, beatDur * 4, 0.06);
+    }
+  }
+
+  return ctx.startRendering();
+}
+
 // Procedural audio generation using Web Audio API
 export function createAudioStream(
   trackId: string,
