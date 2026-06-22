@@ -1,6 +1,7 @@
 import { DataRow, ProjectSettings, BAR_COLORS, ThemeType } from "./types";
 import { formatValue } from "./valueFormat";
 import { fitTextToBounds, fitRectToBounds, type FrameBounds } from "./frameBoundsFitter";
+import { encodeCanvasToMp4, encodeCanvasToWebM, type RecordVideoOptions } from "./videoEncoding";
 
 interface BarState {
   label: string;
@@ -82,10 +83,15 @@ export interface AnimationController {
   restart: () => void;
   destroy: () => void;
   isPlaying: () => boolean;
-  recordVideo: (onProgress: (p: number) => void, audioStream?: MediaStream) => Promise<Blob>;
+  recordVideo: (onProgress: (p: number) => void, options?: MediaStream | RecordVideoOptions) => Promise<Blob>;
 }
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export function normalizeRecordVideoOptions(options?: MediaStream | RecordVideoOptions): RecordVideoOptions & { audioStream?: MediaStream } {
+  if (typeof MediaStream !== "undefined" && options instanceof MediaStream) return { format: "webm", fps: 60, audioStream: options };
+  return { format: "mp4", fps: 60, audioTrackId: "none", ...(options ?? {}) };
+}
 
 export function getFittedTitleFontSize(
   ctx: CanvasRenderingContext2D,
@@ -782,7 +788,7 @@ export function createBarRaceAnimation(
       cancelAnimationFrame(animFrame);
     },
     isPlaying: () => playing,
-    async recordVideo(onRecordProgress: (p: number) => void, audioStream?: MediaStream): Promise<Blob> {
+    async recordVideo(onRecordProgress: (p: number) => void, options?: MediaStream | RecordVideoOptions): Promise<Blob> {
       // Reset state for recording
       playing = false;
       cancelAnimationFrame(animFrame);
@@ -803,100 +809,44 @@ export function createBarRaceAnimation(
         b.y = recTop + labels.indexOf(b.label) * (rm.barHeight + rm.barGap);
       });
 
-      const fps = 30;
-      const totalFrames = Math.round((totalMs / 1000) * fps);
-      const frameDuration = 1000 / fps;
+      const recordOptions = normalizeRecordVideoOptions(options);
+      const renderEncodedFrame = (_frame: number, progress: number) => {
+        elapsed = progress * totalMs;
 
-      // Try webm with VP9, fallback to VP8
-      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-        ? 'video/webm;codecs=vp9'
-        : 'video/webm;codecs=vp8';
+        const dataProgress = Math.max(0, (progress - 0.12) / 0.85);
+        const yearRange = years[years.length - 1] - years[0];
+        const currentYear = years[0] + yearRange * Math.min(dataProgress, 1);
+        const barData = labels.map((label) => ({
+          label,
+          value: interpolateValue(valueMap[label] || {}, years, currentYear),
+        }));
+        barData.sort((a, b) => b.value - a.value);
+        const visible = barData.slice(0, maxBars);
+        const maxVal = Math.max(...visible.map((b) => b.value), 1);
+        const recM = metrics(canvas.width, canvas.height);
+        const barStartX = recM.sidePadding + recM.labelGutter;
+        const barAreaWidth = canvas.width - barStartX - recM.rightPadding - recM.valueGutter;
+        const recTopPad = getTopPadding(canvas.width, canvas.height);
+        visible.forEach((bd, i) => {
+          const bar = bars.find((b) => b.label === bd.label)!;
+          bar.targetValue = bd.value;
+          bar.targetY = recTopPad + i * (recM.barHeight + recM.barGap);
+          bar.targetWidth = (bd.value / maxVal) * barAreaWidth;
+        });
 
-      const stream = canvas.captureStream(fps);
-      if (audioStream) {
-        audioStream.getAudioTracks().forEach(t => stream.addTrack(t));
-      }
-      const recorder = new MediaRecorder(stream, {
-        mimeType,
-        // Higher bitrate so portrait HD exports stay crisp for social media.
-        videoBitsPerSecond: 12_000_000,
-      });
-
-      const chunks: Blob[] = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
+        const totalDelta = bars.reduce(
+          (acc, b) => acc + Math.abs(b.targetY - b.y) + Math.abs(b.targetWidth - b.width) * 0.5,
+          0,
+        );
+        const strength = totalDelta > canvas.height * 0.4 ? 0.7 : 1;
+        for (let s = 0; s < 5; s++) stepSprings(strength);
+        render(progress);
       };
 
-      return new Promise<Blob>((resolve, reject) => {
-        recorder.onerror = () => reject(new Error('Recording failed'));
-        recorder.onstop = () => {
-          resolve(new Blob(chunks, { type: mimeType }));
-        };
-
-        recorder.start(250);
-
-        const track = stream.getVideoTracks()[0] as MediaStreamTrack & { requestFrame?: () => void };
-
-        (async () => {
-          try {
-            for (let frame = 0; frame <= totalFrames; frame++) {
-              const progress = Math.min(frame / totalFrames, 1);
-
-              // Simulate elapsed time for lerp-based animation
-              // Run multiple lerp iterations per frame for smooth catch-up
-              const targetElapsed = progress * totalMs;
-              elapsed = targetElapsed;
-
-              // Update bar targets based on progress
-              const dataProgress = Math.max(0, (progress - 0.12) / 0.85);
-              const yearRange = years[years.length - 1] - years[0];
-              const currentYear = years[0] + yearRange * Math.min(dataProgress, 1);
-
-              const barData = labels.map((label) => ({
-                label,
-                value: interpolateValue(valueMap[label] || {}, years, currentYear),
-              }));
-              barData.sort((a, b) => b.value - a.value);
-              const visible = barData.slice(0, maxBars);
-              const maxVal = Math.max(...visible.map((b) => b.value), 1);
-              const recM = metrics(canvas.width, canvas.height);
-              const barStartX = recM.sidePadding + recM.labelGutter;
-              const barAreaWidth = canvas.width - barStartX - recM.rightPadding - recM.valueGutter;
-
-              const recTopPad = getTopPadding(canvas.width, canvas.height);
-              visible.forEach((bd, i) => {
-                const bar = bars.find((b) => b.label === bd.label)!;
-                bar.targetValue = bd.value;
-                bar.targetY = recTopPad + i * (recM.barHeight + recM.barGap);
-                bar.targetWidth = (bd.value / maxVal) * barAreaWidth;
-              });
-
-              // Dynamic speed: slow physics during big rank shake-ups to add anticipation.
-              const totalDelta = bars.reduce(
-                (acc, b) => acc + Math.abs(b.targetY - b.y) + Math.abs(b.targetWidth - b.width) * 0.5,
-                0,
-              );
-              const big = totalDelta > canvas.height * 0.4;
-              const strength = big ? 0.7 : 1;
-              // Multiple spring iterations per frame so motion fully converges between frames.
-              for (let s = 0; s < 5; s++) stepSprings(strength);
-
-              render(progress);
-              track.requestFrame?.();
-              onRecordProgress(progress);
-
-              if (frame < totalFrames) {
-                await wait(frameDuration);
-              }
-            }
-
-            await wait(300);
-            recorder.stop();
-          } catch (error) {
-            reject(error instanceof Error ? error : new Error("Recording failed"));
-          }
-        })();
-      });
+      if (recordOptions.format === "webm") {
+        return encodeCanvasToWebM({ canvas, totalMs, renderFrame: renderEncodedFrame, onProgress: onRecordProgress, ...recordOptions });
+      }
+      return encodeCanvasToMp4({ canvas, totalMs, renderFrame: renderEncodedFrame, onProgress: onRecordProgress, ...recordOptions });
     },
   };
 }

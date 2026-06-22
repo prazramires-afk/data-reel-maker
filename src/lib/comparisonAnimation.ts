@@ -1,6 +1,7 @@
 import { DataRow, ProjectSettings, BAR_COLORS, ThemeType } from "./types";
-import { processData, AnimationController, getFittedTitleFontSize } from "./animationEngine";
+import { processData, AnimationController, getFittedTitleFontSize, normalizeRecordVideoOptions } from "./animationEngine";
 import { formatValue } from "./valueFormat";
+import { encodeCanvasToMp4, encodeCanvasToWebM, type RecordVideoOptions } from "./videoEncoding";
 
 function getThemeColors(theme: ThemeType) {
   switch (theme) {
@@ -257,48 +258,28 @@ export function createComparisonAnimation(
     },
     destroy() { playing = false; cancelAnimationFrame(animFrame); },
     isPlaying: () => playing,
-    async recordVideo(onRecordProgress: (p: number) => void, audioStream?: MediaStream): Promise<Blob> {
+    async recordVideo(onRecordProgress: (p: number) => void, options?: MediaStream | RecordVideoOptions): Promise<Blob> {
       playing = false; cancelAnimationFrame(animFrame); elapsed = 0; startTime = 0;
       labels.forEach(l => animValues[l] = 0);
 
-      const fps = 30, totalFrames = Math.round((totalMs / 1000) * fps), frameDuration = 1000 / fps;
-      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm;codecs=vp8';
-      const stream = canvas.captureStream(fps);
-      if (audioStream) {
-        audioStream.getAudioTracks().forEach(t => stream.addTrack(t));
+      const recordOptions = normalizeRecordVideoOptions(options);
+      const renderEncodedFrame = (_frame: number, progress: number) => {
+        const dataProgress = Math.max(0, progress / 0.95);
+        const yearRange = years[years.length - 1] - years[0];
+        const currentYear = years[0] + yearRange * Math.min(dataProgress, 1);
+        const lerpSpeed = settings.smoothAnimation ? 0.12 : 0.3;
+        for (let s = 0; s < 12; s++) {
+          labels.forEach(label => {
+            const val = interpolateValue(valueMap[label] || {}, years, currentYear);
+            animValues[label] = lerp(animValues[label], val, lerpSpeed);
+          });
+        }
+        render(progress);
+      };
+      if (recordOptions.format === "webm") {
+        return encodeCanvasToWebM({ canvas, totalMs, renderFrame: renderEncodedFrame, onProgress: onRecordProgress, ...recordOptions });
       }
-      const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 12_000_000 });
-      const chunks: Blob[] = [];
-      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
-      return new Promise<Blob>((resolve, reject) => {
-        recorder.onerror = () => reject(new Error('Recording failed'));
-        recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
-        recorder.start(250);
-        const track = stream.getVideoTracks()[0] as MediaStreamTrack & { requestFrame?: () => void };
-        (async () => {
-          try {
-            for (let frame = 0; frame <= totalFrames; frame++) {
-              const progress = Math.min(frame / totalFrames, 1);
-              // Run lerp iterations for smooth animation
-              const dataProgress = Math.max(0, progress / 0.95);
-              const yearRange = years[years.length - 1] - years[0];
-              const currentYear = years[0] + yearRange * Math.min(dataProgress, 1);
-              const lerpSpeed = settings.smoothAnimation ? 0.12 : 0.3;
-              for (let s = 0; s < 12; s++) {
-                labels.forEach(label => {
-                  const val = interpolateValue(valueMap[label] || {}, years, currentYear);
-                  animValues[label] = lerp(animValues[label], val, lerpSpeed);
-                });
-              }
-              render(progress);
-              track.requestFrame?.();
-              onRecordProgress(progress);
-              if (frame < totalFrames) await wait(frameDuration);
-            }
-            await wait(300); recorder.stop();
-          } catch (error) { reject(error instanceof Error ? error : new Error("Recording failed")); }
-        })();
-      });
+      return encodeCanvasToMp4({ canvas, totalMs, renderFrame: renderEncodedFrame, onProgress: onRecordProgress, ...recordOptions });
     },
   };
 }

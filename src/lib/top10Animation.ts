@@ -1,6 +1,7 @@
 import { DataRow, ProjectSettings, BAR_COLORS, ThemeType } from "./types";
-import { processData, AnimationController, getFittedTitleFontSize } from "./animationEngine";
+import { processData, AnimationController, getFittedTitleFontSize, normalizeRecordVideoOptions } from "./animationEngine";
 import { formatValue } from "./valueFormat";
+import { encodeCanvasToMp4, encodeCanvasToWebM, type RecordVideoOptions } from "./videoEncoding";
 
 function getThemeColors(theme: ThemeType) {
   switch (theme) {
@@ -195,34 +196,14 @@ export function createTop10Animation(
     restart() { playing = false; cancelAnimationFrame(animFrame); elapsed = 0; startTime = 0; render(0); },
     destroy() { playing = false; cancelAnimationFrame(animFrame); },
     isPlaying: () => playing,
-    async recordVideo(onRecordProgress: (p: number) => void, audioStream?: MediaStream): Promise<Blob> {
+    async recordVideo(onRecordProgress: (p: number) => void, options?: MediaStream | RecordVideoOptions): Promise<Blob> {
       playing = false; cancelAnimationFrame(animFrame); elapsed = 0; startTime = 0;
-      const fps = 30, totalFrames = Math.round((totalMs / 1000) * fps), frameDuration = 1000 / fps;
-      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm;codecs=vp8';
-      const stream = canvas.captureStream(fps);
-      if (audioStream) {
-        audioStream.getAudioTracks().forEach(t => stream.addTrack(t));
+      const recordOptions = normalizeRecordVideoOptions(options);
+      const renderEncodedFrame = (_frame: number, progress: number) => render(progress);
+      if (recordOptions.format === "webm") {
+        return encodeCanvasToWebM({ canvas, totalMs, renderFrame: renderEncodedFrame, onProgress: onRecordProgress, ...recordOptions });
       }
-      const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 12_000_000 });
-      const chunks: Blob[] = [];
-      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
-      return new Promise<Blob>((resolve, reject) => {
-        recorder.onerror = () => reject(new Error('Recording failed'));
-        recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
-        recorder.start(250);
-        const track = stream.getVideoTracks()[0] as MediaStreamTrack & { requestFrame?: () => void };
-        (async () => {
-          try {
-            for (let frame = 0; frame <= totalFrames; frame++) {
-              render(Math.min(frame / totalFrames, 1));
-              track.requestFrame?.();
-              onRecordProgress(Math.min(frame / totalFrames, 1));
-              if (frame < totalFrames) await wait(frameDuration);
-            }
-            await wait(300); recorder.stop();
-          } catch (error) { reject(error instanceof Error ? error : new Error("Recording failed")); }
-        })();
-      });
+      return encodeCanvasToMp4({ canvas, totalMs, renderFrame: renderEncodedFrame, onProgress: onRecordProgress, ...recordOptions });
     },
   };
 }
