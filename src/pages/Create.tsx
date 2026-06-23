@@ -23,6 +23,23 @@ import { Seo } from "@/components/Seo";
 
 const STEPS = ["Type", "Data", "Style", "Preview", "Export"];
 const VIDEO_COST = 5;
+const DRAFT_KEY = "datatovid:create-draft:v1";
+
+type CreateDraft = {
+  step: number;
+  videoType: VideoType;
+  data: DataRow[];
+  settings: ProjectSettings;
+  csvText: string;
+  dataTab: "manual" | "csv" | "sample";
+  projectId: string;
+  linkedDatasetId: string | null;
+  labelImages: Record<string, string>;
+  exportFormat: "webm" | "mp4";
+  exportResolution: "480p" | "720p" | "1080p";
+  exportAspect: "portrait" | "landscape" | "square";
+  selectedTrack: string;
+};
 
 /**
  * Drag handle overlay for repositioning canvas-drawn elements.
