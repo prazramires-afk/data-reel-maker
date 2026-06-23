@@ -23,6 +23,23 @@ import { Seo } from "@/components/Seo";
 
 const STEPS = ["Type", "Data", "Style", "Preview", "Export"];
 const VIDEO_COST = 5;
+const DRAFT_KEY = "datatovid:create-draft:v1";
+
+type CreateDraft = {
+  step: number;
+  videoType: VideoType;
+  data: DataRow[];
+  settings: ProjectSettings;
+  csvText: string;
+  dataTab: "manual" | "csv" | "sample";
+  projectId: string;
+  linkedDatasetId: string | null;
+  labelImages: Record<string, string>;
+  exportFormat: "webm" | "mp4";
+  exportResolution: "480p" | "720p" | "1080p";
+  exportAspect: "portrait" | "landscape" | "square";
+  selectedTrack: string;
+};
 
 /**
  * Drag handle overlay for repositioning canvas-drawn elements.
@@ -156,12 +173,94 @@ const Create = () => {
     [settings, isPremium]
   );
 
+  // ---- Draft persistence ----------------------------------------------------
+  // Persist wizard state to sessionStorage so an accidental refresh, mobile
+  // pull-to-refresh, or tab-suspension during export/publishing does NOT wipe
+  // the user's progress back to Step 1.
+  const draftHydrated = useRef(false);
+
+  // Restore draft on mount (skip if a template/edit/dataset URL param is set,
+  // because those load their own state).
+  useEffect(() => {
+    if (draftHydrated.current) return;
+    draftHydrated.current = true;
+    const hasUrlSource =
+      searchParams.get("template") ||
+      searchParams.get("edit") ||
+      searchParams.get("dataset");
+    if (hasUrlSource) return;
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw) as Partial<CreateDraft>;
+      if (typeof d.step === "number") setStep(d.step);
+      if (d.videoType) setVideoType(d.videoType);
+      if (Array.isArray(d.data) && d.data.length) setData(d.data);
+      if (d.settings) setSettings({ ...DEFAULT_SETTINGS, ...d.settings });
+      if (typeof d.csvText === "string") setCsvText(d.csvText);
+      if (d.dataTab) setDataTab(d.dataTab);
+      if (d.projectId) setProjectId(d.projectId);
+      if (d.linkedDatasetId !== undefined) setLinkedDatasetId(d.linkedDatasetId);
+      if (d.labelImages) setLabelImages(d.labelImages);
+      if (d.exportFormat) setExportFormat(d.exportFormat);
+      if (d.exportResolution) setExportResolution(d.exportResolution);
+      if (d.exportAspect) setExportAspect(d.exportAspect);
+      if (typeof d.selectedTrack === "string") setSelectedTrack(d.selectedTrack);
+    } catch {
+      /* ignore corrupt drafts */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save draft whenever anything meaningful changes.
+  useEffect(() => {
+    if (!draftHydrated.current) return;
+    try {
+      const draft: CreateDraft = {
+        step,
+        videoType,
+        data,
+        settings,
+        csvText,
+        dataTab,
+        projectId,
+        linkedDatasetId,
+        labelImages,
+        exportFormat,
+        exportResolution,
+        exportAspect,
+        selectedTrack,
+      };
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch {
+      /* quota or serialization issues — silently skip */
+    }
+  }, [
+    step, videoType, data, settings, csvText, dataTab, projectId,
+    linkedDatasetId, labelImages, exportFormat, exportResolution,
+    exportAspect, selectedTrack,
+  ]);
+
   // Redirect to auth if not signed in (after auth state has loaded)
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth", { replace: true });
     }
   }, [authLoading, user, navigate]);
+
+  // Warn before the tab refreshes/closes while a heavy export or community
+  // publish is in flight — avoids losing minutes of encoding work to an
+  // accidental mobile pull-to-refresh or swipe-back.
+  useEffect(() => {
+    if (!exporting && !sharingCommunity) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+      return "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [exporting, sharingCommunity]);
 
   // Show upgrade toast when ?upgrade=1 is present
   useEffect(() => {
