@@ -248,6 +248,20 @@ const Create = () => {
     }
   }, [authLoading, user, navigate]);
 
+  // Warn before the tab refreshes/closes while a heavy export or community
+  // publish is in flight — avoids losing minutes of encoding work to an
+  // accidental mobile pull-to-refresh or swipe-back.
+  useEffect(() => {
+    if (!exporting && !sharingCommunity) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+      return "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [exporting, sharingCommunity]);
+
   // Show upgrade toast when ?upgrade=1 is present
   useEffect(() => {
     if (searchParams.get("upgrade") === "1") {
