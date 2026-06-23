@@ -441,9 +441,13 @@ const Create = () => {
       return;
     }
 
-    await handleSave();
     setExporting(true);
     setExportProgress(0);
+    try {
+      await handleSave();
+    } catch (saveErr) {
+      console.warn("Project save before export failed (continuing):", saveErr);
+    }
     setVideoBlob(null);
     setCommunityShareUrl(null);
     let controller: AnimationController | null = null;
