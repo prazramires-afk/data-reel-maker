@@ -146,6 +146,7 @@ export function createBarRaceAnimation(
   labelImages?: Record<string, HTMLImageElement>
 ): AnimationController {
   const ctx = canvas.getContext("2d")!;
+  settings = enforceWatermarkSettings(settings);
   const { years, labels, valueMap } = processData(data);
   const theme = getThemeColors(settings.theme);
   const colorMap: Record<string, string> = {};
