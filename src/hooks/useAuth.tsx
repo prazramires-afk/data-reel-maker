@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
+import { refreshWatermarkPolicy, lockWatermark } from "@/lib/watermarkPolicy";
 
 export interface UserCredits {
   tokens: number;
@@ -77,10 +78,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setTimeout(() => {
           fetchCredits(newSession.user.id);
           fetchAdmin(newSession.user.id);
+          refreshWatermarkPolicy();
         }, 0);
       } else {
         setCredits(null);
         setIsAdmin(false);
+        lockWatermark();
       }
     });
 
@@ -90,6 +93,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (data.session?.user) {
         fetchCredits(data.session.user.id);
         fetchAdmin(data.session.user.id);
+        refreshWatermarkPolicy();
+      } else {
+        lockWatermark();
       }
       setLoading(false);
     });
