@@ -2,6 +2,7 @@ import { DataRow, ProjectSettings, BAR_COLORS, ThemeType } from "./types";
 import { formatValue } from "./valueFormat";
 import { fitTextToBounds, fitRectToBounds, type FrameBounds } from "./frameBoundsFitter";
 import { encodeCanvasToMp4, encodeCanvasToWebM, type RecordVideoOptions } from "./videoEncoding";
+import { enforceWatermarkSettings } from "./watermarkPolicy";
 
 interface BarState {
   label: string;
