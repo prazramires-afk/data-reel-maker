@@ -17,6 +17,7 @@ import { createBarRaceAnimation, AnimationController } from "@/lib/animationEngi
 import { createTimelineAnimation } from "@/lib/timelineAnimation";
 import { createTop10Animation } from "@/lib/top10Animation";
 import { createComparisonAnimation } from "@/lib/comparisonAnimation";
+import { refreshWatermarkPolicy } from "@/lib/watermarkPolicy";
 import { AUDIO_TRACKS } from "@/lib/audioTracks";
 import { formatValue, UNIT_TYPE_OPTIONS, CURRENCY_PRESETS, DEFAULT_VALUE_FORMAT, ValueFormat, UnitType } from "@/lib/valueFormat";
 import { Seo } from "@/components/Seo";
@@ -443,6 +444,9 @@ const Create = () => {
 
     setExporting(true);
     setExportProgress(0);
+    // Re-verify premium with the backend before every render so a tampered
+    // client can't trick the engine into hiding the watermark.
+    await refreshWatermarkPolicy();
     try {
       await handleSave();
     } catch (saveErr) {

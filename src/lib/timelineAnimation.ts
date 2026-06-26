@@ -2,6 +2,7 @@ import { DataRow, ProjectSettings, BAR_COLORS, ThemeType } from "./types";
 import { processData, AnimationController, getFittedTitleFontSize, normalizeRecordVideoOptions } from "./animationEngine";
 import { formatValue } from "./valueFormat";
 import { encodeCanvasToMp4, encodeCanvasToWebM, type RecordVideoOptions } from "./videoEncoding";
+import { enforceWatermarkSettings } from "./watermarkPolicy";
 
 function getThemeColors(theme: ThemeType) {
   switch (theme) {
@@ -50,6 +51,7 @@ export function createTimelineAnimation(
   labelImages?: Record<string, HTMLImageElement>
 ): AnimationController {
   const ctx = canvas.getContext("2d")!;
+  settings = enforceWatermarkSettings(settings);
   const { years, labels, valueMap } = processData(data);
   const theme = getThemeColors(settings.theme);
   const colorMap: Record<string, string> = {};

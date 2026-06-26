@@ -2,6 +2,7 @@ import { DataRow, ProjectSettings, BAR_COLORS, ThemeType } from "./types";
 import { formatValue } from "./valueFormat";
 import { fitTextToBounds, fitRectToBounds, type FrameBounds } from "./frameBoundsFitter";
 import { encodeCanvasToMp4, encodeCanvasToWebM, type RecordVideoOptions } from "./videoEncoding";
+import { enforceWatermarkSettings } from "./watermarkPolicy";
 
 interface BarState {
   label: string;
@@ -145,6 +146,7 @@ export function createBarRaceAnimation(
   labelImages?: Record<string, HTMLImageElement>
 ): AnimationController {
   const ctx = canvas.getContext("2d")!;
+  settings = enforceWatermarkSettings(settings);
   const { years, labels, valueMap } = processData(data);
   const theme = getThemeColors(settings.theme);
   const colorMap: Record<string, string> = {};
