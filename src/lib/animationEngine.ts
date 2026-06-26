@@ -702,21 +702,35 @@ export function createBarRaceAnimation(
       }
     }
 
-    // Watermark — auto-fitted so user-positioned watermarks never crop.
+    // Watermarks — both gated behind the premium hideWatermark flag.
     if (!settings.hideWatermark) {
+      // Big diagonal "datatovid.com" stamp across the middle of the frame.
+      ctx.save();
+      ctx.translate(w / 2, h / 2);
+      ctx.rotate(-Math.PI / 9);
+      ctx.globalAlpha = 0.085;
+      ctx.fillStyle = theme.text;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `900 ${Math.round(w * 0.14)}px system-ui, sans-serif`;
+      ctx.fillText("datatovid.com", 0, 0);
+      ctx.restore();
+      ctx.globalAlpha = 1;
+
+      // Bottom signature — larger and bolder so it stays readable in social feeds.
       const wp = settings.watermarkPos ?? { x: 0.5, y: 0.97 };
       const wmFit = fitTextToBounds(ctx, frame, {
         text: "Made with datatovid.com",
         x: w * wp.x,
         y: h * wp.y,
-        baseFontSize: Math.round(w * 0.025),
-        weight: 500,
+        baseFontSize: Math.round(w * 0.04),
+        weight: 700,
         align: "center",
         baseline: "middle",
-        minFontSize: Math.max(10, Math.round(w * 0.014)),
+        minFontSize: Math.max(14, Math.round(w * 0.022)),
       });
-      ctx.fillStyle = theme.sub;
-      ctx.globalAlpha = 0.4;
+      ctx.fillStyle = theme.text;
+      ctx.globalAlpha = 0.7;
       ctx.font = wmFit.font;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
