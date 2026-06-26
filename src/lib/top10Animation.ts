@@ -161,10 +161,22 @@ export function createTop10Animation(
     }
 
     if (!settings.hideWatermark) {
+      ctx.save();
+      ctx.translate(w / 2, h / 2);
+      ctx.rotate(-Math.PI / 9);
+      ctx.globalAlpha = 0.085;
+      ctx.fillStyle = theme.text;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `900 ${Math.round(w * 0.14)}px system-ui, sans-serif`;
+      ctx.fillText("datatovid.com", 0, 0);
+      ctx.restore();
+      ctx.globalAlpha = 1;
+
       const wp = settings.watermarkPos ?? { x: 0.5, y: 0.97 };
-      ctx.fillStyle = theme.sub;
-      ctx.globalAlpha = 0.4;
-      ctx.font = `500 ${Math.round(w * 0.025)}px system-ui, sans-serif`;
+      ctx.fillStyle = theme.text;
+      ctx.globalAlpha = 0.7;
+      ctx.font = `700 ${Math.round(w * 0.04)}px system-ui, sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText("Made with datatovid.com", w * wp.x, h * wp.y);
