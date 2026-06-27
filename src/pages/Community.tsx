@@ -8,6 +8,11 @@ import { Footer } from "@/components/Footer";
 import { CommunityCard } from "@/components/community/CommunityCard";
 import { CATEGORIES } from "@/lib/seo/categories";
 
+// Module-level cache so re-visiting the page (or toggling filters) shows
+// the last known good list immediately instead of an empty state while
+// the network refetches in the background.
+const communityCache = new Map<string, Project[]>();
+
 const SORTS: { key: CommunitySort; label: string }[] = [
   { key: "trending", label: "Trending" },
   { key: "latest", label: "Latest" },
@@ -31,16 +36,27 @@ const Community = () => {
   const win = (sp.get("window") as CommunityWindow) || "7d";
   const category = sp.get("category") || "";
   const [q, setQ] = useState(sp.get("q") || "");
-  const [projects, setProjects] = useState<Project[] | null>(null);
+  const cacheKey = `${sp.get("q") || ""}|${category}|${sort}|${win}`;
+  const [projects, setProjects] = useState<Project[] | null>(
+    () => communityCache.get(cacheKey) ?? null,
+  );
+  const [loading, setLoading] = useState(false);
   const [trending, setTrending] = useState<Project[] | null>(null);
 
   useEffect(() => {
     let alive = true;
-    setProjects(null);
+    const cached = communityCache.get(cacheKey);
+    if (cached) setProjects(cached);
+    setLoading(true);
     searchCommunity({ q: sp.get("q") || undefined, category: category || undefined, sort, window: win, limit: 48 })
-      .then((r) => alive && setProjects(r));
+      .then((r) => {
+        if (!alive) return;
+        communityCache.set(cacheKey, r);
+        setProjects(r);
+        setLoading(false);
+      });
     return () => { alive = false; };
-  }, [sp, sort, win, category]);
+  }, [sp, sort, win, category, cacheKey]);
 
   useEffect(() => {
     getTrendingProjects("7d", 6).then(setTrending);
@@ -138,15 +154,21 @@ const Community = () => {
                 <div key={i} className="aspect-[16/9] rounded-2xl bg-card animate-pulse" />
               ))}
             </div>
-          ) : projects.length === 0 ? (
+          ) : projects.length === 0 && !loading ? (
             <div className="text-center py-20 bg-card rounded-2xl border border-border">
               <Sparkles className="w-8 h-8 text-primary mx-auto mb-3" />
               <p className="text-foreground font-semibold">No videos match this filter</p>
               <p className="text-muted-foreground text-sm mt-2 max-w-md mx-auto">Try a different sort, time window, or category — or publish your own.</p>
               <Link to="/create" className="mt-5 inline-block px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold">Create a video</Link>
             </div>
-          ) : (
+          ) : projects.length === 0 ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="aspect-[16/9] rounded-2xl bg-card animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className={"grid sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity " + (loading ? "opacity-60" : "opacity-100")}>
               {projects.map((p) => <CommunityCard key={p.id} project={p} />)}
             </div>
           )}
