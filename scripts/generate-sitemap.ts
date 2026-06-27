@@ -200,13 +200,23 @@ function generateSitemap(items: Entry[]) {
     if (e.lastmod) lines.push(`    <lastmod>${e.lastmod}</lastmod>`);
     if (e.changefreq) lines.push(`    <changefreq>${e.changefreq}</changefreq>`);
     if (e.priority) lines.push(`    <priority>${e.priority}</priority>`);
+    const imgs = imageEntries.get(e.path);
+    if (imgs) {
+      for (const im of imgs) {
+        const safeTitle = im.title.replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]!));
+        lines.push(`    <image:image>`);
+        lines.push(`      <image:loc>${im.loc}</image:loc>`);
+        lines.push(`      <image:title>${safeTitle}</image:title>`);
+        lines.push(`    </image:image>`);
+      }
+    }
     lines.push(`  </url>`);
     return lines.join("\n");
   });
 
   return [
     `<?xml version="1.0" encoding="UTF-8"?>`,
-    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`,
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">`,
     ...urls,
     `</urlset>`,
     "",
