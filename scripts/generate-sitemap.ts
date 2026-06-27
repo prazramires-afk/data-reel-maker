@@ -68,7 +68,7 @@ for (const c of CATEGORIES) {
   entries.push({ path: `/community/${c.slug}`, changefreq: "weekly", priority: "0.7", lastmod: today });
 }
 
-async function fetchPublicProjects(): Promise<{ slug: string; published_at: string | null; tags: string[] }[]> {
+async function fetchPublicProjects(): Promise<{ slug: string; published_at: string | null; tags: string[]; title: string; thumbnail_url: string | null }[]> {
   const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
   const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
   if (!url || !key) {
@@ -76,15 +76,21 @@ async function fetchPublicProjects(): Promise<{ slug: string; published_at: stri
     return [];
   }
   try {
-    const r = await fetch(`${url}/rest/v1/projects?is_public=eq.true&hidden=eq.false&select=slug,id,published_at,tags&order=published_at.desc&limit=5000`, {
+    const r = await fetch(`${url}/rest/v1/projects?is_public=eq.true&hidden=eq.false&select=slug,id,name,published_at,tags,thumbnail_url,settings&order=published_at.desc&limit=5000`, {
       headers: { apikey: key, Authorization: `Bearer ${key}` },
     });
     if (!r.ok) {
       console.warn("sitemap: fetch projects failed", r.status);
       return [];
     }
-    const rows = (await r.json()) as { slug: string | null; id: string; published_at: string | null; tags: string[] | null }[];
-    return rows.map((x) => ({ slug: x.slug || x.id, published_at: x.published_at, tags: x.tags || [] }));
+    const rows = (await r.json()) as { slug: string | null; id: string; name: string | null; published_at: string | null; tags: string[] | null; thumbnail_url: string | null; settings: { title?: string } | null }[];
+    return rows.map((x) => ({
+      slug: x.slug || x.id,
+      published_at: x.published_at,
+      tags: x.tags || [],
+      title: x.settings?.title || x.name || "Community data video",
+      thumbnail_url: x.thumbnail_url,
+    }));
   } catch (e) {
     console.warn("sitemap: error fetching projects", e);
     return [];
@@ -93,13 +99,18 @@ async function fetchPublicProjects(): Promise<{ slug: string; published_at: stri
 
 const publicProjects = await fetchPublicProjects();
 const tagSet = new Set<string>();
+const imageEntries = new Map<string, { loc: string; title: string }[]>();
 for (const p of publicProjects) {
+  const path = `/community/${p.slug}`;
   entries.push({
-    path: `/community/${p.slug}`,
+    path,
     changefreq: "weekly",
     priority: "0.6",
     lastmod: p.published_at ? p.published_at.split("T")[0] : today,
   });
+  const img = p.thumbnail_url || `${BASE_URL}/og/default.jpg`;
+  const absImg = img.startsWith("http") ? img : `${BASE_URL}${img}`;
+  imageEntries.set(path, [{ loc: absImg, title: p.title }]);
   for (const t of p.tags) tagSet.add(t);
 }
 for (const t of tagSet) {
@@ -189,13 +200,23 @@ function generateSitemap(items: Entry[]) {
     if (e.lastmod) lines.push(`    <lastmod>${e.lastmod}</lastmod>`);
     if (e.changefreq) lines.push(`    <changefreq>${e.changefreq}</changefreq>`);
     if (e.priority) lines.push(`    <priority>${e.priority}</priority>`);
+    const imgs = imageEntries.get(e.path);
+    if (imgs) {
+      for (const im of imgs) {
+        const safeTitle = im.title.replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]!));
+        lines.push(`    <image:image>`);
+        lines.push(`      <image:loc>${im.loc}</image:loc>`);
+        lines.push(`      <image:title>${safeTitle}</image:title>`);
+        lines.push(`    </image:image>`);
+      }
+    }
     lines.push(`  </url>`);
     return lines.join("\n");
   });
 
   return [
     `<?xml version="1.0" encoding="UTF-8"?>`,
-    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`,
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">`,
     ...urls,
     `</urlset>`,
     "",

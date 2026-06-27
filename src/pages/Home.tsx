@@ -102,7 +102,7 @@ const Home = () => {
           className="text-5xl md:text-6xl font-extrabold tracking-tight text-foreground opacity-0 animate-fade-in"
           style={{ lineHeight: "1.1" }}
         >
-          Create Viral Data Videos Online
+          Create Viral Data to Video Online
         </h1>
         <p className="mt-5 text-muted-foreground text-lg md:text-xl max-w-xl mx-auto opacity-0 animate-fade-in" style={{ animationDelay: "100ms" }}>
           Turn statistics, rankings, timelines and charts into animated TikTok and Reels videos in seconds — free, in your browser.
