@@ -8,6 +8,11 @@ import { Footer } from "@/components/Footer";
 import { CommunityCard } from "@/components/community/CommunityCard";
 import { CATEGORIES } from "@/lib/seo/categories";
 
+// Module-level cache so re-visiting the page (or toggling filters) shows
+// the last known good list immediately instead of an empty state while
+// the network refetches in the background.
+const communityCache = new Map<string, Project[]>();
+
 const SORTS: { key: CommunitySort; label: string }[] = [
   { key: "trending", label: "Trending" },
   { key: "latest", label: "Latest" },
@@ -31,23 +36,27 @@ const Community = () => {
   const win = (sp.get("window") as CommunityWindow) || "7d";
   const category = sp.get("category") || "";
   const [q, setQ] = useState(sp.get("q") || "");
-  const [projects, setProjects] = useState<Project[] | null>(null);
+  const cacheKey = `${sp.get("q") || ""}|${category}|${sort}|${win}`;
+  const [projects, setProjects] = useState<Project[] | null>(
+    () => communityCache.get(cacheKey) ?? null,
+  );
   const [loading, setLoading] = useState(false);
   const [trending, setTrending] = useState<Project[] | null>(null);
 
   useEffect(() => {
     let alive = true;
+    const cached = communityCache.get(cacheKey);
+    if (cached) setProjects(cached);
     setLoading(true);
-    // Keep previous results visible while refetching to avoid flashing
-    // an empty/skeleton state when filters change.
     searchCommunity({ q: sp.get("q") || undefined, category: category || undefined, sort, window: win, limit: 48 })
       .then((r) => {
         if (!alive) return;
+        communityCache.set(cacheKey, r);
         setProjects(r);
         setLoading(false);
       });
     return () => { alive = false; };
-  }, [sp, sort, win, category]);
+  }, [sp, sort, win, category, cacheKey]);
 
   useEffect(() => {
     getTrendingProjects("7d", 6).then(setTrending);
