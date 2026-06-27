@@ -32,13 +32,20 @@ const Community = () => {
   const category = sp.get("category") || "";
   const [q, setQ] = useState(sp.get("q") || "");
   const [projects, setProjects] = useState<Project[] | null>(null);
+  const [loading, setLoading] = useState(false);
   const [trending, setTrending] = useState<Project[] | null>(null);
 
   useEffect(() => {
     let alive = true;
-    setProjects(null);
+    setLoading(true);
+    // Keep previous results visible while refetching to avoid flashing
+    // an empty/skeleton state when filters change.
     searchCommunity({ q: sp.get("q") || undefined, category: category || undefined, sort, window: win, limit: 48 })
-      .then((r) => alive && setProjects(r));
+      .then((r) => {
+        if (!alive) return;
+        setProjects(r);
+        setLoading(false);
+      });
     return () => { alive = false; };
   }, [sp, sort, win, category]);
 
@@ -138,15 +145,21 @@ const Community = () => {
                 <div key={i} className="aspect-[16/9] rounded-2xl bg-card animate-pulse" />
               ))}
             </div>
-          ) : projects.length === 0 ? (
+          ) : projects.length === 0 && !loading ? (
             <div className="text-center py-20 bg-card rounded-2xl border border-border">
               <Sparkles className="w-8 h-8 text-primary mx-auto mb-3" />
               <p className="text-foreground font-semibold">No videos match this filter</p>
               <p className="text-muted-foreground text-sm mt-2 max-w-md mx-auto">Try a different sort, time window, or category — or publish your own.</p>
               <Link to="/create" className="mt-5 inline-block px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold">Create a video</Link>
             </div>
-          ) : (
+          ) : projects.length === 0 ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="aspect-[16/9] rounded-2xl bg-card animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className={"grid sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity " + (loading ? "opacity-60" : "opacity-100")}>
               {projects.map((p) => <CommunityCard key={p.id} project={p} />)}
             </div>
           )}
