@@ -113,7 +113,7 @@ routes.push({
     ${headerHtml}
     <main>
       <section>
-        <h1>Create Viral Data Videos Online</h1>
+        <h1>Create Viral Data to Video Online</h1>
         <p>Turn statistics, rankings, timelines and charts into animated TikTok and Reels videos in seconds — free, in your browser.</p>
         <p><a href="/create">Start creating free</a> &middot; <a href="/templates">Browse templates</a></p>
       </section>

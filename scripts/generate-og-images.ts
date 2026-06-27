@@ -137,7 +137,7 @@ const cards: Card[] = [
   { path: "/templates", badge: "Templates", title: "Animated Data Video Templates", subtitle: "Bar chart race, top 10, timeline, head-to-head — vertical MP4s ready for TikTok." },
   { path: "/datasets", badge: "Datasets", title: "Free Datasets for Animated Stats Videos", subtitle: "GDP, sports, demographics, business and crypto — drop in and export." },
   { path: "/tools", badge: "Tools", title: "Free Data Video Tools", subtitle: "CSV to video, chart race generator, ranking maker — all client-side." },
-  { path: "/blog", badge: "Blog", title: "Creator Guides for Viral Data Videos", subtitle: "Tutorials, case studies and playbooks for TikTok, Reels and Shorts." },
+  { path: "/blog", badge: "Blog", title: "Creator Guides for Viral Data to Video", subtitle: "Tutorials, case studies and playbooks for TikTok, Reels and Shorts." },
 ];
 
 for (const t of TEMPLATE_LANDINGS) {
