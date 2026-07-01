@@ -19,6 +19,9 @@ interface BarState {
   vWidth: number;
   // Leader spotlight scale (0..1 -> 1.0..1.08 visually).
   spotlight: number;
+  // Appearance lifecycle timestamps (in ms of `elapsed`); undefined = never appeared / removed.
+  appearedAt?: number;
+  disappearAt?: number;
 }
 
 function getThemeColors(theme: ThemeType) {
