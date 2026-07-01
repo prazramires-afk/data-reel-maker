@@ -843,6 +843,8 @@ export function createBarRaceAnimation(
         b.width = 0;
         b.vValue = 0; b.vWidth = 0; b.vY = 0; b.spotlight = 0;
         b.y = resetTop + labels.indexOf(b.label) * (rm.barHeight + rm.barGap);
+        b.appearedAt = undefined;
+        b.disappearAt = undefined;
       });
       render(0);
     },
@@ -870,6 +872,8 @@ export function createBarRaceAnimation(
         b.width = 0;
         b.vValue = 0; b.vWidth = 0; b.vY = 0; b.spotlight = 0;
         b.y = recTop + labels.indexOf(b.label) * (rm.barHeight + rm.barGap);
+        b.appearedAt = undefined;
+        b.disappearAt = undefined;
       });
 
       const recordOptions = normalizeRecordVideoOptions(options);
