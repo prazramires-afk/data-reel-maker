@@ -49,6 +49,10 @@ export interface ProjectSettings {
   labelColors?: Record<string, string>;
   /** Cinematic preset: spring physics, leader spotlight, camera motion, particles. */
   cinematic?: boolean;
+  /** Only render entities after their interpolated value first crosses `appearThreshold`. */
+  appearOnFirstValue?: boolean;
+  /** Value threshold that gates entity appearance (default 0). */
+  appearThreshold?: number;
 }
 
 export interface Project {
@@ -116,6 +120,8 @@ export const DEFAULT_SETTINGS: ProjectSettings = {
   valueFormat: { ...DEFAULT_VALUE_FORMAT },
   labelColors: {},
   cinematic: true,
+  appearOnFirstValue: true,
+  appearThreshold: 0,
 };
 
 export const VIDEO_TYPES: { type: VideoType; label: string; description: string; available: boolean }[] = [
