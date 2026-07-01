@@ -454,7 +454,7 @@ export function createBarRaceAnimation(
     }
 
     // Bars + static left-side labels (TikTok viral style)
-    const visibleLabels = new Set(visible.map((v) => v.label));
+    const visibleLabels = visibleSet;
     const labelGap = Math.round(w * 0.018);
     const labelRightX = barStartX - labelGap;
     const labelMaxWidth = Math.max(40, labelRightX - sidePadding);
@@ -463,7 +463,25 @@ export function createBarRaceAnimation(
     const leaderLabel = visible[0]?.label ?? null;
     const isFinal = progress >= 0.97;
     bars.forEach((bar) => {
-      if (!visibleLabels.has(bar.label)) return;
+      // Only draw bars that have appeared. Bars still in their fade-out window keep drawing.
+      if (bar.appearedAt === undefined) return;
+
+      // Appearance transition: fade-in over APPEAR_MS from opacity 0 and slide-in from left.
+      const appearAge = elapsed - bar.appearedAt;
+      const appearT = Math.max(0, Math.min(1, appearAge / APPEAR_MS));
+      let lifecycleAlpha = appearT;
+      let slideX = (1 - appearT) * -w * 0.02;
+      if (bar.disappearAt !== undefined) {
+        const dAge = elapsed - bar.disappearAt;
+        const dT = Math.max(0, Math.min(1, dAge / APPEAR_MS));
+        lifecycleAlpha = 1 - dT;
+        slideX = -dT * w * 0.02;
+      }
+
+      ctx.save();
+      ctx.translate(slideX, 0);
+      const priorAlpha = ctx.globalAlpha;
+      ctx.globalAlpha = priorAlpha * lifecycleAlpha;
 
       // Spotlight: leader gets 1.08x bar height + glow + brighter color; others dimmer.
       const isLeader = bar.label === leaderLabel;
@@ -586,6 +604,7 @@ export function createBarRaceAnimation(
         ctx.fillText(valueText, valueX, bar.y + barHeight / 2, valueMaxWidth);
         ctx.restore();
       }
+      ctx.restore();
     });
 
     // Year — sits inline at the right edge of the lowest bar row.
