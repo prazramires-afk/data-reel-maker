@@ -365,7 +365,10 @@ export function createBarRaceAnimation(
 
     // Sort descending
     barData.sort((a, b) => b.value - a.value);
-    const visible = barData.slice(0, maxBars);
+    const appearOn = settings.appearOnFirstValue !== false;
+    const appearThreshold = settings.appearThreshold ?? 0;
+    const eligible = appearOn ? barData.filter((b) => b.value > appearThreshold) : barData;
+    const visible = eligible.slice(0, maxBars);
     const maxVal = Math.max(...visible.map((b) => b.value), 1);
     // Bars start after the static label gutter on the left.
     const barStartX = sidePadding + labelGutter;
@@ -378,6 +381,28 @@ export function createBarRaceAnimation(
       bar.targetValue = bd.value;
       bar.targetY = topPad + i * (barHeight + barGap);
       bar.targetWidth = (bd.value / maxVal) * barAreaWidth;
+    });
+
+    // Appearance lifecycle: mark first-visible time, mark disappear time when a bar drops out.
+    const APPEAR_MS = 250;
+    const visibleSet = new Set(visible.map((v) => v.label));
+    bars.forEach((bar) => {
+      if (visibleSet.has(bar.label)) {
+        if (bar.appearedAt === undefined) {
+          bar.appearedAt = elapsed;
+          // Prime springs so the bar grows from 0 rather than jumping.
+          if (bar.width === 0) { bar.value = 0; bar.vValue = 0; bar.vWidth = 0; }
+        }
+        bar.disappearAt = undefined;
+      } else if (bar.appearedAt !== undefined && bar.disappearAt === undefined && appearOn) {
+        bar.disappearAt = elapsed;
+      }
+      // Fully remove once fade-out complete.
+      if (bar.disappearAt !== undefined && elapsed - bar.disappearAt > APPEAR_MS) {
+        bar.appearedAt = undefined;
+        bar.disappearAt = undefined;
+        bar.width = 0; bar.value = 0; bar.vValue = 0; bar.vWidth = 0;
+      }
     });
 
     // Spring physics step (live playback). Recording calls stepSprings() externally.
