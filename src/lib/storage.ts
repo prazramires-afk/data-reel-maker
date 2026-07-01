@@ -2,6 +2,7 @@ import { Project } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 
 const PROJECTS_KEY = "dtv_projects";
+const MAX_PROJECTS = 10;
 
 function getLocalProjects(): Project[] {
   try {
@@ -18,14 +19,19 @@ function saveLocalProject(project: Project): void {
   if (idx >= 0) {
     projects[idx] = { ...project, updatedAt: new Date().toISOString() };
   } else {
-    projects.push(project);
+    projects.push({ ...project, updatedAt: new Date().toISOString() });
+  }
+  // Cap at MAX_PROJECTS — drop oldest by updatedAt.
+  projects.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+  while (projects.length > MAX_PROJECTS) {
+    projects.pop();
   }
   try {
     localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
   } catch (e) {
     // Storage full — trim oldest projects and retry
     console.warn("Storage quota exceeded, trimming old projects");
-    const trimmed = projects.slice(-5);
+    const trimmed = projects.slice(0, 5);
     try {
       localStorage.setItem(PROJECTS_KEY, JSON.stringify(trimmed));
     } catch {
@@ -136,6 +142,24 @@ export async function saveProject(project: Project): Promise<boolean> {
     console.error("saveProject error", error);
     saveLocalProject(project);
     return false;
+  }
+  // Enforce a soft cap of MAX_PROJECTS per user — delete oldest beyond the cap
+  // so free-tier storage stays predictable. Community-published rows are kept.
+  try {
+    const { data: extras } = await supabase
+      .from("projects")
+      .select("id, updated_at, is_public")
+      .eq("user_id", user.id)
+      .eq("is_public", false)
+      .order("updated_at", { ascending: false });
+    if (extras && extras.length > MAX_PROJECTS) {
+      const toDelete = extras.slice(MAX_PROJECTS).map((r: any) => r.id);
+      if (toDelete.length) {
+        await supabase.from("projects").delete().in("id", toDelete);
+      }
+    }
+  } catch (e) {
+    console.warn("Project cap enforcement skipped", e);
   }
   return true;
 }
