@@ -888,7 +888,10 @@ export function createBarRaceAnimation(
           value: interpolateValue(valueMap[label] || {}, years, currentYear),
         }));
         barData.sort((a, b) => b.value - a.value);
-        const visible = barData.slice(0, maxBars);
+        const appearOnRec = settings.appearOnFirstValue !== false;
+        const thresholdRec = settings.appearThreshold ?? 0;
+        const eligibleRec = appearOnRec ? barData.filter((b) => b.value > thresholdRec) : barData;
+        const visible = eligibleRec.slice(0, maxBars);
         const maxVal = Math.max(...visible.map((b) => b.value), 1);
         const recM = metrics(canvas.width, canvas.height);
         const barStartX = recM.sidePadding + recM.labelGutter;
