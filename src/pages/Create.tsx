@@ -242,6 +242,25 @@ const Create = () => {
     exportAspect, selectedTrack,
   ]);
 
+  // Auto-save the project to /projects once the user has real data.
+  // Debounced so we don't spam the backend during rapid edits. Skipped when
+  // signed out or while an export/publish is running.
+  const autoSaveTimer = useRef<number | null>(null);
+  useEffect(() => {
+    if (!user || exporting || sharingCommunity) return;
+    if (step < 2) return;
+    const hasRealData = data.some((r) => (r.label || "").trim() !== "" && Number.isFinite(r.value));
+    if (!hasRealData) return;
+    if (autoSaveTimer.current) window.clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = window.setTimeout(() => {
+      handleSave().catch((e) => console.warn("Auto-save failed", e));
+    }, 1200);
+    return () => {
+      if (autoSaveTimer.current) window.clearTimeout(autoSaveTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, videoType, data, settings, labelImages, linkedDatasetId, user]);
+
   // Redirect to auth if not signed in (after auth state has loaded)
   useEffect(() => {
     if (!authLoading && !user) {
