@@ -1144,6 +1144,7 @@ const Create = () => {
                 { label: "Show Values", key: "showValues" as const },
                 { label: "Show Intro Text", key: "showIntro" as const },
                 { label: "Smooth Animation", key: "smoothAnimation" as const },
+                { label: "Show entities only after first value", key: "appearOnFirstValue" as const },
               ].map(({ label, key }) => (
                 <div key={key} className="flex items-center justify-between">
                   <span className="text-sm text-foreground font-medium">{label}</span>
