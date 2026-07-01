@@ -79,7 +79,7 @@ export default function CommunityCategory({ category }: { category: CategoryMeta
             <p className="text-muted-foreground text-sm mt-2 max-w-md mx-auto">
               Be the first to publish a {category.name.toLowerCase()} data video.
             </p>
-            <Link to="/create" className="mt-5 inline-block px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold">
+            <Link to="/create?new=1" className="mt-5 inline-block px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold">
               Create a video
             </Link>
           </div>

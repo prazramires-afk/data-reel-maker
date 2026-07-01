@@ -78,7 +78,7 @@ const Projects = () => {
         <div className="text-center py-20 opacity-0 animate-fade-in">
           <p className="text-muted-foreground text-lg mb-4">No projects yet</p>
           <button
-            onClick={() => navigate("/create")}
+            onClick={() => navigate("/create?new=1")}
             className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold active:scale-95 transition-transform"
           >
             Create your first video

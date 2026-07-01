@@ -89,7 +89,7 @@ const Dashboard = () => {
           )}
         </div>
         <Link
-          to="/create"
+          to="/create?new=1"
           className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl font-semibold text-sm active:scale-95 transition-transform"
         >
           <Plus className="w-4 h-4" /> New Video
@@ -134,7 +134,7 @@ const Dashboard = () => {
           <div className="bg-card rounded-2xl p-8 text-center border border-border/50">
             <p className="text-muted-foreground mb-4">No videos yet</p>
             <Link
-              to="/create"
+              to="/create?new=1"
               className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl font-semibold text-sm"
             >
               <Plus className="w-4 h-4" /> Create your first video

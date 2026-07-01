@@ -249,7 +249,7 @@ function CommunityArticle({ param }: { param: string }) {
           <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
             Drop in your own numbers or CSV and export a vertical MP4 in under two minutes.
           </p>
-          <Link to="/create" className="mt-4 inline-block px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold">
+          <Link to="/create?new=1" className="mt-4 inline-block px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold">
             Open the editor
           </Link>
         </section>
