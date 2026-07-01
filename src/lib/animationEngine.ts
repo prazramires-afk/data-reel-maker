@@ -607,12 +607,9 @@ export function createBarRaceAnimation(
       ctx.restore();
     });
 
-    // Year — sits inline at the right edge of the lowest bar row.
-    // Pops on each integer change. Auto-fitted so the digits never overflow
-    // either the canvas width OR the bottom timeline area in exports.
-    const visibleCount = Math.min(visible.length, maxBars);
-    const lastIndex = Math.max(0, visibleCount - 1);
-    const lastY = topPad + lastIndex * (barHeight + barGap);
+    // Year — position is user-draggable via `settings.yearPos`.
+    // Defaults to the bottom-right area so it never sticks to the lowest bar.
+    const yp = settings.yearPos ?? { x: 0.88, y: 0.9 };
     const yearFontSize = Math.round(barHeight * 0.95);
     const yearAge = yearPopAt < 0 ? 999 : (elapsed - yearPopAt) / 1000;
     const pop = cinematic && yearAge < 0.35 ? 1 + 0.18 * (1 - yearAge / 0.35) : 1;
@@ -620,11 +617,11 @@ export function createBarRaceAnimation(
     const yearText = Math.round(currentYear).toString();
     const yearFit = fitTextToBounds(ctx, frame, {
       text: yearText,
-      x: w - rightPadding,
-      y: lastY + barHeight / 2,
+      x: w * yp.x,
+      y: h * yp.y,
       baseFontSize: Math.round(yearFontSize * pop),
       weight: 900,
-      align: "right",
+      align: "center",
       baseline: "middle",
       maxWidth: Math.max(barHeight * 3, w * 0.25),
       maxHeight: barHeight * 1.1,
@@ -634,7 +631,7 @@ export function createBarRaceAnimation(
     ctx.globalAlpha = yearAlpha;
     ctx.fillStyle = theme.text;
     ctx.font = yearFit.font;
-    ctx.textAlign = "right";
+    ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(yearText, yearFit.x, yearFit.y);
     ctx.restore();
