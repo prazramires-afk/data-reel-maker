@@ -190,6 +190,12 @@ const Create = () => {
       searchParams.get("edit") ||
       searchParams.get("dataset");
     if (hasUrlSource) return;
+    // Explicit fresh-start (e.g. from the header "Create" button) — wipe any
+    // stale draft so the wizard opens on an empty Step 1.
+    if (searchParams.get("new")) {
+      try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+      return;
+    }
     try {
       const raw = sessionStorage.getItem(DRAFT_KEY);
       if (!raw) return;
@@ -508,6 +514,9 @@ const Create = () => {
       }
       setVideoBlob(blob);
       setExported(true);
+      // Export complete — clear the persisted draft so returning to /create
+      // later starts on an empty workspace instead of re-loading this project.
+      try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
     } catch (err) {
       console.error("Export failed:", err);
       toast.error(err instanceof Error ? err.message : "Export failed. No tokens were charged.");
