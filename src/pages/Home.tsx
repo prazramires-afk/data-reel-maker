@@ -110,7 +110,7 @@ const Home = () => {
 
         <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center opacity-0 animate-slide-up" style={{ animationDelay: "200ms" }}>
           <button
-            onClick={() => navigate("/create")}
+            onClick={() => navigate("/create?new=1")}
             className="flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-primary text-primary-foreground font-bold text-lg shadow-lg shadow-primary/25 active:scale-[0.97] transition-transform duration-150"
           >
             <Play className="w-5 h-5" />
@@ -212,7 +212,7 @@ const Home = () => {
             <p className="text-foreground font-semibold">Be the first to publish a community video</p>
             <p className="text-muted-foreground text-sm mt-2 max-w-md mx-auto">Create one, then hit Publish on the Projects page and it will show up here.</p>
             <button
-              onClick={() => navigate("/create")}
+              onClick={() => navigate("/create?new=1")}
               className="mt-5 inline-block px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
             >
               Create a video
@@ -344,7 +344,7 @@ const Home = () => {
         <h2 className="text-3xl md:text-4xl font-extrabold text-foreground">Start creating your first data video</h2>
         <p className="mt-3 text-muted-foreground">Free forever. No download. No watermark on premium.</p>
         <button
-          onClick={() => navigate("/create")}
+          onClick={() => navigate("/create?new=1")}
           className="mt-6 inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-primary text-primary-foreground font-bold text-lg"
         >
           <Play className="w-5 h-5" /> Start Creating Free

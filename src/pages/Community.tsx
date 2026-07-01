@@ -159,7 +159,7 @@ const Community = () => {
               <Sparkles className="w-8 h-8 text-primary mx-auto mb-3" />
               <p className="text-foreground font-semibold">No videos match this filter</p>
               <p className="text-muted-foreground text-sm mt-2 max-w-md mx-auto">Try a different sort, time window, or category — or publish your own.</p>
-              <Link to="/create" className="mt-5 inline-block px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold">Create a video</Link>
+              <Link to="/create?new=1" className="mt-5 inline-block px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold">Create a video</Link>
             </div>
           ) : projects.length === 0 ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -29,7 +29,7 @@ const DashboardVideos = () => {
       {projects.length === 0 ? (
         <div className="bg-card rounded-2xl p-8 text-center border border-border/50">
           <p className="text-muted-foreground mb-4">You haven't created any videos yet.</p>
-          <Link to="/create" className="inline-block px-5 py-2 rounded-xl bg-primary text-primary-foreground font-semibold text-sm">Create one</Link>
+          <Link to="/create?new=1" className="inline-block px-5 py-2 rounded-xl bg-primary text-primary-foreground font-semibold text-sm">Create one</Link>
         </div>
       ) : (
         <div className="space-y-3">

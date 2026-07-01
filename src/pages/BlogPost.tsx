@@ -220,7 +220,7 @@ const BlogPost = () => {
               <h2 className="text-xl font-bold text-foreground">Ready to make your first one?</h2>
               <p className="text-muted-foreground mt-2 text-sm">Open the editor and turn this into a vertical MP4 in under five minutes — no signup required.</p>
               <div className="mt-4 flex flex-wrap gap-3">
-                <Link to="/create" className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold">Start creating free</Link>
+                <Link to="/create?new=1" className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold">Start creating free</Link>
                 <Link to="/templates" className="px-5 py-2.5 rounded-xl bg-secondary text-secondary-foreground font-semibold">Browse templates</Link>
               </div>
             </section>
