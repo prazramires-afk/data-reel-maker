@@ -19,6 +19,9 @@ interface BarState {
   vWidth: number;
   // Leader spotlight scale (0..1 -> 1.0..1.08 visually).
   spotlight: number;
+  // Appearance lifecycle timestamps (in ms of `elapsed`); undefined = never appeared / removed.
+  appearedAt?: number;
+  disappearAt?: number;
 }
 
 function getThemeColors(theme: ThemeType) {
@@ -362,7 +365,10 @@ export function createBarRaceAnimation(
 
     // Sort descending
     barData.sort((a, b) => b.value - a.value);
-    const visible = barData.slice(0, maxBars);
+    const appearOn = settings.appearOnFirstValue !== false;
+    const appearThreshold = settings.appearThreshold ?? 0;
+    const eligible = appearOn ? barData.filter((b) => b.value > appearThreshold) : barData;
+    const visible = eligible.slice(0, maxBars);
     const maxVal = Math.max(...visible.map((b) => b.value), 1);
     // Bars start after the static label gutter on the left.
     const barStartX = sidePadding + labelGutter;
@@ -375,6 +381,28 @@ export function createBarRaceAnimation(
       bar.targetValue = bd.value;
       bar.targetY = topPad + i * (barHeight + barGap);
       bar.targetWidth = (bd.value / maxVal) * barAreaWidth;
+    });
+
+    // Appearance lifecycle: mark first-visible time, mark disappear time when a bar drops out.
+    const APPEAR_MS = 250;
+    const visibleSet = new Set(visible.map((v) => v.label));
+    bars.forEach((bar) => {
+      if (visibleSet.has(bar.label)) {
+        if (bar.appearedAt === undefined) {
+          bar.appearedAt = elapsed;
+          // Prime springs so the bar grows from 0 rather than jumping.
+          if (bar.width === 0) { bar.value = 0; bar.vValue = 0; bar.vWidth = 0; }
+        }
+        bar.disappearAt = undefined;
+      } else if (bar.appearedAt !== undefined && bar.disappearAt === undefined && appearOn) {
+        bar.disappearAt = elapsed;
+      }
+      // Fully remove once fade-out complete.
+      if (bar.disappearAt !== undefined && elapsed - bar.disappearAt > APPEAR_MS) {
+        bar.appearedAt = undefined;
+        bar.disappearAt = undefined;
+        bar.width = 0; bar.value = 0; bar.vValue = 0; bar.vWidth = 0;
+      }
     });
 
     // Spring physics step (live playback). Recording calls stepSprings() externally.
@@ -426,7 +454,7 @@ export function createBarRaceAnimation(
     }
 
     // Bars + static left-side labels (TikTok viral style)
-    const visibleLabels = new Set(visible.map((v) => v.label));
+    const visibleLabels = visibleSet;
     const labelGap = Math.round(w * 0.018);
     const labelRightX = barStartX - labelGap;
     const labelMaxWidth = Math.max(40, labelRightX - sidePadding);
@@ -435,7 +463,25 @@ export function createBarRaceAnimation(
     const leaderLabel = visible[0]?.label ?? null;
     const isFinal = progress >= 0.97;
     bars.forEach((bar) => {
-      if (!visibleLabels.has(bar.label)) return;
+      // Only draw bars that have appeared. Bars still in their fade-out window keep drawing.
+      if (bar.appearedAt === undefined) return;
+
+      // Appearance transition: fade-in over APPEAR_MS from opacity 0 and slide-in from left.
+      const appearAge = elapsed - bar.appearedAt;
+      const appearT = Math.max(0, Math.min(1, appearAge / APPEAR_MS));
+      let lifecycleAlpha = appearT;
+      let slideX = (1 - appearT) * -w * 0.02;
+      if (bar.disappearAt !== undefined) {
+        const dAge = elapsed - bar.disappearAt;
+        const dT = Math.max(0, Math.min(1, dAge / APPEAR_MS));
+        lifecycleAlpha = 1 - dT;
+        slideX = -dT * w * 0.02;
+      }
+
+      ctx.save();
+      ctx.translate(slideX, 0);
+      const priorAlpha = ctx.globalAlpha;
+      ctx.globalAlpha = priorAlpha * lifecycleAlpha;
 
       // Spotlight: leader gets 1.08x bar height + glow + brighter color; others dimmer.
       const isLeader = bar.label === leaderLabel;
@@ -558,6 +604,7 @@ export function createBarRaceAnimation(
         ctx.fillText(valueText, valueX, bar.y + barHeight / 2, valueMaxWidth);
         ctx.restore();
       }
+      ctx.restore();
     });
 
     // Year — sits inline at the right edge of the lowest bar row.
@@ -796,6 +843,8 @@ export function createBarRaceAnimation(
         b.width = 0;
         b.vValue = 0; b.vWidth = 0; b.vY = 0; b.spotlight = 0;
         b.y = resetTop + labels.indexOf(b.label) * (rm.barHeight + rm.barGap);
+        b.appearedAt = undefined;
+        b.disappearAt = undefined;
       });
       render(0);
     },
@@ -823,6 +872,8 @@ export function createBarRaceAnimation(
         b.width = 0;
         b.vValue = 0; b.vWidth = 0; b.vY = 0; b.spotlight = 0;
         b.y = recTop + labels.indexOf(b.label) * (rm.barHeight + rm.barGap);
+        b.appearedAt = undefined;
+        b.disappearAt = undefined;
       });
 
       const recordOptions = normalizeRecordVideoOptions(options);
@@ -837,7 +888,10 @@ export function createBarRaceAnimation(
           value: interpolateValue(valueMap[label] || {}, years, currentYear),
         }));
         barData.sort((a, b) => b.value - a.value);
-        const visible = barData.slice(0, maxBars);
+        const appearOnRec = settings.appearOnFirstValue !== false;
+        const thresholdRec = settings.appearThreshold ?? 0;
+        const eligibleRec = appearOnRec ? barData.filter((b) => b.value > thresholdRec) : barData;
+        const visible = eligibleRec.slice(0, maxBars);
         const maxVal = Math.max(...visible.map((b) => b.value), 1);
         const recM = metrics(canvas.width, canvas.height);
         const barStartX = recM.sidePadding + recM.labelGutter;
