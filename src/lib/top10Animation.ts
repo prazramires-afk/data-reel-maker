@@ -51,7 +51,7 @@ export function createTop10Animation(
   labels.forEach((l, i) => (colorMap[l] = settings.labelColors?.[l] ?? BAR_COLORS[i % BAR_COLORS.length]));
 
   const baseDuration = 15;
-  const speedMultiplier = settings.speed === "slow" ? 0.7 : settings.speed === "fast" ? 1.5 : 1;
+  const speedMultiplier = getSpeedMultiplier(settings.speed);
   const totalMs = (baseDuration / speedMultiplier) * 1000;
 
   let playing = false, startTime = 0, elapsed = 0, animFrame = 0;

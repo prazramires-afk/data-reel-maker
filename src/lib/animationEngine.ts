@@ -105,7 +105,7 @@ export function getFittedTitleFontSize(
   settings: ProjectSettings,
   maxWidth?: number,
 ) {
-  const speedMultiplier = settings.speed === "slow" ? 0.7 : settings.speed === "fast" ? 1.5 : 1;
+  const speedMultiplier = getSpeedMultiplier(settings.speed);
   const durationSeconds = 15 / speedMultiplier;
   const durationFit = durationSeconds < 12 ? 0.95 : durationSeconds > 18 ? 1.05 : 1;
   const scaledSize = baseSize * (settings.titleScale ?? 1) * durationFit;
@@ -156,7 +156,7 @@ export function createBarRaceAnimation(
   labels.forEach((l, i) => (colorMap[l] = settings.labelColors?.[l] ?? BAR_COLORS[i % BAR_COLORS.length]));
 
   const baseDuration = 15; // fixed 15s base
-  const speedMultiplier = settings.speed === "slow" ? 0.7 : settings.speed === "fast" ? 1.5 : 1;
+  const speedMultiplier = getSpeedMultiplier(settings.speed);
   const totalMs = (baseDuration / speedMultiplier) * 1000;
 
   const maxBars = Math.min(labels.length, 10);
