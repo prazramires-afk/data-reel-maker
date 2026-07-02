@@ -454,7 +454,7 @@ const Create = () => {
     "1080p": dimsFor("1080p", exportAspect),
   };
   const fileExt = exportFormat === "mp4" ? "mp4" : "webm";
-  const selectedDurationSeconds = Math.round(15 / (settings.speed === "slow" ? 0.7 : settings.speed === "fast" ? 1.5 : 1));
+  const selectedDurationSeconds = Math.round(15 / getSpeedMultiplier(settings.speed));
 
   const handleExport = async () => {
     if (!user) {
@@ -500,7 +500,7 @@ const Create = () => {
 
       // Calculate duration for audio
       const baseDuration = 15;
-      const speedMultiplier = settings.speed === "slow" ? 0.7 : settings.speed === "fast" ? 1.5 : 1;
+      const speedMultiplier = getSpeedMultiplier(settings.speed);
       const totalMs = (baseDuration / speedMultiplier) * 1000;
 
       const blob = await controller.recordVideo((p) => {
@@ -1150,17 +1150,19 @@ const Create = () => {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-foreground block mb-2">Speed</label>
-              <div className="flex gap-2">
-                {(["slow", "medium", "fast"] as SpeedType[]).map((s) => (
+              <label className="text-sm font-medium text-foreground block mb-2">
+                Speed <span className="text-muted-foreground font-normal">· ~{Math.round(15 / getSpeedMultiplier(settings.speed))}s</span>
+              </label>
+              <div className="grid grid-cols-5 gap-1.5">
+                {(["extra_slow", "slow", "medium", "fast", "extra_fast"] as SpeedType[]).map((s) => (
                   <button
                     key={s}
                     onClick={() => setSettings({ ...settings, speed: s })}
-                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold capitalize transition-colors active:scale-95 ${
+                    className={`py-2.5 rounded-lg text-xs font-semibold transition-colors active:scale-95 ${
                       settings.speed === s ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
                     }`}
                   >
-                    {s}
+                    {s === "extra_slow" ? "X-Slow" : s === "extra_fast" ? "X-Fast" : s.charAt(0).toUpperCase() + s.slice(1)}
                   </button>
                 ))}
               </div>
