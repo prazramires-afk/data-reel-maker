@@ -1267,12 +1267,101 @@ const Create = () => {
         {step === 3 && (
           <div className="opacity-0 animate-fade-in">
             <h2 className="text-xl font-bold text-foreground mb-4">Preview</h2>
+
+            {/* Aspect ratio — chosen here so the background-image size hint matches
+                exactly what will be rendered into the exported video. */}
+            <div className="text-left mb-4">
+              <label className="text-sm font-medium text-foreground block mb-2">Aspect Ratio</label>
+              <div className="flex gap-2">
+                {([
+                  { id: "portrait", label: "Portrait", hint: "9:16" },
+                  { id: "landscape", label: "Landscape", hint: "16:9" },
+                  { id: "square", label: "Square", hint: "1:1" },
+                ] as const).map((a) => (
+                  <button
+                    key={a.id}
+                    onClick={() => {
+                      setExportAspect(a.id);
+                      setSettings({ ...settings, exportWidth: undefined, exportHeight: undefined });
+                    }}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors active:scale-95 ${
+                      exportAspect === a.id ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                    }`}
+                  >
+                    <span className="block">{a.label}</span>
+                    <span className="block text-[10px] opacity-70 mt-0.5">{a.hint}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1.5">
+                {exportAspect === "portrait" && "Best for TikTok, Reels, Shorts"}
+                {exportAspect === "landscape" && "Best for YouTube, Twitter, web"}
+                {exportAspect === "square" && "Best for Instagram feed, LinkedIn"}
+              </p>
+            </div>
+
+            {/* Background image — sits below every animation layer, including
+                the watermark, so free users can style the frame without hiding
+                the "datatovid.com" branding. */}
+            <div className="text-left mb-4">
+              <label className="text-sm font-medium text-foreground block mb-2">Background Image (optional)</label>
+              <div className="flex items-center gap-3">
+                <label className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-secondary text-sm font-semibold text-foreground cursor-pointer active:scale-[0.98] transition-transform">
+                  <ImagePlus className="w-4 h-4" />
+                  {settings.backgroundImage ? "Replace image" : "Upload image"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const dataUrl = await readImageFile(file);
+                        setSettings({ ...settings, backgroundImage: dataUrl });
+                      } catch {
+                        toast.error("Could not read image");
+                      } finally {
+                        e.target.value = "";
+                      }
+                    }}
+                  />
+                </label>
+                {settings.backgroundImage && (
+                  <>
+                    <img
+                      src={settings.backgroundImage}
+                      alt="Background preview"
+                      className="w-12 h-12 rounded-lg object-cover border border-border"
+                    />
+                    <button
+                      onClick={() => setSettings({ ...settings, backgroundImage: undefined })}
+                      className="p-2.5 rounded-lg bg-secondary text-muted-foreground hover:text-destructive transition-colors"
+                      aria-label="Remove background image"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Ideal size for a crisp export: <span className="font-semibold text-foreground">{resolutionMap["1080p"].w} × {resolutionMap["1080p"].h}px</span> ({exportAspect === "portrait" ? "9:16" : exportAspect === "landscape" ? "16:9" : "1:1"}). Smaller images are cover-fit and may look soft.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Renders under every element — watermarks stay visible on top.
+              </p>
+            </div>
+
             <p className="text-xs text-muted-foreground mb-2">Tip: drag the year and watermark labels to reposition them.</p>
             <div ref={previewContainerRef} className="relative bg-card rounded-2xl overflow-hidden">
               <canvas
                 ref={canvasRef}
                 className="w-full"
-                style={{ aspectRatio: "9/16", maxHeight: "70vh" }}
+                style={{
+                  aspectRatio:
+                    exportAspect === "landscape" ? "16/9" : exportAspect === "square" ? "1/1" : "9/16",
+                  maxHeight: "70vh",
+                }}
               />
               <DraggableHandle
                 containerRef={previewContainerRef}
