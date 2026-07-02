@@ -2,7 +2,17 @@ export type VideoType = "bar_race" | "timeline" | "top10" | "comparison";
 
 export type ThemeType = "dark" | "light" | "neon" | "greenscreen";
 
-export type SpeedType = "slow" | "medium" | "fast";
+export type SpeedType = "extra_slow" | "slow" | "medium" | "fast" | "extra_fast";
+
+export function getSpeedMultiplier(speed: SpeedType): number {
+  switch (speed) {
+    case "extra_slow": return 0.4;
+    case "slow": return 0.7;
+    case "fast": return 1.5;
+    case "extra_fast": return 2.2;
+    default: return 1;
+  }
+}
 
 import type { ValueFormat } from "./valueFormat";
 import { DEFAULT_VALUE_FORMAT } from "./valueFormat";
