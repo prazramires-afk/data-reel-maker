@@ -1,4 +1,4 @@
-import { DataRow, ProjectSettings, BAR_COLORS, ThemeType } from "./types";
+import { DataRow, ProjectSettings, BAR_COLORS, ThemeType, getSpeedMultiplier } from "./types";
 import { processData, AnimationController, getFittedTitleFontSize, normalizeRecordVideoOptions } from "./animationEngine";
 import { formatValue } from "./valueFormat";
 import { encodeCanvasToMp4, encodeCanvasToWebM, type RecordVideoOptions } from "./videoEncoding";
@@ -58,7 +58,7 @@ export function createTimelineAnimation(
   labels.forEach((l, i) => (colorMap[l] = settings.labelColors?.[l] ?? BAR_COLORS[i % BAR_COLORS.length]));
 
   const baseDuration = 15;
-  const speedMultiplier = settings.speed === "slow" ? 0.7 : settings.speed === "fast" ? 1.5 : 1;
+  const speedMultiplier = getSpeedMultiplier(settings.speed);
   const totalMs = (baseDuration / speedMultiplier) * 1000;
 
   let playing = false;
