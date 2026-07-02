@@ -29,10 +29,22 @@ const Home = () => {
   const navigate = useNavigate();
   const { user, credits, signOut, isAdmin } = useAuth();
   const dailyCap = credits?.is_premium ? 50 : 10;
-  const [community, setCommunity] = useState<Project[]>([]);
+  const [community, setCommunity] = useState<Project[] | null>(() => {
+    try {
+      const cached = sessionStorage.getItem("home:community");
+      if (cached) return JSON.parse(cached) as Project[];
+    } catch {}
+    return null;
+  });
 
   useEffect(() => {
-    getCommunityProjects(6).then(setCommunity);
+    let alive = true;
+    getCommunityProjects(6).then((r) => {
+      if (!alive) return;
+      setCommunity(r);
+      try { sessionStorage.setItem("home:community", JSON.stringify(r)); } catch {}
+    });
+    return () => { alive = false; };
   }, []);
 
   return (
@@ -207,7 +219,13 @@ const Home = () => {
           </div>
           <Link to="/community" className="text-sm text-primary font-semibold whitespace-nowrap">Browse all →</Link>
         </div>
-        {community.length === 0 ? (
+        {community === null ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="aspect-[16/9] rounded-2xl bg-card animate-pulse" />
+            ))}
+          </div>
+        ) : community.length === 0 ? (
           <div className="text-center py-12 bg-card rounded-2xl border border-border">
             <p className="text-foreground font-semibold">Be the first to publish a community video</p>
             <p className="text-muted-foreground text-sm mt-2 max-w-md mx-auto">Create one, then hit Publish on the Projects page and it will show up here.</p>
