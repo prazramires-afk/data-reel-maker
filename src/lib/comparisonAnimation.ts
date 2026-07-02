@@ -1,4 +1,4 @@
-import { DataRow, ProjectSettings, BAR_COLORS, ThemeType } from "./types";
+import { DataRow, ProjectSettings, BAR_COLORS, ThemeType, getSpeedMultiplier } from "./types";
 import { processData, AnimationController, getFittedTitleFontSize, normalizeRecordVideoOptions } from "./animationEngine";
 import { formatValue } from "./valueFormat";
 import { encodeCanvasToMp4, encodeCanvasToWebM, type RecordVideoOptions } from "./videoEncoding";
