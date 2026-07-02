@@ -406,7 +406,7 @@ const Create = () => {
       );
     }
     return () => controllerRef.current?.destroy();
-  }, [step, data, effectiveSettings, loadedImages, videoType]);
+  }, [step, data, effectiveSettings, loadedImages, videoType, exportAspect]);
 
   const handlePlay = () => {
     if (isPlaying) {
