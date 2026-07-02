@@ -37,6 +37,28 @@ function getThemeColors(theme: ThemeType) {
   }
 }
 
+/** Reserved key inside labelImages used to carry the user's background image. */
+export const BACKGROUND_IMAGE_KEY = "__background__";
+
+/**
+ * Draw the user's background image cover-fit across the entire canvas.
+ * Returns true when an image was drawn so the caller can skip its own theme fill.
+ */
+export function drawUserBackground(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  labelImages?: Record<string, HTMLImageElement>
+): boolean {
+  const img = labelImages?.[BACKGROUND_IMAGE_KEY];
+  if (!img || !img.complete || !img.naturalWidth) return false;
+  const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+  const dw = img.naturalWidth * scale;
+  const dh = img.naturalHeight * scale;
+  ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  return true;
+}
+
 function easeInOut(t: number): number {
   return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 }
@@ -270,6 +292,9 @@ export function createBarRaceAnimation(
   }
 
   function drawBackground(w: number, h: number, progress: number) {
+    // User-supplied background image wins over the themed gradient. Drawn first so
+    // every animation layer (bars, title, hook, watermark) still sits on top of it.
+    if (drawUserBackground(ctx, w, h, labelImages)) return;
     // Layered gradient background — never plain.
     const grad = ctx.createLinearGradient(0, 0, 0, h);
     if (settings.theme === "greenscreen") {

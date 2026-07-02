@@ -1,5 +1,5 @@
 import { DataRow, ProjectSettings, BAR_COLORS, ThemeType, getSpeedMultiplier } from "./types";
-import { processData, AnimationController, getFittedTitleFontSize, normalizeRecordVideoOptions } from "./animationEngine";
+import { processData, AnimationController, getFittedTitleFontSize, normalizeRecordVideoOptions, drawUserBackground } from "./animationEngine";
 import { formatValue } from "./valueFormat";
 import { encodeCanvasToMp4, encodeCanvasToWebM, type RecordVideoOptions } from "./videoEncoding";
 import { enforceWatermarkSettings } from "./watermarkPolicy";
@@ -75,6 +75,7 @@ export function createComparisonAnimation(
 
     ctx.fillStyle = theme.bg;
     ctx.fillRect(0, 0, w, h);
+    drawUserBackground(ctx, w, h, labelImages);
 
     const sidePad = w * 0.06;
     const topPad = h * 0.08;

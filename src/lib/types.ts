@@ -63,6 +63,8 @@ export interface ProjectSettings {
   appearOnFirstValue?: boolean;
   /** Value threshold that gates entity appearance (default 0). */
   appearThreshold?: number;
+  /** User-provided background image (base64 data URL). Rendered under every other element, including watermarks. */
+  backgroundImage?: string;
 }
 
 export interface Project {
