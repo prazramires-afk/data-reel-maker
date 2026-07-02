@@ -13,7 +13,7 @@ import { parseCSV } from "@/lib/parseCSV";
 import { saveProject, getProjectById, generateId, publishProject, isValidProjectId } from "@/lib/storage";
 import { getDatasetBySlug } from "@/lib/datasets";
 import { communityUrl, copyToClipboard } from "@/lib/share";
-import { createBarRaceAnimation, AnimationController } from "@/lib/animationEngine";
+import { createBarRaceAnimation, AnimationController, BACKGROUND_IMAGE_KEY } from "@/lib/animationEngine";
 import { createTimelineAnimation } from "@/lib/timelineAnimation";
 import { createTop10Animation } from "@/lib/top10Animation";
 import { createComparisonAnimation } from "@/lib/comparisonAnimation";
@@ -295,19 +295,24 @@ const Create = () => {
     }
   }, [searchParams]);
 
-  // Load images into HTMLImageElement cache when labelImages change
+  // Load images into HTMLImageElement cache when labelImages OR the user's
+  // background image change. The background is preloaded under a reserved key
+  // so every animation engine can pick it up via labelImages[BACKGROUND_IMAGE_KEY].
   useEffect(() => {
-    const newLoaded: Record<string, HTMLImageElement> = {};
-    let remaining = Object.keys(labelImages).length;
-    if (remaining === 0) {
+    const sources: Record<string, string> = { ...labelImages };
+    if (settings.backgroundImage) sources[BACKGROUND_IMAGE_KEY] = settings.backgroundImage;
+    const keys = Object.keys(sources);
+    if (keys.length === 0) {
       setLoadedImages({});
       return;
     }
-    Object.entries(labelImages).forEach(([label, src]) => {
+    const newLoaded: Record<string, HTMLImageElement> = {};
+    let remaining = keys.length;
+    keys.forEach((key) => {
       const img = new Image();
       img.decoding = "async";
       img.onload = () => {
-        newLoaded[label] = img;
+        newLoaded[key] = img;
         remaining--;
         if (remaining <= 0) setLoadedImages({ ...newLoaded });
       };
@@ -315,9 +320,9 @@ const Create = () => {
         remaining--;
         if (remaining <= 0) setLoadedImages({ ...newLoaded });
       };
-      img.src = src;
+      img.src = sources[key];
     });
-  }, [labelImages]);
+  }, [labelImages, settings.backgroundImage]);
 
   // Load template or edit
   useEffect(() => {
