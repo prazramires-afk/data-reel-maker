@@ -1339,35 +1339,14 @@ const Create = () => {
                   )}
                 </div>
 
-                {/* Aspect ratio selector */}
-                <div className="text-left">
-                  <label className="text-sm font-medium text-foreground block mb-2">Aspect Ratio</label>
-                  <div className="flex gap-2">
-                    {([
-                      { id: "portrait", label: "Portrait", hint: "9:16" },
-                      { id: "landscape", label: "Landscape", hint: "16:9" },
-                      { id: "square", label: "Square", hint: "1:1" },
-                    ] as const).map((a) => (
-                      <button
-                        key={a.id}
-                        onClick={() => {
-                          setExportAspect(a.id);
-                          setSettings({ ...settings, exportWidth: undefined, exportHeight: undefined });
-                        }}
-                        className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors active:scale-95 ${
-                          exportAspect === a.id ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
-                        }`}
-                      >
-                        <span className="block">{a.label}</span>
-                        <span className="block text-[10px] opacity-70 mt-0.5">{a.hint}</span>
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1.5">
-                    {exportAspect === "portrait" && "Best for TikTok, Reels, Shorts"}
-                    {exportAspect === "landscape" && "Best for YouTube, Twitter, web"}
-                    {exportAspect === "square" && "Best for Instagram feed, LinkedIn"}
-                  </p>
+                {/* Aspect ratio is chosen in Step 3 (Preview) so the ideal
+                    background-image size matches what the user actually sees. */}
+                <div className="text-left rounded-lg bg-secondary/40 px-3 py-2.5 text-xs text-muted-foreground">
+                  Aspect ratio: <span className="font-semibold text-foreground capitalize">{exportAspect}</span>
+                  {" · "}
+                  {exportAspect === "portrait" ? "9:16" : exportAspect === "landscape" ? "16:9" : "1:1"}
+                  {" · "}
+                  Change it in the Preview step.
                 </div>
 
                 {/* Resolution selector */}
