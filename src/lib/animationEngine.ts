@@ -292,6 +292,9 @@ export function createBarRaceAnimation(
   }
 
   function drawBackground(w: number, h: number, progress: number) {
+    // User-supplied background image wins over the themed gradient. Drawn first so
+    // every animation layer (bars, title, hook, watermark) still sits on top of it.
+    if (drawUserBackground(ctx, w, h, labelImages)) return;
     // Layered gradient background — never plain.
     const grad = ctx.createLinearGradient(0, 0, 0, h);
     if (settings.theme === "greenscreen") {
