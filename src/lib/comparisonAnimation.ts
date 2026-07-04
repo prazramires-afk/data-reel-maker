@@ -82,7 +82,7 @@ export function createComparisonAnimation(
 
     // Title
     if (settings.title) {
-      ctx.fillStyle = theme.text;
+      ctx.fillStyle = settings.titleColor ?? theme.text;
       const titleMaxWidth = w - sidePad * 2;
       const titleFontSize = getFittedTitleFontSize(ctx, settings.title, w, w * 0.048, settings, titleMaxWidth);
       ctx.font = `bold ${titleFontSize}px system-ui, sans-serif`;
@@ -97,7 +97,7 @@ export function createComparisonAnimation(
 
     // Year display (draggable)
     const yp = settings.yearPos ?? { x: 0.85, y: 0.92 };
-    ctx.fillStyle = theme.sub;
+    ctx.fillStyle = settings.yearColor ?? theme.sub;
     ctx.globalAlpha = 0.12;
     ctx.font = `bold ${Math.round(w * 0.18)}px system-ui, sans-serif`;
     ctx.textAlign = "center";
