@@ -73,7 +73,7 @@ export function createTop10Animation(
 
     // Title
     if (settings.title) {
-      ctx.fillStyle = theme.text;
+      ctx.fillStyle = settings.titleColor ?? theme.text;
       const titleMaxWidth = w - sidePad * 2;
       const titleFontSize = getFittedTitleFontSize(ctx, settings.title, w, w * 0.05, settings, titleMaxWidth);
       ctx.font = `bold ${titleFontSize}px system-ui, sans-serif`;
