@@ -451,7 +451,7 @@ export function createBarRaceAnimation(
     // Title — positioned above the bars area
     const titleY = Math.max(sidePadding, topPad - Math.round(w * 0.09));
     if (settings.title) {
-      ctx.fillStyle = theme.text;
+      ctx.fillStyle = settings.titleColor ?? theme.text;
       const titleMaxWidth = w - sidePadding - rightPadding - w * 0.16;
       const baseTitleSize = getFittedTitleFontSize(
         ctx,
@@ -525,7 +525,7 @@ export function createBarRaceAnimation(
       if (settings.showLabels) {
         ctx.save();
         ctx.globalAlpha = dim;
-        ctx.fillStyle = theme.text;
+        ctx.fillStyle = settings.labelColor ?? theme.text;
         const ls = getFittedCanvasFontSize(
           ctx,
           bar.label,
@@ -654,7 +654,7 @@ export function createBarRaceAnimation(
     });
     ctx.save();
     ctx.globalAlpha = yearAlpha;
-    ctx.fillStyle = theme.text;
+    ctx.fillStyle = settings.yearColor ?? theme.text;
     ctx.font = yearFit.font;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";

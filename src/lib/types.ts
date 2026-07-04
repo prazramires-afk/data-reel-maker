@@ -65,6 +65,12 @@ export interface ProjectSettings {
   appearThreshold?: number;
   /** User-provided background image (base64 data URL). Rendered under every other element, including watermarks. */
   backgroundImage?: string;
+  /** Custom hex color for the chart title text. Falls back to theme text color. */
+  titleColor?: string;
+  /** Custom hex color for bar / entity labels. Falls back to theme text color. */
+  labelColor?: string;
+  /** Custom hex color for the animated year display. Falls back to theme text color. */
+  yearColor?: string;
 }
 
 export interface Project {
