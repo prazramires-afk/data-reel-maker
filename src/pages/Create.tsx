@@ -1570,6 +1570,12 @@ const Create = () => {
                 >
                   View all projects →
                 </button>
+                <button
+                  onClick={() => navigate("/")}
+                  className="text-sm text-muted-foreground font-medium hover:text-foreground"
+                >
+                  ← Back to homepage
+                </button>
               </div>
             )}
           </div>
