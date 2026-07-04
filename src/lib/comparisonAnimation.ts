@@ -176,7 +176,7 @@ export function createComparisonAnimation(
       }
 
       if (settings.showLabels) {
-        ctx.fillStyle = theme.text;
+        ctx.fillStyle = settings.labelColor ?? theme.text;
         ctx.font = `600 ${Math.round(w * 0.03)}px system-ui, sans-serif`;
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
@@ -205,7 +205,7 @@ export function createComparisonAnimation(
       }
 
       if (settings.showLabels) {
-        ctx.fillStyle = theme.text;
+        ctx.fillStyle = settings.labelColor ?? theme.text;
         ctx.font = `600 ${Math.round(w * 0.03)}px system-ui, sans-serif`;
         ctx.textAlign = "right";
         ctx.textBaseline = "top";
