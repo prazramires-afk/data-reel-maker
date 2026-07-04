@@ -138,7 +138,7 @@ export function createTop10Animation(
 
         // Label
         if (settings.showLabels) {
-          ctx.fillStyle = theme.text;
+          ctx.fillStyle = settings.labelColor ?? theme.text;
           ctx.font = `600 ${Math.round(w * 0.033)}px system-ui, sans-serif`;
           ctx.textAlign = "left";
           ctx.textBaseline = "middle";
