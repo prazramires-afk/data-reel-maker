@@ -932,6 +932,44 @@ const Create = () => {
               </p>
             </div>
 
+            {/* Text colors: title, labels, year */}
+            <div className="rounded-xl bg-card border border-border p-4">
+              <h3 className="text-sm font-semibold text-foreground mb-1">Text Colors</h3>
+              <p className="text-[11px] text-muted-foreground mb-3">
+                Customize the color of the title, bar/entity names, and the animated year.
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { key: "titleColor" as const, label: "Title" },
+                  { key: "labelColor" as const, label: "Names" },
+                  { key: "yearColor" as const, label: "Year" },
+                ].map(({ key, label }) => {
+                  const value = (settings[key] as string | undefined) ?? "#ffffff";
+                  const isSet = !!settings[key];
+                  return (
+                    <div key={key} className="flex flex-col items-center gap-1.5 bg-secondary rounded-xl p-2.5">
+                      <input
+                        type="color"
+                        value={value}
+                        onChange={(e) => setSettings({ ...settings, [key]: e.target.value })}
+                        className="w-10 h-10 rounded-full border-0 bg-transparent cursor-pointer p-0"
+                        aria-label={`${label} color`}
+                      />
+                      <span className="text-[11px] font-medium text-foreground">{label}</span>
+                      {isSet && (
+                        <button
+                          onClick={() => setSettings({ ...settings, [key]: undefined })}
+                          className="text-[10px] text-muted-foreground hover:text-foreground underline"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="rounded-xl bg-card border border-border p-4 space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="text-left">
