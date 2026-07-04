@@ -82,7 +82,7 @@ export function createTimelineAnimation(
 
     // Title
     if (settings.title) {
-      ctx.fillStyle = theme.text;
+      ctx.fillStyle = settings.titleColor ?? theme.text;
       const titleMaxWidth = w - sidePad * 2;
       const titleFontSize = getFittedTitleFontSize(ctx, settings.title, w, w * 0.05, settings, titleMaxWidth);
       ctx.font = `bold ${titleFontSize}px system-ui, sans-serif`;
@@ -189,7 +189,7 @@ export function createTimelineAnimation(
 
       // Label
       if (settings.showLabels) {
-        ctx.fillStyle = theme.text;
+        ctx.fillStyle = settings.labelColor ?? theme.text;
         ctx.font = `600 ${Math.round(w * 0.025)}px system-ui, sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "bottom";
