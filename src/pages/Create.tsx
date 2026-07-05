@@ -613,14 +613,23 @@ const Create = () => {
   const uniqueLabels = [...new Set(data.map((r) => r.label).filter(Boolean))];
 
   const canProceed = () => {
-    if (step === 1) return data.filter((r) => r.label.trim()).length >= 5;
+    if (step === 1) {
+      if (videoType === "event_timeline") {
+        return (settings.events ?? []).filter((e) => e.title.trim()).length >= 2;
+      }
+      return data.filter((r) => r.label.trim()).length >= 5;
+    }
     return true;
   };
 
   const next = () => {
-    if (step === 1 && dataTab === "csv" && csvText.trim()) {
+    if (step === 1 && dataTab === "csv" && csvText.trim() && videoType !== "event_timeline") {
       const parsed = parseCSV(csvText);
       if (parsed.length >= 5) setData(parsed);
+    }
+    if (step === 1 && dataTab === "csv" && csvText.trim() && videoType === "event_timeline") {
+      const parsed = parseEventCSV(csvText);
+      if (parsed.rows.length >= 2) setSettings({ ...settings, events: parsed.rows });
     }
     if (step < STEPS.length - 1) setStep(step + 1);
   };
