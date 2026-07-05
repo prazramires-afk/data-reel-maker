@@ -396,7 +396,8 @@ const Create = () => {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
 
       controllerRef.current?.destroy();
-      const createAnimation = videoType === "timeline" ? createTimelineAnimation
+      const createAnimation = videoType === "event_timeline" ? createEventTimelineAnimation
+        : videoType === "timeline" ? createTimelineAnimation
         : videoType === "top10" ? createTop10Animation
         : videoType === "comparison" ? createComparisonAnimation
         : createBarRaceAnimation;
@@ -494,7 +495,8 @@ const Create = () => {
       exportCanvas.width = w;
       exportCanvas.height = h;
 
-      const createAnimation = videoType === "timeline" ? createTimelineAnimation
+      const createAnimation = videoType === "event_timeline" ? createEventTimelineAnimation
+        : videoType === "timeline" ? createTimelineAnimation
         : videoType === "top10" ? createTop10Animation
         : videoType === "comparison" ? createComparisonAnimation
         : createBarRaceAnimation;
