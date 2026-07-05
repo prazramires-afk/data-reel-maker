@@ -89,6 +89,172 @@ const DraggableHandle = ({
 };
 
 const Create = () => {
+};
+
+// --- Event Timeline Editor -------------------------------------------------
+
+function EventTimelineEditor({
+  events,
+  onChange,
+  csvText,
+  setCsvText,
+  dataTab,
+  setDataTab,
+}: {
+  events: EventRow[];
+  onChange: (events: EventRow[]) => void;
+  csvText: string;
+  setCsvText: (s: string) => void;
+  dataTab: "manual" | "csv" | "sample";
+  setDataTab: (t: "manual" | "csv" | "sample") => void;
+}) {
+  const rows = events.length ? events : [
+    { year: 0, title: "", description: "" },
+    { year: 0, title: "", description: "" },
+  ];
+  const update = (i: number, field: keyof EventRow, value: string) => {
+    const next = rows.slice();
+    if (field === "year") {
+      const parsed = parseYearCell(value);
+      next[i] = { ...next[i], year: parsed ?? 0 };
+    } else {
+      next[i] = { ...next[i], [field]: value };
+    }
+    onChange(next);
+  };
+  const addRow = () => onChange([...rows, { year: 0, title: "", description: "" }]);
+  const removeRow = (i: number) => {
+    if (rows.length <= 2) return;
+    onChange(rows.filter((_, idx) => idx !== i));
+  };
+  const [yearInputs, setYearInputs] = useState<Record<number, string>>({});
+
+  const loadSample = () => {
+    onChange([
+      { year: -753, title: "Founding of Rome", description: "Traditional founding of Rome by Romulus." },
+      { year: -509, title: "Roman Republic Established", description: "Monarchy abolished and the Republic begins." },
+      { year: -264, title: "First Punic War Begins", description: "Rome enters its first major war against Carthage." },
+      { year: -218, title: "Second Punic War", description: "Hannibal invades Italy by crossing the Alps." },
+      { year: -202, title: "Battle of Zama", description: "Scipio Africanus defeats Hannibal." },
+      { year: -146, title: "Destruction of Carthage", description: "Rome dominates the western Mediterranean." },
+      { year: -60, title: "First Triumvirate", description: "Caesar, Pompey and Crassus form a political alliance." },
+    ]);
+    setDataTab("manual");
+  };
+
+  const importCsv = (text: string) => {
+    const parsed = parseEventCSV(text);
+    if (parsed.rows.length >= 2) {
+      onChange(parsed.rows);
+      setDataTab("manual");
+    } else {
+      const firstError = parsed.issues.find((i) => i.level === "error");
+      toast.error(firstError?.message || "CSV could not be parsed.");
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex gap-1 bg-secondary rounded-lg p-1 mb-5">
+        {(["manual", "csv", "sample"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setDataTab(tab)}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+              dataTab === tab ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+            }`}
+          >
+            {tab === "manual" ? "Events" : tab === "csv" ? "Paste CSV" : "Samples"}
+          </button>
+        ))}
+      </div>
+
+      {dataTab === "manual" && (
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Year accepts formats like <code className="bg-secondary px-1 rounded">753 BC</code>, <code className="bg-secondary px-1 rounded">-753</code>, or <code className="bg-secondary px-1 rounded">2024</code>.
+          </p>
+          {rows.map((row, i) => (
+            <div key={i} className="bg-card rounded-xl p-3 space-y-2 border border-border">
+              <div className="flex gap-2 items-center">
+                <input
+                  value={yearInputs[i] ?? (row.year === 0 && !events[i] ? "" : formatYear(row.year))}
+                  onChange={(e) => {
+                    setYearInputs({ ...yearInputs, [i]: e.target.value });
+                    update(i, "year", e.target.value);
+                  }}
+                  placeholder="e.g. 753 BC"
+                  className="w-28 bg-secondary rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+                />
+                <input
+                  value={row.title}
+                  onChange={(e) => update(i, "title", e.target.value)}
+                  placeholder="Event title"
+                  className="flex-1 bg-secondary rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+                />
+                <button
+                  onClick={() => removeRow(i)}
+                  disabled={rows.length <= 2}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive active:scale-90 transition-all disabled:opacity-30"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+              <textarea
+                value={row.description}
+                onChange={(e) => update(i, "description", e.target.value)}
+                placeholder="Short description (optional)"
+                rows={2}
+                className="w-full bg-secondary rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary resize-none"
+              />
+            </div>
+          ))}
+          <button onClick={addRow} className="flex items-center gap-2 text-sm text-primary font-medium mt-2 active:scale-95 transition-transform">
+            <Plus className="w-4 h-4" /> Add Event
+          </button>
+        </div>
+      )}
+
+      {dataTab === "csv" && (
+        <div>
+          <textarea
+            value={csvText}
+            onChange={(e) => setCsvText(e.target.value)}
+            placeholder={"Year,Event,Description\n753 BC,Founding of Rome,Traditional founding by Romulus.\n509 BC,Roman Republic,Monarchy abolished.\n264 BC,First Punic War,Rome vs Carthage begins."}
+            className="w-full h-56 bg-secondary rounded-xl p-4 text-sm text-foreground font-mono placeholder:text-muted-foreground resize-none outline-none focus:ring-1 focus:ring-primary"
+          />
+          <p className="text-xs text-muted-foreground mt-2">
+            Format: <strong>Year, Event, Description</strong>. Years support <code className="bg-secondary px-1 rounded">753 BC</code> / <code className="bg-secondary px-1 rounded">2024</code>. Wrap descriptions containing commas in double quotes.
+          </p>
+          {csvText.trim() && (
+            <button
+              onClick={() => importCsv(csvText)}
+              className="mt-2 text-sm text-primary font-medium active:scale-95 transition-transform"
+            >
+              Load into Events →
+            </button>
+          )}
+        </div>
+      )}
+
+      {dataTab === "sample" && (
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={loadSample}
+            className="bg-card rounded-xl p-4 text-left font-semibold text-foreground active:scale-[0.97] transition-transform"
+          >
+            <div className="text-sm">Roman Republic Timeline</div>
+            <div className="text-xs text-muted-foreground mt-1">7 milestone events, 753 BC – 60 BC</div>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- Main wizard -----------------------------------------------------------
+
+const CreateInner = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, credits, consumeTokens, loading: authLoading } = useAuth();
