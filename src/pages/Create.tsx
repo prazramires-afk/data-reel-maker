@@ -88,9 +88,6 @@ const DraggableHandle = ({
   );
 };
 
-const Create = () => {
-};
-
 // --- Event Timeline Editor -------------------------------------------------
 
 function EventTimelineEditor({
@@ -254,7 +251,7 @@ function EventTimelineEditor({
 
 // --- Main wizard -----------------------------------------------------------
 
-const CreateInner = () => {
+const Create = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, credits, consumeTokens, loading: authLoading } = useAuth();
