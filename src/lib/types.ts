@@ -1,4 +1,4 @@
-export type VideoType = "bar_race" | "timeline" | "top10" | "comparison";
+export type VideoType = "bar_race" | "timeline" | "top10" | "comparison" | "event_timeline";
 
 export type ThemeType = "dark" | "light" | "neon" | "greenscreen";
 
@@ -21,6 +21,13 @@ export interface DataRow {
   label: string;
   value: number;
   year: number;
+}
+
+export interface EventRow {
+  /** Signed integer year. BC years are negative (e.g. 753 BC → -753). */
+  year: number;
+  title: string;
+  description: string;
 }
 
 export interface MultiYearData {
@@ -71,6 +78,8 @@ export interface ProjectSettings {
   labelColor?: string;
   /** Custom hex color for the animated year display. Falls back to theme text color. */
   yearColor?: string;
+  /** Chronological events for the Event Timeline video type. */
+  events?: EventRow[];
 }
 
 export interface Project {
@@ -147,6 +156,7 @@ export const VIDEO_TYPES: { type: VideoType; label: string; description: string;
   { type: "timeline", label: "Timeline Story", description: "Events unfolding through time", available: true },
   { type: "top10", label: "Top 10 Countdown", description: "Countdown revealing the best", available: true },
   { type: "comparison", label: "Comparison Battle", description: "Head-to-head face-offs", available: true },
+  { type: "event_timeline", label: "Event Timeline", description: "Dated events unfolding one by one", available: true },
 ];
 
 export const BAR_COLORS = [
