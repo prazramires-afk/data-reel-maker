@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import {
   VideoType, DataRow, ProjectSettings, Project, DEFAULT_SETTINGS,
-  VIDEO_TYPES, ThemeType, SpeedType, BAR_COLORS, getSpeedMultiplier,
+  VIDEO_TYPES, ThemeType, SpeedType, BAR_COLORS, getSpeedMultiplier, EventRow,
 } from "@/lib/types";
 import { TEMPLATES } from "@/lib/templates";
 import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE, NBA_SAMPLE, CRYPTO_SAMPLE, COMPANIES_SAMPLE } from "@/lib/sampleData";
@@ -17,6 +17,8 @@ import { createBarRaceAnimation, AnimationController, BACKGROUND_IMAGE_KEY } fro
 import { createTimelineAnimation } from "@/lib/timelineAnimation";
 import { createTop10Animation } from "@/lib/top10Animation";
 import { createComparisonAnimation } from "@/lib/comparisonAnimation";
+import { createEventTimelineAnimation } from "@/lib/eventTimelineAnimation";
+import { parseEventCSV, formatYear, parseYearCell } from "@/lib/parseEventCSV";
 import { refreshWatermarkPolicy } from "@/lib/watermarkPolicy";
 import { AUDIO_TRACKS } from "@/lib/audioTracks";
 import { formatValue, UNIT_TYPE_OPTIONS, CURRENCY_PRESETS, DEFAULT_VALUE_FORMAT, ValueFormat, UnitType } from "@/lib/valueFormat";
