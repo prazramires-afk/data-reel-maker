@@ -18,6 +18,7 @@ function getThemeColors(theme: ThemeType) {
 }
 
 function easeOut(t: number) { return 1 - Math.pow(1 - t, 3); }
+function easeInOut(t: number) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
 function clamp01(v: number) { return Math.max(0, Math.min(1, v)); }
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
@@ -49,7 +50,7 @@ export function createEventTimelineAnimation(
   const theme = getThemeColors(settings.theme);
   const events = (settings.events ?? []).slice().sort((a, b) => a.year - b.year);
 
-  const baseDuration = Math.max(12, Math.min(30, 4 + events.length * 2)); // ~2s per event, clamped
+  const baseDuration = Math.max(12, Math.min(40, 3 + events.length * 2.5)); // ~2.5s per event
   const speedMultiplier = getSpeedMultiplier(settings.speed);
   const totalMs = (baseDuration / speedMultiplier) * 1000;
 
@@ -91,101 +92,156 @@ export function createEventTimelineAnimation(
       return;
     }
 
-    // Vertical timeline (works for portrait & square; still fine for landscape)
-    const lineX = sidePad + w * 0.06;
-    const lineTop = h * 0.22;
-    const lineBottom = h * (settings.hideWatermark ? 0.92 : 0.88);
-    const lineH = lineBottom - lineTop;
+    // ---- Horizontal timeline + one focused event card at a time ----
+    const lineY = h * 0.78;
+    const lineLeft = sidePad;
+    const lineRight = w - sidePad;
+    const lineW = lineRight - lineLeft;
+    const dotR = Math.max(6, w * 0.011);
 
     // Base line
     ctx.strokeStyle = theme.line;
-    ctx.lineWidth = Math.max(2, w * 0.006);
+    ctx.lineWidth = Math.max(2, w * 0.005);
     ctx.beginPath();
-    ctx.moveTo(lineX, lineTop);
-    ctx.lineTo(lineX, lineBottom);
+    ctx.moveTo(lineLeft, lineY);
+    ctx.lineTo(lineRight, lineY);
     ctx.stroke();
 
-    // Reveal progression: how many events fully revealed by now
-    const revealFloat = progress * (events.length + 0.5);
-    const currentIdx = Math.min(events.length - 1, Math.floor(revealFloat));
+    // Which event is focused right now, and how far into its slot we are.
+    const slot = progress * events.length; // [0, events.length]
+    const rawIdx = Math.min(events.length - 1, Math.floor(slot));
+    const localT = clamp01(slot - rawIdx); // [0..1] within slot
+    // Transition window: last 25% of a slot slides toward next; first 15% eases in.
+    const enterT = easeOut(clamp01(localT / 0.15));
+    const exitT = easeInOut(clamp01((localT - 0.75) / 0.25));
+    // Effective focus index (fractional) for line-progress travel.
+    const focusFloat = rawIdx + exitT;
 
-    // Active dot travels along line
-    const activeYBase = lineTop + (lineH / events.length) * (currentIdx + 0.5);
+    // Dot positions (evenly spaced; single-event fallback centered)
+    const dotX = (i: number) =>
+      events.length === 1
+        ? (lineLeft + lineRight) / 2
+        : lineLeft + (lineW * i) / (events.length - 1);
 
-    // Progress line
+    // Progress line up to focused position
+    const progressX = events.length === 1 ? dotX(0) : lineLeft + (lineW * focusFloat) / (events.length - 1);
     ctx.strokeStyle = settings.yearColor ?? theme.accent;
-    ctx.lineWidth = Math.max(3, w * 0.008);
+    ctx.lineWidth = Math.max(3, w * 0.007);
     ctx.beginPath();
-    ctx.moveTo(lineX, lineTop);
-    ctx.lineTo(lineX, activeYBase);
+    ctx.moveTo(lineLeft, lineY);
+    ctx.lineTo(progressX, lineY);
     ctx.stroke();
 
-    // Event nodes + cards
-    const rowH = lineH / events.length;
-    const cardX = lineX + w * 0.05;
-    const cardMaxW = w - cardX - sidePad;
-    const yearFontSize = Math.round(w * 0.028);
-    const titleFontSize = Math.round(w * 0.038);
-    const descFontSize = Math.round(w * 0.028);
-
-    events.forEach((ev, i) => {
-      const nodeY = lineTop + rowH * (i + 0.5);
-      const rawT = clamp01(revealFloat - i);
-      const t = easeOut(rawT);
-      const revealed = rawT > 0;
-      const isActive = i === currentIdx;
-
-      // Node dot
-      const dotR = Math.max(6, w * 0.012);
-      ctx.fillStyle = revealed ? (settings.yearColor ?? theme.accent) : theme.line;
+    // Draw all dots
+    events.forEach((_ev, i) => {
+      const x = dotX(i);
+      const reached = i < rawIdx || (i === rawIdx && exitT >= 1);
+      const isFocus = i === rawIdx;
+      ctx.fillStyle = reached || isFocus ? (settings.yearColor ?? theme.accent) : theme.line;
       ctx.beginPath();
-      ctx.arc(lineX, nodeY, dotR, 0, Math.PI * 2);
+      ctx.arc(x, lineY, isFocus ? dotR * 1.5 : dotR, 0, Math.PI * 2);
       ctx.fill();
-      if (isActive) {
+      if (isFocus) {
         ctx.fillStyle = theme.bg;
         ctx.beginPath();
-        ctx.arc(lineX, nodeY, dotR * 0.45, 0, Math.PI * 2);
+        ctx.arc(x, lineY, dotR * 0.6, 0, Math.PI * 2);
         ctx.fill();
       }
+    });
 
-      if (!revealed) return;
+    // Travelling indicator (progressX)
+    ctx.fillStyle = settings.yearColor ?? theme.accent;
+    ctx.beginPath();
+    ctx.arc(progressX, lineY, dotR * 1.2, 0, Math.PI * 2);
+    ctx.fill();
 
-      // Card fade + slide
-      const alpha = t;
-      const offsetX = (1 - t) * w * 0.03;
+    // Card region (single focused card centered above the line)
+    const cardCenterX = w / 2;
+    const cardTop = h * 0.22;
+    const cardBottom = lineY - h * 0.06;
+    const cardH = cardBottom - cardTop;
+    const cardW = w - sidePad * 2;
+    const cardLeft = cardCenterX - cardW / 2;
+
+    // Slide offsets: current slides out to left as exitT grows; incoming slides in from right during exitT
+    const slideOut = -exitT * w * 0.6;
+    const slideIn = (1 - exitT) * w * 0.6;
+
+    const drawCard = (ev: EventRow, offsetX: number, alpha: number) => {
+      if (alpha <= 0.001) return;
       ctx.globalAlpha = alpha;
 
-      // Year label
+      const originX = cardLeft + offsetX;
+
+      // Optional event image (circle) on the left
+      const img = labelImages?.[ev.title];
+      const hasImg = !!(img && img.complete && img.naturalWidth > 0);
+      const imgSize = Math.min(cardH * 0.55, w * 0.22);
+      const imgX = originX + w * 0.02;
+      const imgY = cardTop + (cardH - imgSize) / 2;
+      const textX = hasImg ? imgX + imgSize + w * 0.03 : originX + w * 0.02;
+      const textMaxW = cardLeft + cardW - textX - w * 0.02;
+
+      if (hasImg) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(imgX + imgSize / 2, imgY + imgSize / 2, imgSize / 2, 0, Math.PI * 2);
+        ctx.closePath();
+        // Thin ring
+        ctx.lineWidth = Math.max(3, w * 0.005);
+        ctx.strokeStyle = settings.yearColor ?? theme.accent;
+        ctx.stroke();
+        ctx.clip();
+        ctx.drawImage(img!, imgX, imgY, imgSize, imgSize);
+        ctx.restore();
+      }
+
+      // Year (big accent)
+      const yearFontSize = Math.round(w * 0.075);
       ctx.fillStyle = settings.yearColor ?? theme.accent;
-      ctx.font = `800 ${yearFontSize}px system-ui, sans-serif`;
+      ctx.font = `900 ${yearFontSize}px system-ui, sans-serif`;
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
       const yearText = formatYear(ev.year);
-      ctx.fillText(yearText, cardX + offsetX, nodeY - rowH * 0.42);
+      ctx.fillText(yearText, textX, cardTop);
 
-      // Event title
+      // Title
+      const titleFontSize = Math.round(w * 0.05);
       ctx.fillStyle = settings.labelColor ?? theme.text;
-      ctx.font = `700 ${titleFontSize}px system-ui, sans-serif`;
-      const titleLines = wrapText(ctx, ev.title, cardMaxW);
-      const titleY = nodeY - rowH * 0.42 + yearFontSize + 6;
-      titleLines.slice(0, 2).forEach((ln, k) => {
-        ctx.fillText(ln, cardX + offsetX, titleY + k * (titleFontSize + 4));
+      ctx.font = `800 ${titleFontSize}px system-ui, sans-serif`;
+      const titleLines = wrapText(ctx, ev.title, textMaxW);
+      const titleY = cardTop + yearFontSize + 8;
+      const shownTitle = titleLines.slice(0, 2);
+      shownTitle.forEach((ln, k) => {
+        ctx.fillText(ln, textX, titleY + k * (titleFontSize + 6));
       });
 
-      // Description (only render for active + previously-active if room)
+      // Description
       if (ev.description) {
+        const descFontSize = Math.round(w * 0.032);
         ctx.fillStyle = theme.sub;
         ctx.font = `500 ${descFontSize}px system-ui, sans-serif`;
-        const descY = titleY + Math.min(titleLines.length, 2) * (titleFontSize + 4) + 4;
-        const descLines = wrapText(ctx, ev.description, cardMaxW);
-        const maxDescLines = Math.max(1, Math.floor((rowH * 0.55) / (descFontSize + 3)));
+        const descY = titleY + shownTitle.length * (titleFontSize + 6) + 8;
+        const descLines = wrapText(ctx, ev.description, textMaxW);
+        const maxDescLines = Math.max(1, Math.floor((cardBottom - descY) / (descFontSize + 4)));
         descLines.slice(0, maxDescLines).forEach((ln, k) => {
-          ctx.fillText(ln, cardX + offsetX, descY + k * (descFontSize + 3));
+          ctx.fillText(ln, textX, descY + k * (descFontSize + 4));
         });
       }
 
       ctx.globalAlpha = 1;
-    });
+    };
+
+    // Focused (current) card — enters at localT=0, slides out at end
+    const current = events[rawIdx];
+    const currentAlpha = enterT * (1 - exitT);
+    drawCard(current, slideOut, currentAlpha);
+
+    // Incoming (next) card — only during exit transition
+    if (exitT > 0 && rawIdx + 1 < events.length) {
+      const nextEv = events[rawIdx + 1];
+      drawCard(nextEv, slideIn, exitT);
+    }
 
     // Watermark
     if (!settings.hideWatermark) {
