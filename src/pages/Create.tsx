@@ -889,6 +889,8 @@ const Create = () => {
                 setCsvText={setCsvText}
                 dataTab={dataTab}
                 setDataTab={setDataTab}
+                labelImages={labelImages}
+                onUploadImage={handleImageUpload}
               />
             ) : (
             <>
