@@ -97,6 +97,8 @@ function EventTimelineEditor({
   setCsvText,
   dataTab,
   setDataTab,
+  labelImages,
+  onUploadImage,
 }: {
   events: EventRow[];
   onChange: (events: EventRow[]) => void;
@@ -104,6 +106,8 @@ function EventTimelineEditor({
   setCsvText: (s: string) => void;
   dataTab: "manual" | "csv" | "sample";
   setDataTab: (t: "manual" | "csv" | "sample") => void;
+  labelImages: Record<string, string>;
+  onUploadImage: (key: string) => void;
 }) {
   const rows = events.length ? events : [
     { year: 0, title: "", description: "" },
@@ -174,6 +178,19 @@ function EventTimelineEditor({
           {rows.map((row, i) => (
             <div key={i} className="bg-card rounded-xl p-3 space-y-2 border border-border">
               <div className="flex gap-2 items-center">
+                <button
+                  type="button"
+                  onClick={() => row.title.trim() && onUploadImage(row.title.trim())}
+                  disabled={!row.title.trim()}
+                  title={row.title.trim() ? "Upload event photo" : "Add a title first"}
+                  className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0 overflow-hidden border border-border active:scale-95 transition-transform disabled:opacity-40"
+                >
+                  {row.title.trim() && labelImages[row.title.trim()] ? (
+                    <img src={labelImages[row.title.trim()]} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <ImagePlus className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </button>
                 <input
                   value={yearInputs[i] ?? (row.year === 0 && !events[i] ? "" : formatYear(row.year))}
                   onChange={(e) => {
@@ -209,6 +226,9 @@ function EventTimelineEditor({
           <button onClick={addRow} className="flex items-center gap-2 text-sm text-primary font-medium mt-2 active:scale-95 transition-transform">
             <Plus className="w-4 h-4" /> Add Event
           </button>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Tip: tap the circle to upload a photo for that event (great for portraits, flags, or emblems).
+          </p>
         </div>
       )}
 
