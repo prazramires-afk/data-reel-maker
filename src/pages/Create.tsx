@@ -698,6 +698,17 @@ const Create = () => {
           <div className="opacity-0 animate-fade-in">
             <h2 className="text-xl font-bold text-foreground mb-4">Add your data</h2>
 
+            {videoType === "event_timeline" ? (
+              <EventTimelineEditor
+                events={settings.events ?? []}
+                onChange={(events) => setSettings({ ...settings, events })}
+                csvText={csvText}
+                setCsvText={setCsvText}
+                dataTab={dataTab}
+                setDataTab={setDataTab}
+              />
+            ) : (
+            <>
             {/* Tabs */}
             <div className="flex gap-1 bg-secondary rounded-lg p-1 mb-5">
               {(["manual", "csv", "sample"] as const).map((tab) => (
