@@ -149,6 +149,18 @@ export function createEventTimelineAnimation(
       }
     });
 
+    // Year labels under every dot for context
+    const dotYearFont = Math.max(10, Math.round(w * 0.02));
+    ctx.font = `700 ${dotYearFont}px system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    events.forEach((ev, i) => {
+      const x = dotX(i);
+      const isFocus = i === rawIdx;
+      ctx.fillStyle = isFocus ? (settings.yearColor ?? theme.accent) : theme.sub;
+      ctx.fillText(formatYear(ev.year), x, lineY + dotR * 2 + 6);
+    });
+
     // Travelling indicator (progressX)
     ctx.fillStyle = settings.yearColor ?? theme.accent;
     ctx.beginPath();
@@ -173,8 +185,10 @@ export function createEventTimelineAnimation(
 
       const originX = cardLeft + offsetX;
 
-      // Optional event image (circle) on the left
-      const img = labelImages?.[ev.title];
+      // Optional event image (circle) on the left — keyed by event index so
+      // every event gets its own uploaded photo, independent of the title.
+      const idx = events.indexOf(ev);
+      const img = labelImages?.[`__event_img__${idx}`];
       const hasImg = !!(img && img.complete && img.naturalWidth > 0);
       const imgSize = Math.min(cardH * 0.55, w * 0.22);
       const imgX = originX + w * 0.02;
