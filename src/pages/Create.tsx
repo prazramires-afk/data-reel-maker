@@ -1710,6 +1710,12 @@ const Create = () => {
                   </p>
                 </div>
 
+                {videoType === "event_timeline" && exportResolution === "1080p" && (
+                  <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-200">
+                    <strong className="font-semibold">Heads up:</strong> Event Timeline videos at 1080p can take several minutes to export because each event card is rendered at full resolution. Please keep this tab open and don't close it. Pick 720p for a much faster export at nearly the same quality.
+                  </div>
+                )}
+
                 <button
                   onClick={handleExport}
                   className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold text-lg active:scale-[0.97] transition-transform shadow-lg shadow-primary/25"
