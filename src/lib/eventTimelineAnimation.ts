@@ -149,17 +149,16 @@ export function createEventTimelineAnimation(
       }
     });
 
-    // Year labels under every dot for context
-    const dotYearFont = Math.max(10, Math.round(w * 0.02));
-    ctx.font = `700 ${dotYearFont}px system-ui, sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "top";
-    events.forEach((ev, i) => {
-      const x = dotX(i);
-      const isFocus = i === rawIdx;
-      ctx.fillStyle = isFocus ? (settings.yearColor ?? theme.accent) : theme.sub;
-      ctx.fillText(formatYear(ev.year), x, lineY + dotR * 2 + 6);
-    });
+    // Year label only under the currently focused dot (avoid collisions)
+    {
+      const dotYearFont = Math.max(12, Math.round(w * 0.024));
+      ctx.font = `800 ${dotYearFont}px system-ui, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillStyle = settings.yearColor ?? theme.accent;
+      const focusEv = events[rawIdx];
+      ctx.fillText(formatYear(focusEv.year), dotX(rawIdx), lineY + dotR * 2 + 6);
+    }
 
     // Travelling indicator (progressX)
     ctx.fillStyle = settings.yearColor ?? theme.accent;
