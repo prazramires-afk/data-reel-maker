@@ -69,6 +69,36 @@ export function createEventTimelineAnimation(
     ctx.fillRect(0, 0, w, h);
     drawUserBackground(ctx, w, h, labelImages);
 
+    // Per-event zoomed background image (cover fill) so no black gaps show,
+    // with a dark scrim to keep text and watermark legible.
+    const drawEventBg = (idx: number, alpha: number) => {
+      if (alpha <= 0.001) return;
+      const bgImg = labelImages?.[`__event_img__${idx}`];
+      if (!bgImg || !bgImg.complete || !bgImg.naturalWidth) return;
+      const iw = bgImg.naturalWidth;
+      const ih = bgImg.naturalHeight;
+      const scale = Math.max(w / iw, h / ih); // cover
+      const dw = iw * scale;
+      const dh = ih * scale;
+      const dx = (w - dw) / 2;
+      const dy = (h - dh) / 2;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(bgImg, dx, dy, dw, dh);
+      // Scrim for readability
+      ctx.fillStyle = settings.theme === "light" ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.55)";
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+    };
+
+    // We need slot/exit values here to crossfade — compute early.
+    const _slot = progress * events.length;
+    const _rawIdx = Math.min(events.length - 1, Math.floor(_slot));
+    const _localT = clamp01(_slot - _rawIdx);
+    const _exitT = easeInOut(clamp01((_localT - 0.75) / 0.25));
+    drawEventBg(_rawIdx, 1 - _exitT);
+    if (_exitT > 0 && _rawIdx + 1 < events.length) drawEventBg(_rawIdx + 1, _exitT);
+
     const sidePad = w * 0.08;
 
     // Title
@@ -108,12 +138,11 @@ export function createEventTimelineAnimation(
     ctx.stroke();
 
     // Which event is focused right now, and how far into its slot we are.
-    const slot = progress * events.length; // [0, events.length]
-    const rawIdx = Math.min(events.length - 1, Math.floor(slot));
-    const localT = clamp01(slot - rawIdx); // [0..1] within slot
-    // Transition window: last 25% of a slot slides toward next; first 15% eases in.
+    const slot = _slot;
+    const rawIdx = _rawIdx;
+    const localT = _localT;
     const enterT = easeOut(clamp01(localT / 0.15));
-    const exitT = easeInOut(clamp01((localT - 0.75) / 0.25));
+    const exitT = _exitT;
     // Effective focus index (fractional) for line-progress travel.
     const focusFloat = rawIdx + exitT;
 
