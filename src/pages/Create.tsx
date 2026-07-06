@@ -180,13 +180,12 @@ function EventTimelineEditor({
               <div className="flex gap-2 items-center">
                 <button
                   type="button"
-                  onClick={() => row.title.trim() && onUploadImage(row.title.trim())}
-                  disabled={!row.title.trim()}
-                  title={row.title.trim() ? "Upload event photo" : "Add a title first"}
-                  className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0 overflow-hidden border border-border active:scale-95 transition-transform disabled:opacity-40"
+                  onClick={() => onUploadImage(`__event_img__${i}`)}
+                  title="Upload event photo"
+                  className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0 overflow-hidden border border-border active:scale-95 transition-transform"
                 >
-                  {row.title.trim() && labelImages[row.title.trim()] ? (
-                    <img src={labelImages[row.title.trim()]} alt="" className="w-full h-full object-cover" />
+                  {labelImages[`__event_img__${i}`] ? (
+                    <img src={labelImages[`__event_img__${i}`]} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <ImagePlus className="w-4 h-4 text-muted-foreground" />
                   )}
@@ -1710,6 +1709,12 @@ const Create = () => {
                     {`${resolutionMap[exportResolution].w}×${resolutionMap[exportResolution].h}`}
                   </p>
                 </div>
+
+                {videoType === "event_timeline" && exportResolution === "1080p" && (
+                  <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-200">
+                    <strong className="font-semibold">Heads up:</strong> Event Timeline videos at 1080p can take several minutes to export because each event card is rendered at full resolution. Please keep this tab open and don't close it. Pick 720p for a much faster export at nearly the same quality.
+                  </div>
+                )}
 
                 <button
                   onClick={handleExport}
