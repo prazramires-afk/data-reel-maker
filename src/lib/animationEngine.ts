@@ -516,7 +516,7 @@ export function createBarRaceAnimation(
         x: titlePlacement.x,
         y: titleY,
         baseFontSize: baseTitleSize,
-        weight: getTitleFontWeight(settings) as CanvasTextAlign extends never ? never : any,
+        weight: getTitleFontWeight(settings),
         align: titlePlacement.align,
         baseline: "top",
         maxWidth: alignedMaxWidth,
