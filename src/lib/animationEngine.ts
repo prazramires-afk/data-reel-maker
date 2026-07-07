@@ -136,7 +136,9 @@ export function getFittedTitleFontSize(
   const safeMargin = Math.max(0.04, Math.min(settings.titleSafeMargin ?? 0.08, 0.2));
   const availableWidth = Math.min(maxWidth ?? Number.POSITIVE_INFINITY, canvasWidth * (1 - safeMargin * 2));
   let fittedSize = scaledSize;
-  ctx.font = `bold ${Math.round(fittedSize)}px system-ui, sans-serif`;
+  const family = getTitleFontFamily(settings);
+  const weight = getTitleFontWeight(settings);
+  ctx.font = `${weight} ${Math.round(fittedSize)}px ${family}`;
 
   const measuredWidth = ctx.measureText(title).width;
   if (measuredWidth > availableWidth) {
@@ -145,6 +147,49 @@ export function getFittedTitleFontSize(
 
   const minSize = canvasWidth * 0.014;
   return Math.round(Math.max(minSize, fittedSize));
+}
+
+/** CSS font family stack for the chosen title font preset. */
+export function getTitleFontFamily(settings: ProjectSettings): string {
+  switch (settings.titleFont) {
+    case "playfair": return `"Playfair Display", Georgia, serif`;
+    case "bebas": return `"Bebas Neue", Impact, system-ui, sans-serif`;
+    case "cinzel": return `"Cinzel", "Trajan Pro", Georgia, serif`;
+    case "caveat": return `"Caveat", "Comic Sans MS", cursive`;
+    case "abril": return `"Abril Fatface", Georgia, serif`;
+    case "space_grotesk": return `"Space Grotesk", system-ui, sans-serif`;
+    default: return `system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+  }
+}
+
+/** Preferred font-weight token for the chosen title font preset. */
+export function getTitleFontWeight(settings: ProjectSettings): number | string {
+  switch (settings.titleFont) {
+    case "bebas":
+    case "abril":
+    case "caveat":
+      return 400; // display faces already ship at a single heavy weight
+    case "playfair":
+    case "cinzel":
+      return 900;
+    default:
+      return "bold";
+  }
+}
+
+/**
+ * Returns the canvas x coordinate and textAlign value for the title,
+ * based on `settings.titleAlign` and a symmetrical side padding.
+ */
+export function getTitlePlacement(
+  settings: ProjectSettings,
+  canvasWidth: number,
+  sidePad: number,
+): { x: number; align: CanvasTextAlign } {
+  const align = settings.titleAlign ?? "left";
+  if (align === "center") return { x: canvasWidth / 2, align: "center" };
+  if (align === "right") return { x: canvasWidth - sidePad, align: "right" };
+  return { x: sidePad, align: "left" };
 }
 
 function getFittedCanvasFontSize(
@@ -461,21 +506,27 @@ export function createBarRaceAnimation(
         settings,
         titleMaxWidth,
       );
+      const titlePlacement = getTitlePlacement(settings, w, sidePadding);
+      // Custom title-max-width above is anchored to the left; when the user picks
+      // right/center alignment, fall back to a symmetric budget so the text isn't clipped.
+      const alignedMaxWidth =
+        titlePlacement.align === "left" ? titleMaxWidth : Math.max(120, w - sidePadding * 2);
       const fitTitle = fitTextToBounds(ctx, frame, {
         text: settings.title,
-        x: sidePadding,
+        x: titlePlacement.x,
         y: titleY,
         baseFontSize: baseTitleSize,
-        weight: "bold",
-        align: "left",
+        weight: getTitleFontWeight(settings),
+        align: titlePlacement.align,
         baseline: "top",
-        maxWidth: titleMaxWidth,
+        maxWidth: alignedMaxWidth,
         minFontSize: Math.max(14, Math.round(w * 0.018)),
+        fontFamily: getTitleFontFamily(settings),
       });
       ctx.font = fitTitle.font;
-      ctx.textAlign = "left";
+      ctx.textAlign = titlePlacement.align;
       ctx.textBaseline = "top";
-      ctx.fillText(settings.title, fitTitle.x, fitTitle.y, titleMaxWidth);
+      ctx.fillText(settings.title, fitTitle.x, fitTitle.y, alignedMaxWidth);
     }
 
     // Bars + static left-side labels (TikTok viral style)

@@ -78,6 +78,10 @@ export interface ProjectSettings {
   labelColor?: string;
   /** Custom hex color for the animated year display. Falls back to theme text color. */
   yearColor?: string;
+  /** Horizontal alignment for the video title. */
+  titleAlign?: "left" | "center" | "right";
+  /** Font family preset for the title. */
+  titleFont?: "system" | "playfair" | "bebas" | "cinzel" | "caveat" | "abril" | "space_grotesk";
   /** Chronological events for the Event Timeline video type. */
   events?: EventRow[];
 }
