@@ -1,5 +1,5 @@
 import { EventRow, ProjectSettings, ThemeType, getSpeedMultiplier } from "./types";
-import { AnimationController, getFittedTitleFontSize, normalizeRecordVideoOptions, drawUserBackground } from "./animationEngine";
+import { AnimationController, getFittedTitleFontSize, normalizeRecordVideoOptions, drawUserBackground, getTitleFontFamily, getTitleFontWeight, getTitlePlacement } from "./animationEngine";
 import { encodeCanvasToMp4, encodeCanvasToWebM, type RecordVideoOptions } from "./videoEncoding";
 import { enforceWatermarkSettings } from "./watermarkPolicy";
 import { formatYear } from "./parseEventCSV";
@@ -106,11 +106,12 @@ export function createEventTimelineAnimation(
       ctx.fillStyle = settings.titleColor ?? theme.text;
       const titleMaxWidth = w - sidePad * 2;
       const titleFontSize = getFittedTitleFontSize(ctx, settings.title, w, w * 0.05, settings, titleMaxWidth);
-      ctx.font = `bold ${titleFontSize}px system-ui, sans-serif`;
-      ctx.textAlign = "left";
+      ctx.font = `${getTitleFontWeight(settings)} ${titleFontSize}px ${getTitleFontFamily(settings)}`;
+      const { x: tx, align: ta } = getTitlePlacement(settings, w, sidePad);
+      ctx.textAlign = ta;
       ctx.textBaseline = "top";
       const titleY = Math.max(h * (settings.titleSafeMargin ?? 0.08), h * 0.05);
-      ctx.fillText(settings.title, sidePad, titleY, titleMaxWidth);
+      ctx.fillText(settings.title, tx, titleY, titleMaxWidth);
     }
 
     if (events.length === 0) {
