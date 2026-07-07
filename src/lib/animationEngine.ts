@@ -506,21 +506,27 @@ export function createBarRaceAnimation(
         settings,
         titleMaxWidth,
       );
+      const titlePlacement = getTitlePlacement(settings, w, sidePadding);
+      // Custom title-max-width above is anchored to the left; when the user picks
+      // right/center alignment, fall back to a symmetric budget so the text isn't clipped.
+      const alignedMaxWidth =
+        titlePlacement.align === "left" ? titleMaxWidth : Math.max(120, w - sidePadding * 2);
       const fitTitle = fitTextToBounds(ctx, frame, {
         text: settings.title,
-        x: sidePadding,
+        x: titlePlacement.x,
         y: titleY,
         baseFontSize: baseTitleSize,
-        weight: "bold",
-        align: "left",
+        weight: getTitleFontWeight(settings) as CanvasTextAlign extends never ? never : any,
+        align: titlePlacement.align,
         baseline: "top",
-        maxWidth: titleMaxWidth,
+        maxWidth: alignedMaxWidth,
         minFontSize: Math.max(14, Math.round(w * 0.018)),
+        fontFamily: getTitleFontFamily(settings),
       });
       ctx.font = fitTitle.font;
-      ctx.textAlign = "left";
+      ctx.textAlign = titlePlacement.align;
       ctx.textBaseline = "top";
-      ctx.fillText(settings.title, fitTitle.x, fitTitle.y, titleMaxWidth);
+      ctx.fillText(settings.title, fitTitle.x, fitTitle.y, alignedMaxWidth);
     }
 
     // Bars + static left-side labels (TikTok viral style)
