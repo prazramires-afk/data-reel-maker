@@ -136,7 +136,9 @@ export function getFittedTitleFontSize(
   const safeMargin = Math.max(0.04, Math.min(settings.titleSafeMargin ?? 0.08, 0.2));
   const availableWidth = Math.min(maxWidth ?? Number.POSITIVE_INFINITY, canvasWidth * (1 - safeMargin * 2));
   let fittedSize = scaledSize;
-  ctx.font = `bold ${Math.round(fittedSize)}px system-ui, sans-serif`;
+  const family = getTitleFontFamily(settings);
+  const weight = getTitleFontWeight(settings);
+  ctx.font = `${weight} ${Math.round(fittedSize)}px ${family}`;
 
   const measuredWidth = ctx.measureText(title).width;
   if (measuredWidth > availableWidth) {
@@ -145,6 +147,49 @@ export function getFittedTitleFontSize(
 
   const minSize = canvasWidth * 0.014;
   return Math.round(Math.max(minSize, fittedSize));
+}
+
+/** CSS font family stack for the chosen title font preset. */
+export function getTitleFontFamily(settings: ProjectSettings): string {
+  switch (settings.titleFont) {
+    case "playfair": return `"Playfair Display", Georgia, serif`;
+    case "bebas": return `"Bebas Neue", Impact, system-ui, sans-serif`;
+    case "cinzel": return `"Cinzel", "Trajan Pro", Georgia, serif`;
+    case "caveat": return `"Caveat", "Comic Sans MS", cursive`;
+    case "abril": return `"Abril Fatface", Georgia, serif`;
+    case "space_grotesk": return `"Space Grotesk", system-ui, sans-serif`;
+    default: return `system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+  }
+}
+
+/** Preferred font-weight token for the chosen title font preset. */
+export function getTitleFontWeight(settings: ProjectSettings): number | string {
+  switch (settings.titleFont) {
+    case "bebas":
+    case "abril":
+    case "caveat":
+      return 400; // display faces already ship at a single heavy weight
+    case "playfair":
+    case "cinzel":
+      return 900;
+    default:
+      return "bold";
+  }
+}
+
+/**
+ * Returns the canvas x coordinate and textAlign value for the title,
+ * based on `settings.titleAlign` and a symmetrical side padding.
+ */
+export function getTitlePlacement(
+  settings: ProjectSettings,
+  canvasWidth: number,
+  sidePad: number,
+): { x: number; align: CanvasTextAlign } {
+  const align = settings.titleAlign ?? "left";
+  if (align === "center") return { x: canvasWidth / 2, align: "center" };
+  if (align === "right") return { x: canvasWidth - sidePad, align: "right" };
+  return { x: sidePad, align: "left" };
 }
 
 function getFittedCanvasFontSize(
