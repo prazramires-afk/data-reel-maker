@@ -1119,6 +1119,71 @@ const Create = () => {
               />
             </div>
 
+            {/* Title alignment */}
+            <div>
+              <label className="text-sm font-medium text-foreground block mb-1.5">Title Position</label>
+              <div className="grid grid-cols-3 gap-2">
+                {(["left", "center", "right"] as const).map((pos) => {
+                  const active = (settings.titleAlign ?? "left") === pos;
+                  return (
+                    <button
+                      key={pos}
+                      onClick={() => setSettings({ ...settings, titleAlign: pos })}
+                      className={`rounded-xl px-3 py-2.5 text-sm font-medium capitalize transition-colors border ${
+                        active
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-secondary text-foreground border-transparent hover:bg-secondary/70"
+                      }`}
+                      aria-pressed={active}
+                    >
+                      {pos}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Title font */}
+            <div>
+              <label className="text-sm font-medium text-foreground block mb-1.5">Title Font</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { key: "system", label: "Clean Sans", family: "system-ui, sans-serif", weight: 700 },
+                  { key: "space_grotesk", label: "Modern", family: `"Space Grotesk", system-ui, sans-serif`, weight: 700 },
+                  { key: "playfair", label: "Elegant Serif", family: `"Playfair Display", serif`, weight: 900 },
+                  { key: "abril", label: "Editorial", family: `"Abril Fatface", serif`, weight: 400 },
+                  { key: "bebas", label: "Bold Display", family: `"Bebas Neue", Impact, sans-serif`, weight: 400 },
+                  { key: "cinzel", label: "Cinematic", family: `"Cinzel", serif`, weight: 900 },
+                  { key: "caveat", label: "Handwritten", family: `"Caveat", cursive`, weight: 700 },
+                ].map((f) => {
+                  const active = (settings.titleFont ?? "system") === f.key;
+                  return (
+                    <button
+                      key={f.key}
+                      onClick={() => setSettings({ ...settings, titleFont: f.key as typeof settings.titleFont })}
+                      className={`rounded-xl px-3 py-2.5 text-left transition-colors border ${
+                        active
+                          ? "bg-primary/15 border-primary text-foreground"
+                          : "bg-secondary border-transparent text-foreground hover:bg-secondary/70"
+                      }`}
+                      aria-pressed={active}
+                    >
+                      <span
+                        className="block text-lg leading-tight truncate"
+                        style={{ fontFamily: f.family, fontWeight: f.weight as number }}
+                      >
+                        {settings.title?.trim() ? settings.title : "Aa"}
+                      </span>
+                      <span className="block text-[11px] text-muted-foreground mt-0.5">{f.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1.5">
+                Artistic fonts render in your exported video too.
+              </p>
+            </div>
+
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-sm font-medium text-foreground">Title Size</label>
