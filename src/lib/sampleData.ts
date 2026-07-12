@@ -1,5 +1,35 @@
 import { DataRow } from "./types";
 
+// -- Per video-type CSV samples ------------------------------------------------
+// These are exposed as raw CSV strings so each editor can offer a
+// "Download sample CSV" and "Load sample" button that reflects that type's
+// dedicated schema.
+
+export const TIMELINE_STORY_SAMPLE_CSV = `Year,Title,Description,Image
+1969,Apollo 11,First humans landed on the Moon,apollo11.jpg
+1989,Berlin Wall Falls,End of the Cold War,berlinwall.jpg
+2007,First iPhone,Apple introduced the iPhone,iphone.jpg
+2020,COVID-19 Pandemic,A global pandemic reshapes the world,covid.jpg
+2024,AI Everywhere,Generative AI enters mainstream products,ai.jpg`;
+
+export const TOP10_SAMPLE_CSV = `Rank,Name,Value
+10,Canada,40
+9,Germany,45
+8,France,48
+7,Brazil,52
+6,Japan,61
+5,India,74
+4,United Kingdom,81
+3,Russia,93
+2,China,105
+1,United States,125`;
+
+export const COMPARISON_SAMPLE_CSV = `Category,Apple,Samsung
+Founded,1976,1938
+Revenue,391,305
+Employees,164000,270000
+Countries,175,180`;
+
 export const GDP_SAMPLE: DataRow[] = [
   { label: "USA", value: 14990, year: 2010 },
   { label: "China", value: 6066, year: 2010 },
