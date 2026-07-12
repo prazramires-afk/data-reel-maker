@@ -1139,26 +1139,65 @@ const Create = () => {
               );
             })()}
 
-            {dataTab === "sample" && (
-              <div className="flex flex-col gap-3">
-                {[
-                  { label: "GDP Countries", icon: Globe2, data: GDP_SAMPLE },
-                  { label: "Football Goals", icon: CircleDot, data: FOOTBALL_SAMPLE },
-                  { label: "Population Growth", icon: Users, data: POPULATION_SAMPLE },
-                ].map((s) => (
-                  <button
-                    key={s.label}
-                    onClick={() => loadSample(s.data)}
-                    className="bg-card rounded-xl p-4 text-left font-semibold text-foreground active:scale-[0.97] transition-transform flex items-center gap-3"
-                  >
-                    <span className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                      <s.icon className="w-4 h-4" />
-                    </span>
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            )}
+            {dataTab === "sample" && (() => {
+              const specialized = (videoType === "timeline" || videoType === "top10" || videoType === "comparison")
+                ? SPECIALIZED_CSV[videoType]
+                : null;
+              if (specialized) {
+                const specializedSamples: { label: string; sub: string }[] =
+                  videoType === "timeline" ? [{ label: "Modern Milestones", sub: "Apollo 11 → AI Everywhere" }]
+                  : videoType === "top10" ? [{ label: "Top Countries (Score)", sub: "Countdown from #10 to #1" }]
+                  : [{ label: "Apple vs Samsung", sub: "Revenue, employees, footprint" }];
+                return (
+                  <div className="flex flex-col gap-3">
+                    {specializedSamples.map((s) => (
+                      <button
+                        key={s.label}
+                        onClick={() => {
+                          const p = specialized.parse(specialized.sampleCsv);
+                          if (p.data.length > 0) {
+                            setData(p.data);
+                            setCsvText(specialized.sampleCsv);
+                            setDataTab("manual");
+                          }
+                        }}
+                        className="bg-card rounded-xl p-4 text-left font-semibold text-foreground active:scale-[0.97] transition-transform"
+                      >
+                        <div className="text-sm">{s.label}</div>
+                        <div className="text-xs text-muted-foreground mt-1">{s.sub}</div>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => downloadCsv(specialized.sampleFilename, specialized.sampleCsv)}
+                      className="text-xs text-primary font-medium active:scale-95 transition-transform text-left"
+                    >
+                      ↓ Download sample CSV
+                    </button>
+                  </div>
+                );
+              }
+              return (
+                <div className="flex flex-col gap-3">
+                  {[
+                    { label: "GDP Countries", icon: Globe2, data: GDP_SAMPLE },
+                    { label: "Football Goals", icon: CircleDot, data: FOOTBALL_SAMPLE },
+                    { label: "Population Growth", icon: Users, data: POPULATION_SAMPLE },
+                  ].map((s) => (
+                    <button
+                      key={s.label}
+                      onClick={() => loadSample(s.data)}
+                      className="bg-card rounded-xl p-4 text-left font-semibold text-foreground active:scale-[0.97] transition-transform flex items-center gap-3"
+                    >
+                      <span className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <s.icon className="w-4 h-4" />
+                      </span>
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
 
             {/* Label Images Section */}
             <div className="mt-6">
