@@ -8,8 +8,12 @@ import {
   VIDEO_TYPES, ThemeType, SpeedType, BAR_COLORS, getSpeedMultiplier, EventRow,
 } from "@/lib/types";
 import { TEMPLATES } from "@/lib/templates";
-import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE, NBA_SAMPLE, CRYPTO_SAMPLE, COMPANIES_SAMPLE } from "@/lib/sampleData";
+import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE, NBA_SAMPLE, CRYPTO_SAMPLE, COMPANIES_SAMPLE, TIMELINE_STORY_SAMPLE_CSV, TOP10_SAMPLE_CSV, COMPARISON_SAMPLE_CSV } from "@/lib/sampleData";
 import { parseCSV } from "@/lib/parseCSV";
+import { parseTimelineStoryCSV } from "@/lib/parseTimelineStoryCSV";
+import { parseTop10CSV } from "@/lib/parseTop10CSV";
+import { parseComparisonCSV } from "@/lib/parseComparisonCSV";
+import { detectSchema } from "@/lib/csvSplit";
 import { saveProject, getProjectById, generateId, publishProject, isValidProjectId } from "@/lib/storage";
 import { getDatasetBySlug } from "@/lib/datasets";
 import { communityUrl, copyToClipboard } from "@/lib/share";
