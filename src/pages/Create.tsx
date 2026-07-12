@@ -897,8 +897,13 @@ const Create = () => {
 
   const next = () => {
     if (step === 1 && dataTab === "csv" && csvText.trim() && videoType !== "event_timeline") {
-      const parsed = parseCSV(csvText);
-      if (parsed.length >= 5) setData(parsed);
+      if (videoType === "timeline" || videoType === "top10" || videoType === "comparison") {
+        const parsed = SPECIALIZED_CSV[videoType].parse(csvText);
+        if (!parsed.hasErrors && parsed.data.length > 0) setData(parsed.data);
+      } else {
+        const parsed = parseCSV(csvText);
+        if (parsed.length >= 5) setData(parsed);
+      }
     }
     if (step === 1 && dataTab === "csv" && csvText.trim() && videoType === "event_timeline") {
       const parsed = parseEventCSV(csvText);
