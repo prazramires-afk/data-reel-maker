@@ -1045,43 +1045,99 @@ const Create = () => {
               </div>
             )}
 
-            {dataTab === "csv" && (
-              <div>
-                <textarea
-                  value={csvText}
-                  onChange={(e) => setCsvText(e.target.value)}
-                  onPaste={(e) => {
-                    const pasted = e.clipboardData.getData("text");
-                    if (pasted) {
+            {dataTab === "csv" && (() => {
+              const specialized = (videoType === "timeline" || videoType === "top10" || videoType === "comparison")
+                ? SPECIALIZED_CSV[videoType]
+                : null;
+              const detectedOther = csvText.trim() ? detectSchema(csvText.split("\n")[0] || "") : "unknown";
+              const wrongType = !!specialized
+                && detectedOther !== "unknown"
+                && detectedOther !== videoType;
+              return (
+                <div>
+                  {specialized && (
+                    <div className="mb-3 rounded-lg bg-primary/10 border border-primary/30 p-3">
+                      <div className="text-xs font-semibold text-primary">{specialized.headline}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">Header: <code className="bg-secondary px-1 rounded">{specialized.headerHint}</code></div>
+                      <button
+                        type="button"
+                        onClick={() => downloadCsv(specialized.sampleFilename, specialized.sampleCsv)}
+                        className="mt-2 text-[11px] font-medium text-primary underline underline-offset-2 active:scale-95 transition-transform"
+                      >
+                        Download sample CSV
+                      </button>
+                    </div>
+                  )}
+                  <textarea
+                    value={csvText}
+                    onChange={(e) => setCsvText(e.target.value)}
+                    onPaste={(e) => {
+                      const pasted = e.clipboardData.getData("text");
+                      if (!pasted) return;
                       e.preventDefault();
                       setCsvText(pasted);
-                      const parsed = parseCSV(pasted);
-                      if (parsed.length >= 5) {
-                        setData(parsed);
-                        setDataTab("manual");
-                      }
-                    }
-                  }}
-                  placeholder={"Year,USA,China,Japan\n2010,15000,6000,5000\n2020,21000,14700,5040"}
-                  className="w-full h-48 bg-secondary rounded-xl p-4 text-sm text-foreground font-mono placeholder:text-muted-foreground resize-none outline-none focus:ring-1 focus:ring-primary"
-                />
-                <p className="text-xs text-muted-foreground mt-2">Paste your CSV here — it will auto-populate the table</p>
-                {csvText.trim() && (
-                  <button
-                    onClick={() => {
-                      const parsed = parseCSV(csvText);
-                      if (parsed.length >= 5) {
-                        setData(parsed);
-                        setDataTab("manual");
+                      if (specialized) {
+                        const p = specialized.parse(pasted);
+                        if (!p.hasErrors && p.data.length > 0) {
+                          setData(p.data);
+                          setDataTab("manual");
+                          toast.success(`Loaded ${p.data.length} row${p.data.length === 1 ? "" : "s"}`);
+                        } else {
+                          const first = p.issues.find((i) => i.level === "error");
+                          if (first) toast.error(first.message);
+                        }
+                      } else {
+                        const parsed = parseCSV(pasted);
+                        if (parsed.length >= 5) {
+                          setData(parsed);
+                          setDataTab("manual");
+                        }
                       }
                     }}
-                    className="mt-2 text-sm text-primary font-medium active:scale-95 transition-transform"
-                  >
-                    Load into Table →
-                  </button>
-                )}
-              </div>
-            )}
+                    placeholder={specialized ? specialized.placeholder : "Year,USA,China,Japan\n2010,15000,6000,5000\n2020,21000,14700,5040"}
+                    className="w-full h-48 bg-secondary rounded-xl p-4 text-sm text-foreground font-mono placeholder:text-muted-foreground resize-none outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  {specialized ? (
+                    <ul className="mt-2 space-y-1 text-[11px] text-muted-foreground list-disc pl-4">
+                      {specialized.helpBullets.map((b, i) => <li key={i}>{b}</li>)}
+                    </ul>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-2">Paste your CSV here — it will auto-populate the table</p>
+                  )}
+                  {wrongType && (
+                    <div className="mt-2 text-[11px] text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded-lg px-2 py-1.5">
+                      This CSV looks like a <strong>{detectedOther.replace("_", " ")}</strong> file. Switch video type in Step 1, or update the header to <code className="bg-secondary px-1 rounded">{specialized!.headerHint}</code>.
+                    </div>
+                  )}
+                  {csvText.trim() && (
+                    <button
+                      onClick={() => {
+                        if (specialized) {
+                          const p = specialized.parse(csvText);
+                          if (!p.hasErrors && p.data.length > 0) {
+                            setData(p.data);
+                            setDataTab("manual");
+                            toast.success(`Loaded ${p.data.length} row${p.data.length === 1 ? "" : "s"}`);
+                          } else {
+                            const first = p.issues.find((i) => i.level === "error");
+                            toast.error(first?.message ?? "CSV could not be parsed.");
+                          }
+                          return;
+                        }
+                        const parsed = parseCSV(csvText);
+                        if (parsed.length >= 5) {
+                          setData(parsed);
+                          setDataTab("manual");
+                        }
+                      }}
+                      className="mt-2 text-sm text-primary font-medium active:scale-95 transition-transform"
+                    >
+                      Load into Table →
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
 
             {dataTab === "sample" && (
               <div className="flex flex-col gap-3">
