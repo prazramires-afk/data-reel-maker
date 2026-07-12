@@ -32,6 +32,93 @@ const STEPS = ["Type", "Data", "Style", "Preview", "Export"];
 const VIDEO_COST = 5;
 const DRAFT_KEY = "datatovid:create-draft:v1";
 
+// --- Per video-type CSV configuration ---------------------------------------
+// Bar Chart Race and Event Timeline are intentionally excluded — bar_race
+// keeps its original schema untouched, and event_timeline has its own editor.
+type SpecializedType = "timeline" | "top10" | "comparison";
+
+interface SpecializedCsvConfig {
+  headline: string;
+  headerHint: string;
+  placeholder: string;
+  sampleCsv: string;
+  sampleFilename: string;
+  helpBullets: string[];
+  /** Parses CSV → DataRow[] + issues; issues drive per-type error messages. */
+  parse: (text: string) => {
+    data: DataRow[];
+    issues: { level: "error" | "warning"; line?: number; message: string }[];
+    hasErrors: boolean;
+  };
+}
+
+const SPECIALIZED_CSV: Record<SpecializedType, SpecializedCsvConfig> = {
+  timeline: {
+    headline: "Timeline Story CSV",
+    headerHint: "Year, Title, Description, Image",
+    placeholder: "Year,Title,Description,Image\n1969,Apollo 11,First humans landed on the Moon,apollo11.jpg\n1989,Berlin Wall Falls,End of the Cold War,berlinwall.jpg\n2007,First iPhone,Apple introduced the iPhone,iphone.jpg",
+    sampleCsv: TIMELINE_STORY_SAMPLE_CSV,
+    sampleFilename: "timeline-story-sample.csv",
+    helpBullets: [
+      "One row per event. Year can be a 4-digit year or '753 BC'.",
+      "Description and Image columns are optional — leave blank if unused.",
+      "Wrap descriptions containing commas in double quotes.",
+    ],
+    parse: (text) => {
+      const p = parseTimelineStoryCSV(text);
+      return { data: p.data, issues: p.issues, hasErrors: p.hasErrors };
+    },
+  },
+  top10: {
+    headline: "Top 10 Countdown CSV",
+    headerHint: "Rank, Name, Value",
+    placeholder: "Rank,Name,Value\n10,Canada,40\n9,Germany,45\n...\n1,United States,125",
+    sampleCsv: TOP10_SAMPLE_CSV,
+    sampleFilename: "top10-countdown-sample.csv",
+    helpBullets: [
+      "10 rows counting down from #10 to #1 (the countdown reveals bottom-up).",
+      "If ranks are missing, entries are auto-sorted by Value (highest first).",
+      "Optional 4th 'Image' column adds a logo/flag next to each rank.",
+    ],
+    parse: (text) => {
+      const p = parseTop10CSV(text);
+      return { data: p.data, issues: p.issues, hasErrors: p.hasErrors };
+    },
+  },
+  comparison: {
+    headline: "Comparison Battle CSV",
+    headerHint: "Category, EntityA, EntityB, ...",
+    placeholder: "Category,Apple,Samsung\nFounded,1976,1938\nRevenue,391,305\nEmployees,164000,270000\nCountries,175,180",
+    sampleCsv: COMPARISON_SAMPLE_CSV,
+    sampleFilename: "comparison-battle-sample.csv",
+    helpBullets: [
+      "First column lists the metrics; each following column is one entity being compared.",
+      "2 to 4 entities work best. Values should be numeric for the animated bars.",
+      "Non-numeric cells (like a founded year with text) still parse but render as 0 in the bars.",
+    ],
+    parse: (text) => {
+      const p = parseComparisonCSV(text);
+      return { data: p.data, issues: p.issues, hasErrors: p.hasErrors };
+    },
+  },
+};
+
+function downloadCsv(filename: string, csv: string) {
+  try {
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch {
+    /* ignore */
+  }
+}
+
 type CreateDraft = {
   step: number;
   videoType: VideoType;
