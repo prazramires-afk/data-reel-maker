@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://data-reel-maker.lovable.app/sitemap.xml
+Sitemap: https://www.datatovid.com/sitemap.xml
