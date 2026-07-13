@@ -8,7 +8,10 @@ import { DATASETS as LEGACY_DATASETS } from "../src/lib/seoContent/datasets";
 import { WATCH_PAGES } from "../src/lib/seoContent/watchPages";
 import { CATEGORIES } from "../src/lib/seo/categories";
 
-const BASE_URL = "https://data-reel-maker.lovable.app";
+const BASE_URL =
+  process.env.SITE_URL ||
+  process.env.VITE_SITE_URL ||
+  "https://datatovid.com";
 const OUT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "public", "sitemap.xml");
 
 interface Entry {
