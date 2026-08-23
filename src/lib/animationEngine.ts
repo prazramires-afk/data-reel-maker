@@ -192,6 +192,102 @@ export function getTitlePlacement(
   return { x: sidePad, align: "left" };
 }
 
+export interface TitleLayout {
+  fontSize: number;
+  lines: string[];
+  lineHeight: number;
+  /** Total height of the rendered block. */
+  height: number;
+  font: string;
+}
+
+/** Greedy word-wrap of already-split lines at the current ctx.font. */
+function wrapLinesAt(ctx: CanvasRenderingContext2D, source: string[], maxWidth: number): string[] {
+  const out: string[] = [];
+  for (const raw of source) {
+    const words = raw.split(/\s+/).filter(Boolean);
+    if (!words.length) { out.push(""); continue; }
+    let line = words[0];
+    for (let i = 1; i < words.length; i++) {
+      const candidate = `${line} ${words[i]}`;
+      if (ctx.measureText(candidate).width <= maxWidth) line = candidate;
+      else { out.push(line); line = words[i]; }
+    }
+    out.push(line);
+  }
+  return out;
+}
+
+/**
+ * Lays the video title out over multiple lines: honors manual line breaks and
+ * word-wraps long titles so they never overflow the safe width.
+ */
+export function layoutTitleLines(
+  ctx: CanvasRenderingContext2D,
+  title: string,
+  canvasWidth: number,
+  baseSize: number,
+  settings: ProjectSettings,
+  maxWidth: number,
+  maxLines = 3,
+): TitleLayout {
+  const family = getTitleFontFamily(settings);
+  const weight = getTitleFontWeight(settings);
+  const explicit = (title ?? "").split(/\r?\n/).map((l) => l.trim());
+
+  const speedMultiplier = getSpeedMultiplier(settings.speed);
+  const durationSeconds = 15 / speedMultiplier;
+  const durationFit = durationSeconds < 12 ? 0.95 : durationSeconds > 18 ? 1.05 : 1;
+  let size = baseSize * (settings.titleScale ?? 1) * durationFit;
+  const minSize = Math.max(12, canvasWidth * 0.014);
+
+  let lines: string[];
+  if (settings.titleAutoFit === false) {
+    ctx.font = `${weight} ${Math.round(size)}px ${family}`;
+    lines = wrapLinesAt(ctx, explicit, maxWidth);
+  } else {
+    // Shrink until the wrapped block fits within maxLines and no word overflows.
+    for (let guard = 0; guard < 60; guard++) {
+      ctx.font = `${weight} ${Math.round(size)}px ${family}`;
+      const wrapped = wrapLinesAt(ctx, explicit, maxWidth);
+      const overflows = wrapped.some((l) => ctx.measureText(l).width > maxWidth * 1.02);
+      if ((wrapped.length <= maxLines && !overflows) || size <= minSize) {
+        lines = wrapped;
+        break;
+      }
+      size = Math.max(minSize, size * 0.94);
+    }
+    if (!lines!) {
+      ctx.font = `${weight} ${Math.round(size)}px ${family}`;
+      lines = wrapLinesAt(ctx, explicit, maxWidth);
+    }
+  }
+
+  const fontSize = Math.round(Math.max(minSize, size));
+  const font = `${weight} ${fontSize}px ${family}`;
+  const lineHeight = Math.round(fontSize * 1.18);
+  const finalLines = (lines! || []).filter((l, i, arr) => l !== "" || (i > 0 && i < arr.length - 1));
+  const rendered = finalLines.length ? finalLines : [""];
+  return { fontSize, lines: rendered, lineHeight, height: rendered.length * lineHeight, font };
+}
+
+/** Draws a multi-line title block. Caller sets fillStyle/textAlign. */
+export function drawTitleLines(
+  ctx: CanvasRenderingContext2D,
+  layout: TitleLayout,
+  x: number,
+  topY: number,
+  maxWidth: number,
+) {
+  ctx.font = layout.font;
+  ctx.textBaseline = "top";
+  layout.lines.forEach((line, i) => {
+    ctx.fillText(line, x, topY + i * layout.lineHeight, maxWidth);
+  });
+}
+
+
+
 function getFittedCanvasFontSize(
   ctx: CanvasRenderingContext2D,
   text: string,
