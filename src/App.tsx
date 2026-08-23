@@ -109,6 +109,7 @@ const App = () => (
         <WhatsAppFloat />
         </AuthProvider>
       </BrowserRouter>
+      <Analytics />
     </TooltipProvider>
   </QueryClientProvider>
 );
