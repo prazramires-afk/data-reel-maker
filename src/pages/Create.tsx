@@ -1198,6 +1198,52 @@ const Create = () => {
                   </div>
                 );
               }
+              // Bar Chart Race: CSV sample (mirrors the specialized types) + classic DataRow samples.
+              if (videoType === "bar_race") {
+                return (
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={() => {
+                        const p = BAR_RACE_CSV_CONFIG.parse(BAR_RACE_CSV_CONFIG.sampleCsv);
+                        if (p.data.length > 0) {
+                          setData(p.data);
+                          setCsvText(BAR_RACE_CSV_CONFIG.sampleCsv);
+                          setDataTab("manual");
+                          toast.success(`Loaded ${p.data.length} rows`);
+                        }
+                      }}
+                      className="bg-card rounded-xl p-4 text-left font-semibold text-foreground active:scale-[0.97] transition-transform"
+                    >
+                      <div className="text-sm">Top Economies by GDP</div>
+                      <div className="text-xs text-muted-foreground mt-1">USA · China · Japan · Germany · India — 2010–2024</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadCsv(BAR_RACE_CSV_CONFIG.sampleFilename, BAR_RACE_CSV_CONFIG.sampleCsv)}
+                      className="text-xs text-primary font-medium active:scale-95 transition-transform text-left"
+                    >
+                      ↓ Download sample CSV
+                    </button>
+                    <div className="h-px bg-border my-1" />
+                    {[
+                      { label: "GDP Countries", icon: Globe2, data: GDP_SAMPLE },
+                      { label: "Football Goals", icon: CircleDot, data: FOOTBALL_SAMPLE },
+                      { label: "Population Growth", icon: Users, data: POPULATION_SAMPLE },
+                    ].map((s) => (
+                      <button
+                        key={s.label}
+                        onClick={() => loadSample(s.data)}
+                        className="bg-card rounded-xl p-4 text-left font-semibold text-foreground active:scale-[0.97] transition-transform flex items-center gap-3"
+                      >
+                        <span className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                          <s.icon className="w-4 h-4" />
+                        </span>
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                );
+              }
               return (
                 <div className="flex flex-col gap-3">
                   {[
