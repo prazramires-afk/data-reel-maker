@@ -103,6 +103,25 @@ const SPECIALIZED_CSV: Record<SpecializedType, SpecializedCsvConfig> = {
   },
 };
 
+// Bar Chart Race keeps its original `parseCSV` schema, but gets the same
+// sample-CSV / help experience as the specialized types.
+const BAR_RACE_CSV_CONFIG = {
+  headline: "Bar Chart Race CSV",
+  headerHint: "Year, Label1, Label2, ...",
+  placeholder: "Year,USA,China,Japan,Germany,India\n2010,14990,6066,5700,3400,1700\n2020,21430,14720,5040,3860,2700",
+  sampleCsv: BAR_RACE_SAMPLE_CSV,
+  sampleFilename: "bar-chart-race-sample.csv",
+  helpBullets: [
+    "First column is the Year; every following column is one label with its value at that year.",
+    "Add the same labels in the header for every year row — missing cells are treated as 0.",
+    "More years = a longer race; more labels = a wider chart.",
+  ],
+  parse: (text: string) => {
+    const data = parseCSV(text);
+    return { data, issues: [], hasErrors: data.length === 0 };
+  },
+};
+
 function downloadCsv(filename: string, csv: string) {
   try {
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
