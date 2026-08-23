@@ -8,7 +8,7 @@ import {
   VIDEO_TYPES, ThemeType, SpeedType, BAR_COLORS, getSpeedMultiplier, EventRow,
 } from "@/lib/types";
 import { TEMPLATES } from "@/lib/templates";
-import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE, NBA_SAMPLE, CRYPTO_SAMPLE, COMPANIES_SAMPLE, TIMELINE_STORY_SAMPLE_CSV, TOP10_SAMPLE_CSV, COMPARISON_SAMPLE_CSV } from "@/lib/sampleData";
+import { GDP_SAMPLE, FOOTBALL_SAMPLE, POPULATION_SAMPLE, NBA_SAMPLE, CRYPTO_SAMPLE, COMPANIES_SAMPLE, TIMELINE_STORY_SAMPLE_CSV, TOP10_SAMPLE_CSV, COMPARISON_SAMPLE_CSV, BAR_RACE_SAMPLE_CSV } from "@/lib/sampleData";
 import { parseCSV } from "@/lib/parseCSV";
 import { parseTimelineStoryCSV } from "@/lib/parseTimelineStoryCSV";
 import { parseTop10CSV } from "@/lib/parseTop10CSV";
@@ -100,6 +100,25 @@ const SPECIALIZED_CSV: Record<SpecializedType, SpecializedCsvConfig> = {
       const p = parseComparisonCSV(text);
       return { data: p.data, issues: p.issues, hasErrors: p.hasErrors };
     },
+  },
+};
+
+// Bar Chart Race keeps its original `parseCSV` schema, but gets the same
+// sample-CSV / help experience as the specialized types.
+const BAR_RACE_CSV_CONFIG = {
+  headline: "Bar Chart Race CSV",
+  headerHint: "Year, Label1, Label2, ...",
+  placeholder: "Year,USA,China,Japan,Germany,India\n2010,14990,6066,5700,3400,1700\n2020,21430,14720,5040,3860,2700",
+  sampleCsv: BAR_RACE_SAMPLE_CSV,
+  sampleFilename: "bar-chart-race-sample.csv",
+  helpBullets: [
+    "First column is the Year; every following column is one label with its value at that year.",
+    "Add the same labels in the header for every year row — missing cells are treated as 0.",
+    "More years = a longer race; more labels = a wider chart.",
+  ],
+  parse: (text: string) => {
+    const data = parseCSV(text);
+    return { data, issues: [], hasErrors: data.length === 0 };
   },
 };
 
@@ -1049,19 +1068,21 @@ const Create = () => {
               const specialized = (videoType === "timeline" || videoType === "top10" || videoType === "comparison")
                 ? SPECIALIZED_CSV[videoType]
                 : null;
+              const barRace = videoType === "bar_race" ? BAR_RACE_CSV_CONFIG : null;
+              const cfg = specialized ?? barRace;
               const detectedOther = csvText.trim() ? detectSchema(csvText.split("\n")[0] || "") : "unknown";
-              const wrongType = !!specialized
+              const wrongType = !!cfg
                 && detectedOther !== "unknown"
                 && detectedOther !== videoType;
               return (
                 <div>
-                  {specialized && (
+                  {cfg && (
                     <div className="mb-3 rounded-lg bg-primary/10 border border-primary/30 p-3">
-                      <div className="text-xs font-semibold text-primary">{specialized.headline}</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">Header: <code className="bg-secondary px-1 rounded">{specialized.headerHint}</code></div>
+                      <div className="text-xs font-semibold text-primary">{cfg.headline}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">Header: <code className="bg-secondary px-1 rounded">{cfg.headerHint}</code></div>
                       <button
                         type="button"
-                        onClick={() => downloadCsv(specialized.sampleFilename, specialized.sampleCsv)}
+                        onClick={() => downloadCsv(cfg.sampleFilename, cfg.sampleCsv)}
                         className="mt-2 text-[11px] font-medium text-primary underline underline-offset-2 active:scale-95 transition-transform"
                       >
                         Download sample CSV
@@ -1076,8 +1097,8 @@ const Create = () => {
                       if (!pasted) return;
                       e.preventDefault();
                       setCsvText(pasted);
-                      if (specialized) {
-                        const p = specialized.parse(pasted);
+                      if (cfg) {
+                        const p = cfg.parse(pasted);
                         if (!p.hasErrors && p.data.length > 0) {
                           setData(p.data);
                           setDataTab("manual");
@@ -1094,26 +1115,26 @@ const Create = () => {
                         }
                       }
                     }}
-                    placeholder={specialized ? specialized.placeholder : "Year,USA,China,Japan\n2010,15000,6000,5000\n2020,21000,14700,5040"}
+                    placeholder={cfg ? cfg.placeholder : "Year,USA,China,Japan\n2010,15000,6000,5000\n2020,21000,14700,5040"}
                     className="w-full h-48 bg-secondary rounded-xl p-4 text-sm text-foreground font-mono placeholder:text-muted-foreground resize-none outline-none focus:ring-1 focus:ring-primary"
                   />
-                  {specialized ? (
+                  {cfg ? (
                     <ul className="mt-2 space-y-1 text-[11px] text-muted-foreground list-disc pl-4">
-                      {specialized.helpBullets.map((b, i) => <li key={i}>{b}</li>)}
+                      {cfg.helpBullets.map((b, i) => <li key={i}>{b}</li>)}
                     </ul>
                   ) : (
                     <p className="text-xs text-muted-foreground mt-2">Paste your CSV here — it will auto-populate the table</p>
                   )}
                   {wrongType && (
                     <div className="mt-2 text-[11px] text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded-lg px-2 py-1.5">
-                      This CSV looks like a <strong>{detectedOther.replace("_", " ")}</strong> file. Switch video type in Step 1, or update the header to <code className="bg-secondary px-1 rounded">{specialized!.headerHint}</code>.
+                      This CSV looks like a <strong>{detectedOther.replace("_", " ")}</strong> file. Switch video type in Step 1, or update the header to <code className="bg-secondary px-1 rounded">{cfg!.headerHint}</code>.
                     </div>
                   )}
                   {csvText.trim() && (
                     <button
                       onClick={() => {
-                        if (specialized) {
-                          const p = specialized.parse(csvText);
+                        if (cfg) {
+                          const p = cfg.parse(csvText);
                           if (!p.hasErrors && p.data.length > 0) {
                             setData(p.data);
                             setDataTab("manual");
@@ -1174,6 +1195,52 @@ const Create = () => {
                     >
                       ↓ Download sample CSV
                     </button>
+                  </div>
+                );
+              }
+              // Bar Chart Race: CSV sample (mirrors the specialized types) + classic DataRow samples.
+              if (videoType === "bar_race") {
+                return (
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={() => {
+                        const p = BAR_RACE_CSV_CONFIG.parse(BAR_RACE_CSV_CONFIG.sampleCsv);
+                        if (p.data.length > 0) {
+                          setData(p.data);
+                          setCsvText(BAR_RACE_CSV_CONFIG.sampleCsv);
+                          setDataTab("manual");
+                          toast.success(`Loaded ${p.data.length} rows`);
+                        }
+                      }}
+                      className="bg-card rounded-xl p-4 text-left font-semibold text-foreground active:scale-[0.97] transition-transform"
+                    >
+                      <div className="text-sm">Top Economies by GDP</div>
+                      <div className="text-xs text-muted-foreground mt-1">USA · China · Japan · Germany · India — 2010–2024</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadCsv(BAR_RACE_CSV_CONFIG.sampleFilename, BAR_RACE_CSV_CONFIG.sampleCsv)}
+                      className="text-xs text-primary font-medium active:scale-95 transition-transform text-left"
+                    >
+                      ↓ Download sample CSV
+                    </button>
+                    <div className="h-px bg-border my-1" />
+                    {[
+                      { label: "GDP Countries", icon: Globe2, data: GDP_SAMPLE },
+                      { label: "Football Goals", icon: CircleDot, data: FOOTBALL_SAMPLE },
+                      { label: "Population Growth", icon: Users, data: POPULATION_SAMPLE },
+                    ].map((s) => (
+                      <button
+                        key={s.label}
+                        onClick={() => loadSample(s.data)}
+                        className="bg-card rounded-xl p-4 text-left font-semibold text-foreground active:scale-[0.97] transition-transform flex items-center gap-3"
+                      >
+                        <span className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                          <s.icon className="w-4 h-4" />
+                        </span>
+                        {s.label}
+                      </button>
+                    ))}
                   </div>
                 );
               }

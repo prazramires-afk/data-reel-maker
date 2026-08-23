@@ -30,6 +30,12 @@ Revenue,391,305
 Employees,164000,270000
 Countries,175,180`;
 
+export const BAR_RACE_SAMPLE_CSV = `Year,USA,China,Japan,Germany,India
+2010,14990,6066,5700,3400,1700
+2015,18220,11060,4380,3360,2100
+2020,21430,14720,5040,3860,2700
+2024,25460,17960,4230,4080,3730`;
+
 export const GDP_SAMPLE: DataRow[] = [
   { label: "USA", value: 14990, year: 2010 },
   { label: "China", value: 6066, year: 2010 },
