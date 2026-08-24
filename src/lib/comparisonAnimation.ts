@@ -1,5 +1,5 @@
 import { DataRow, ProjectSettings, BAR_COLORS, ThemeType, getSpeedMultiplier } from "./types";
-import { processData, AnimationController, getFittedTitleFontSize, normalizeRecordVideoOptions, drawUserBackground, getTitleFontFamily, getTitleFontWeight, getTitlePlacement } from "./animationEngine";
+import { processData, AnimationController, layoutTitleLines, drawTitleLines, normalizeRecordVideoOptions, drawUserBackground, getTitleFontFamily, getTitleFontWeight, getTitlePlacement } from "./animationEngine";
 import { formatValue } from "./valueFormat";
 import { encodeCanvasToMp4, encodeCanvasToWebM, type RecordVideoOptions } from "./videoEncoding";
 import { enforceWatermarkSettings } from "./watermarkPolicy";
@@ -84,17 +84,10 @@ export function createComparisonAnimation(
     if (settings.title) {
       ctx.fillStyle = settings.titleColor ?? theme.text;
       const titleMaxWidth = w - sidePad * 2;
-      const titleFontSize = getFittedTitleFontSize(ctx, settings.title, w, w * 0.048, settings, titleMaxWidth);
-      ctx.font = `${getTitleFontWeight(settings)} ${titleFontSize}px ${getTitleFontFamily(settings)}`;
-      // Comparison defaults to centered title; still honor an explicit align choice.
-      const { x: tx, align: ta } = getTitlePlacement(
-        { ...settings, titleAlign: settings.titleAlign ?? "center" },
-        w,
-        sidePad,
-      );
+      const titleLayout = layoutTitleLines(ctx, settings.title, w, w * 0.048, settings, titleMaxWidth);
+      const { x: tx, align: ta } = getTitlePlacement({ ...settings, titleAlign: settings.titleAlign ?? "center" }, w, sidePad);
       ctx.textAlign = ta;
-      ctx.textBaseline = "top";
-      ctx.fillText(settings.title, tx, topPad, titleMaxWidth);
+      drawTitleLines(ctx, titleLayout, tx, topPad, titleMaxWidth);
     }
 
     const dataProgress = Math.max(0, progress / 0.95);

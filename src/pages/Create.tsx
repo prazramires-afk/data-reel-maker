@@ -1369,12 +1369,17 @@ const Create = () => {
 
             <div>
               <label className="text-sm font-medium text-foreground block mb-1.5">Video Title</label>
-              <input
+              <textarea
                 value={settings.title}
                 onChange={(e) => setSettings({ ...settings, title: e.target.value })}
-                placeholder="e.g. Top Economies by GDP"
-                className="w-full bg-secondary rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+                rows={2}
+                placeholder={"e.g. Top Economies by GDP\n(press Enter for a second line)"}
+                className="w-full bg-secondary rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary resize-y leading-relaxed"
               />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Long titles wrap automatically onto up to 3 lines. Press Enter to force your own line break.
+              </p>
+
             </div>
 
             {/* Title alignment */}
