@@ -1,5 +1,5 @@
 import { DataRow, ProjectSettings, BAR_COLORS, ThemeType, getSpeedMultiplier } from "./types";
-import { processData, AnimationController, getFittedTitleFontSize, normalizeRecordVideoOptions, drawUserBackground, getTitleFontFamily, getTitleFontWeight, getTitlePlacement } from "./animationEngine";
+import { processData, AnimationController, layoutTitleLines, drawTitleLines, normalizeRecordVideoOptions, drawUserBackground, getTitleFontFamily, getTitleFontWeight, getTitlePlacement } from "./animationEngine";
 import { formatValue } from "./valueFormat";
 import { encodeCanvasToMp4, encodeCanvasToWebM, type RecordVideoOptions } from "./videoEncoding";
 import { enforceWatermarkSettings } from "./watermarkPolicy";
@@ -84,13 +84,11 @@ export function createTimelineAnimation(
     if (settings.title) {
       ctx.fillStyle = settings.titleColor ?? theme.text;
       const titleMaxWidth = w - sidePad * 2;
-      const titleFontSize = getFittedTitleFontSize(ctx, settings.title, w, w * 0.05, settings, titleMaxWidth);
-      ctx.font = `${getTitleFontWeight(settings)} ${titleFontSize}px ${getTitleFontFamily(settings)}`;
+      const titleLayout = layoutTitleLines(ctx, settings.title, w, w * 0.05, settings, titleMaxWidth);
       const { x: tx, align: ta } = getTitlePlacement(settings, w, sidePad);
       ctx.textAlign = ta;
-      ctx.textBaseline = "top";
       const titleY = Math.max(h * (settings.titleSafeMargin ?? 0.08), topPad - w * 0.07);
-      ctx.fillText(settings.title, tx, titleY, titleMaxWidth);
+      drawTitleLines(ctx, titleLayout, tx, titleY, titleMaxWidth);
     }
 
     const dataProgress = Math.max(0, progress / 0.95);

@@ -1,5 +1,5 @@
 import { DataRow, ProjectSettings, BAR_COLORS, ThemeType, getSpeedMultiplier } from "./types";
-import { processData, AnimationController, getFittedTitleFontSize, normalizeRecordVideoOptions, drawUserBackground, getTitleFontFamily, getTitleFontWeight, getTitlePlacement } from "./animationEngine";
+import { processData, AnimationController, layoutTitleLines, drawTitleLines, normalizeRecordVideoOptions, drawUserBackground, getTitleFontFamily, getTitleFontWeight, getTitlePlacement } from "./animationEngine";
 import { formatValue } from "./valueFormat";
 import { encodeCanvasToMp4, encodeCanvasToWebM, type RecordVideoOptions } from "./videoEncoding";
 import { enforceWatermarkSettings } from "./watermarkPolicy";
@@ -75,12 +75,10 @@ export function createTop10Animation(
     if (settings.title) {
       ctx.fillStyle = settings.titleColor ?? theme.text;
       const titleMaxWidth = w - sidePad * 2;
-      const titleFontSize = getFittedTitleFontSize(ctx, settings.title, w, w * 0.05, settings, titleMaxWidth);
-      ctx.font = `${getTitleFontWeight(settings)} ${titleFontSize}px ${getTitleFontFamily(settings)}`;
+      const titleLayout = layoutTitleLines(ctx, settings.title, w, w * 0.05, settings, titleMaxWidth);
       const { x: tx, align: ta } = getTitlePlacement(settings, w, sidePad);
       ctx.textAlign = ta;
-      ctx.textBaseline = "top";
-      ctx.fillText(settings.title, tx, topPad, titleMaxWidth);
+      drawTitleLines(ctx, titleLayout, tx, topPad, titleMaxWidth);
     }
 
     // Get final rankings
