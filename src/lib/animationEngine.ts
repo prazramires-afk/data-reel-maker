@@ -875,20 +875,26 @@ export function createBarRaceAnimation(
         const valueText = formatValue(bar.value, settings.valueFormat);
         const valueX = x + bw + Math.round(w * 0.012);
         const valueMaxWidth = Math.max(28, w - rightPadding - valueX);
+        const pop = isWinner && celeT > 1.1 && celeT < 1.7 ? Math.sin(((celeT - 1.1) / 0.6) * Math.PI) : 0;
         const vs = getFittedCanvasFontSize(
           ctx,
           valueText,
-          valueFontSize * (isLeader && cinematic ? 1.12 : 1),
+          valueFontSize * (isLeader && cinematic ? 1.12 : 1) * (1 + 0.14 * winnerE + 0.1 * pop),
           valueMaxWidth,
           800,
           Math.max(11, Math.round(w * 0.014)),
         );
-        ctx.font = `800 ${vs}px system-ui, sans-serif`;
+        ctx.font = `${winnerE > 0.3 ? 900 : 800} ${vs}px system-ui, sans-serif`;
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
+        if (winnerE > 0) {
+          ctx.shadowColor = bar.color;
+          ctx.shadowBlur = vs * 0.7 * winnerE;
+        }
         ctx.fillText(valueText, valueX, bar.y + barHeight / 2, valueMaxWidth);
         ctx.restore();
       }
+
       ctx.restore();
     });
 
