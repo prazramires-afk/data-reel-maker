@@ -718,6 +718,17 @@ export function createBarRaceAnimation(
     const valueFontSize = Math.round(barHeight * 0.34);
     const leaderLabel = visible[0]?.label ?? null;
     const isFinal = progress >= 0.97;
+
+    // Final Winner Celebration timings (spec 0-3s timeline).
+    const celeT = celebrationTime();
+    // 1.0-1.6s: winner expands / others dim.
+    const emphasis = celeT < 0 ? 0 : easeInOut(clamp01((celeT - 1.0) / 0.6)) * winnerIntensity;
+    // 1.4s+: particle burst.
+    const burstT = celeT < 0 ? -1 : celeT - 1.4;
+    let winnerTipX = 0;
+    let winnerTipY = 0;
+    let winnerColor = "#ffffff";
+
     bars.forEach((bar) => {
       // Only draw bars that have appeared. Bars still in their fade-out window keep drawing.
       if (bar.appearedAt === undefined) return;
