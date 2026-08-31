@@ -765,7 +765,7 @@ export function createBarRaceAnimation(
       const x = barStartX;
       const roundRadius = Math.round(bh * 0.22);
       const imgSize = bh - Math.round(bh * 0.12);
-      const dim = (cinematic ? 1 - 0.25 * (1 - bar.spotlight) : 1) * (1 - 0.42 * loserE) + 0.25 * winnerE * (cinematic ? 1 : 0);
+      const dim = Math.min(1, (cinematic ? 1 - 0.25 * (1 - bar.spotlight) : 1) * (1 - 0.42 * loserE) + 0.25 * winnerE);
 
 
       // Static label on the LEFT (outside the bar), animates Y smoothly with the bar.
