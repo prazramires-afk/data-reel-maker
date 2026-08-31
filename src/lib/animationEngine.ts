@@ -776,14 +776,18 @@ export function createBarRaceAnimation(
         const ls = getFittedCanvasFontSize(
           ctx,
           bar.label,
-          labelFontSize * (isLeader && cinematic ? 1.06 : 1),
+          labelFontSize * (isLeader && cinematic ? 1.06 : 1) * (1 + 0.12 * winnerE),
           labelMaxWidth,
           700,
           Math.max(13, Math.round(w * 0.016)),
         );
-        ctx.font = `700 ${ls}px system-ui, sans-serif`;
+        ctx.font = `${winnerE > 0.3 ? 800 : 700} ${ls}px system-ui, sans-serif`;
         ctx.textAlign = "right";
         ctx.textBaseline = "middle";
+        if (winnerE > 0) {
+          ctx.shadowColor = bar.color;
+          ctx.shadowBlur = ls * 0.6 * winnerE;
+        }
         ctx.fillText(bar.label, labelRightX, bar.y + barHeight / 2, labelMaxWidth);
         ctx.restore();
       }
@@ -792,19 +796,28 @@ export function createBarRaceAnimation(
       ctx.save();
       if (cinematic) {
         ctx.shadowColor = bar.color;
-        ctx.shadowBlur = isLeader ? bh * 0.55 : bh * 0.18;
+        ctx.shadowBlur = (isLeader ? bh * 0.55 : bh * 0.18) * (1 + 1.3 * winnerE);
         ctx.shadowOffsetY = bh * 0.05;
       }
       const bw = Math.min(Math.max(bar.width, 2), barAreaWidth);
       const bg = ctx.createLinearGradient(x, drawY, x, drawY + bh);
-      bg.addColorStop(0, shadeColor(bar.color, isLeader ? 0.25 : 0.12));
-      bg.addColorStop(1, shadeColor(bar.color, isLeader ? -0.05 : -0.15));
+      bg.addColorStop(0, shadeColor(bar.color, (isLeader ? 0.25 : 0.12) + 0.22 * winnerE));
+      bg.addColorStop(1, shadeColor(bar.color, (isLeader ? -0.05 : -0.15) + 0.28 * winnerE));
       ctx.globalAlpha = dim;
       ctx.fillStyle = bg;
       ctx.beginPath();
       ctx.roundRect(x, drawY, bw, bh, [roundRadius * 0.4, roundRadius, roundRadius, roundRadius * 0.4]);
       ctx.fill();
       ctx.restore();
+
+      if (isWinner) {
+        // Remember the live tip of the winning bar so the burst follows it
+        // at any aspect ratio / bar length. No hardcoded coordinates.
+        winnerTipX = x + bw;
+        winnerTipY = bar.y + barHeight / 2;
+        winnerColor = bar.color;
+      }
+
 
       // Soft top highlight for premium feel.
       if (cinematic) {
