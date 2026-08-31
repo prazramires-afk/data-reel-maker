@@ -372,6 +372,108 @@ export function createBarRaceAnimation(
   }));
   const cinematic = settings.cinematic !== false;
 
+  // ---------------------------------------------------------------------
+  // Final Winner Celebration (Bar Chart Race only).
+  // Purely additive: derives the winner from the real final dataset value,
+  // never touches ranking, data, or the export pipeline.
+  // ---------------------------------------------------------------------
+  const celebrationOn = settings.winnerCelebration !== false;
+  const winnerIntensity = Math.max(0.3, Math.min(settings.winnerIntensity ?? 1, 1.5));
+  const particleIntensity = Math.max(0, Math.min(settings.winnerParticleIntensity ?? 1, 1.5));
+  const finalYear = years[years.length - 1];
+  const winnerLabel: string | null = labels.length
+    ? labels.reduce((best, l) =>
+        interpolateValue(valueMap[l] || {}, years, finalYear) >
+        interpolateValue(valueMap[best] || {}, years, finalYear)
+          ? l
+          : best,
+      labels[0])
+    : null;
+  // Celebration occupies the last ~3s of the timeline (scaled for short videos).
+  const CELEBRATION_MS = Math.min(3000, totalMs * 0.3);
+  /** Position inside the celebration, expressed in the spec's 0-3s timeline. */
+  function celebrationTime(): number {
+    if (!celebrationOn || !cinematic || !winnerLabel) return -1;
+    const start = totalMs - CELEBRATION_MS;
+    if (elapsed < start) return -1;
+    return Math.min(1, (elapsed - start) / CELEBRATION_MS) * 3;
+  }
+  const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+  /** Deterministic pseudo-random in [0,1) — identical in preview and export. */
+  function rand(i: number, salt: number) {
+    const x = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453;
+    return x - Math.floor(x);
+  }
+  const BURST_COUNT = Math.round(34 * particleIntensity);
+  const burstParticles = Array.from({ length: BURST_COUNT }, (_, i) => {
+    const angle = (i / Math.max(1, BURST_COUNT)) * Math.PI * 2 + rand(i, 1) * 0.5;
+    return {
+      angle,
+      speed: 0.5 + rand(i, 2) * 0.9,
+      size: 0.35 + rand(i, 3) * 0.9,
+      delay: rand(i, 4) * 0.35,
+      life: 0.75 + rand(i, 5) * 0.5,
+      streak: rand(i, 6) > 0.65,
+      sparkle: rand(i, 7) > 0.75,
+    };
+  });
+
+  function drawWinnerBurst(
+    w: number,
+    h: number,
+    originX: number,
+    originY: number,
+    color: string,
+    burstT: number,
+  ) {
+    if (burstT <= 0 || particleIntensity <= 0) return;
+    const radius = Math.min(w, h) * 0.16;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    burstParticles.forEach((p) => {
+      const t = (burstT - p.delay) / p.life;
+      if (t <= 0 || t >= 1) return;
+      const ease = 1 - Math.pow(1 - t, 3);
+      const dist = radius * p.speed * ease;
+      const x = originX + Math.cos(p.angle) * dist;
+      const y = originY + Math.sin(p.angle) * dist * 0.85 + radius * 0.25 * t * t;
+      const alpha = (1 - t) * (1 - t) * 0.9;
+      const r = Math.max(0.8, Math.min(w, h) * 0.0035 * p.size * (1 - t * 0.4));
+      ctx.globalAlpha = alpha;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = r * 4;
+      if (p.streak) {
+        const tailX = originX + Math.cos(p.angle) * dist * 0.82;
+        const tailY = originY + Math.sin(p.angle) * dist * 0.82 * 0.85;
+        ctx.strokeStyle = p.sparkle ? "#ffffff" : color;
+        ctx.lineWidth = r * 1.1;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(tailX, tailY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = p.sparkle ? "#ffffff" : color;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+    // Soft expanding shockwave ring — keeps the burst feeling premium, not cartoonish.
+    const ringT = clamp01(burstT / 0.8);
+    if (ringT > 0 && ringT < 1) {
+      ctx.globalAlpha = (1 - ringT) * 0.28;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = Math.max(1, Math.min(w, h) * 0.002);
+      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.arc(originX, originY, radius * 0.9 * ringT, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+
   const hookText = settings.title
     ? `${settings.title} — #1 will shock you`
     : "Top rankings — #1 will shock you";
