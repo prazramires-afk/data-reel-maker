@@ -810,13 +810,8 @@ export function createBarRaceAnimation(
       ctx.fill();
       ctx.restore();
 
-      if (isWinner) {
-        // Remember the live tip of the winning bar so the burst follows it
-        // at any aspect ratio / bar length. No hardcoded coordinates.
-        winnerTipX = x + bw;
-        winnerTipY = bar.y + barHeight / 2;
-        winnerColor = bar.color;
-      }
+
+
 
 
       // Soft top highlight for premium feel.
