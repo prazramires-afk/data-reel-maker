@@ -84,6 +84,13 @@ export interface ProjectSettings {
   titleFont?: "system" | "playfair" | "bebas" | "cinzel" | "caveat" | "abril" | "space_grotesk";
   /** Chronological events for the Event Timeline video type. */
   events?: EventRow[];
+  /** Bar Chart Race only: celebrate the #1 entity at the end (glow, dim, particle burst). */
+  winnerCelebration?: boolean;
+  /** 0.3-1.5 multiplier for winner emphasis (scale, glow, dimming). Default 1. */
+  winnerIntensity?: number;
+  /** 0-1.5 multiplier for the celebration particle burst density. Default 1. */
+  winnerParticleIntensity?: number;
+
 }
 
 export interface Project {
@@ -153,6 +160,9 @@ export const DEFAULT_SETTINGS: ProjectSettings = {
   cinematic: true,
   appearOnFirstValue: true,
   appearThreshold: 0,
+  winnerCelebration: true,
+  winnerIntensity: 1,
+  winnerParticleIntensity: 1,
 };
 
 export const VIDEO_TYPES: { type: VideoType; label: string; description: string; available: boolean }[] = [

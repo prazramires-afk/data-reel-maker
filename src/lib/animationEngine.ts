@@ -372,6 +372,108 @@ export function createBarRaceAnimation(
   }));
   const cinematic = settings.cinematic !== false;
 
+  // ---------------------------------------------------------------------
+  // Final Winner Celebration (Bar Chart Race only).
+  // Purely additive: derives the winner from the real final dataset value,
+  // never touches ranking, data, or the export pipeline.
+  // ---------------------------------------------------------------------
+  const celebrationOn = settings.winnerCelebration !== false;
+  const winnerIntensity = Math.max(0.3, Math.min(settings.winnerIntensity ?? 1, 1.5));
+  const particleIntensity = Math.max(0, Math.min(settings.winnerParticleIntensity ?? 1, 1.5));
+  const finalYear = years[years.length - 1];
+  const winnerLabel: string | null = labels.length
+    ? labels.reduce((best, l) =>
+        interpolateValue(valueMap[l] || {}, years, finalYear) >
+        interpolateValue(valueMap[best] || {}, years, finalYear)
+          ? l
+          : best,
+      labels[0])
+    : null;
+  // Celebration occupies the last ~3s of the timeline (scaled for short videos).
+  const CELEBRATION_MS = Math.min(3000, totalMs * 0.3);
+  /** Position inside the celebration, expressed in the spec's 0-3s timeline. */
+  function celebrationTime(): number {
+    if (!celebrationOn || !cinematic || !winnerLabel) return -1;
+    const start = totalMs - CELEBRATION_MS;
+    if (elapsed < start) return -1;
+    return Math.min(1, (elapsed - start) / CELEBRATION_MS) * 3;
+  }
+  const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+  /** Deterministic pseudo-random in [0,1) — identical in preview and export. */
+  function rand(i: number, salt: number) {
+    const x = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453;
+    return x - Math.floor(x);
+  }
+  const BURST_COUNT = Math.round(34 * particleIntensity);
+  const burstParticles = Array.from({ length: BURST_COUNT }, (_, i) => {
+    const angle = (i / Math.max(1, BURST_COUNT)) * Math.PI * 2 + rand(i, 1) * 0.5;
+    return {
+      angle,
+      speed: 0.5 + rand(i, 2) * 0.9,
+      size: 0.35 + rand(i, 3) * 0.9,
+      delay: rand(i, 4) * 0.35,
+      life: 0.75 + rand(i, 5) * 0.5,
+      streak: rand(i, 6) > 0.65,
+      sparkle: rand(i, 7) > 0.75,
+    };
+  });
+
+  function drawWinnerBurst(
+    w: number,
+    h: number,
+    originX: number,
+    originY: number,
+    color: string,
+    burstT: number,
+  ) {
+    if (burstT <= 0 || particleIntensity <= 0) return;
+    const radius = Math.min(w, h) * 0.16;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    burstParticles.forEach((p) => {
+      const t = (burstT - p.delay) / p.life;
+      if (t <= 0 || t >= 1) return;
+      const ease = 1 - Math.pow(1 - t, 3);
+      const dist = radius * p.speed * ease;
+      const x = originX + Math.cos(p.angle) * dist;
+      const y = originY + Math.sin(p.angle) * dist * 0.85 + radius * 0.25 * t * t;
+      const alpha = (1 - t) * (1 - t) * 0.9;
+      const r = Math.max(0.8, Math.min(w, h) * 0.0035 * p.size * (1 - t * 0.4));
+      ctx.globalAlpha = alpha;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = r * 4;
+      if (p.streak) {
+        const tailX = originX + Math.cos(p.angle) * dist * 0.82;
+        const tailY = originY + Math.sin(p.angle) * dist * 0.82 * 0.85;
+        ctx.strokeStyle = p.sparkle ? "#ffffff" : color;
+        ctx.lineWidth = r * 1.1;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(tailX, tailY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = p.sparkle ? "#ffffff" : color;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+    // Soft expanding shockwave ring — keeps the burst feeling premium, not cartoonish.
+    const ringT = clamp01(burstT / 0.8);
+    if (ringT > 0 && ringT < 1) {
+      ctx.globalAlpha = (1 - ringT) * 0.28;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = Math.max(1, Math.min(w, h) * 0.002);
+      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.arc(originX, originY, radius * 0.9 * ringT, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+
   const hookText = settings.title
     ? `${settings.title} — #1 will shock you`
     : "Top rankings — #1 will shock you";
@@ -616,6 +718,25 @@ export function createBarRaceAnimation(
     const valueFontSize = Math.round(barHeight * 0.34);
     const leaderLabel = visible[0]?.label ?? null;
     const isFinal = progress >= 0.97;
+
+    // Final Winner Celebration timings (spec 0-3s timeline).
+    const celeT = celebrationTime();
+    // 1.0-1.6s: winner expands / others dim.
+    const emphasis = celeT < 0 ? 0 : easeInOut(clamp01((celeT - 1.0) / 0.6)) * winnerIntensity;
+    // 1.4s+: particle burst. Drawn BEFORE the bars/labels so the final
+    // result always stays readable on top of the effect.
+    const burstT = celeT < 0 ? -1 : celeT - 1.4;
+    if (burstT > 0 && winnerLabel) {
+      const wb = bars.find((b) => b.label === winnerLabel);
+      if (wb && wb.appearedAt !== undefined) {
+        const tipX = barStartX + Math.min(Math.max(wb.width, 2), barAreaWidth);
+        const tipY = wb.y + barHeight / 2;
+        drawWinnerBurst(w, h, tipX, tipY, wb.color, burstT);
+      }
+    }
+
+
+
     bars.forEach((bar) => {
       // Only draw bars that have appeared. Bars still in their fade-out window keep drawing.
       if (bar.appearedAt === undefined) return;
@@ -641,14 +762,19 @@ export function createBarRaceAnimation(
       const isLeader = bar.label === leaderLabel;
       const spotlightTarget = isLeader ? 1 : 0;
       bar.spotlight += (spotlightTarget - bar.spotlight) * 0.12;
-      const scale = cinematic ? 1 + 0.08 * bar.spotlight : 1;
+      // Final Winner Celebration emphasis (0 outside the celebration window).
+      const isWinner = emphasis > 0 && bar.label === winnerLabel;
+      const winnerE = isWinner ? emphasis : 0;
+      const loserE = emphasis > 0 && !isWinner ? emphasis : 0;
+      const scale = (cinematic ? 1 + 0.08 * bar.spotlight : 1) + 0.09 * winnerE;
       const bh = barHeight * scale;
       const yOffset = (bh - barHeight) / 2;
       const drawY = bar.y - yOffset;
       const x = barStartX;
       const roundRadius = Math.round(bh * 0.22);
       const imgSize = bh - Math.round(bh * 0.12);
-      const dim = cinematic ? 1 - 0.25 * (1 - bar.spotlight) : 1;
+      const dim = Math.min(1, (cinematic ? 1 - 0.25 * (1 - bar.spotlight) : 1) * (1 - 0.42 * loserE) + 0.25 * winnerE);
+
 
       // Static label on the LEFT (outside the bar), animates Y smoothly with the bar.
       if (settings.showLabels) {
@@ -658,14 +784,18 @@ export function createBarRaceAnimation(
         const ls = getFittedCanvasFontSize(
           ctx,
           bar.label,
-          labelFontSize * (isLeader && cinematic ? 1.06 : 1),
+          labelFontSize * (isLeader && cinematic ? 1.06 : 1) * (1 + 0.12 * winnerE),
           labelMaxWidth,
           700,
           Math.max(13, Math.round(w * 0.016)),
         );
-        ctx.font = `700 ${ls}px system-ui, sans-serif`;
+        ctx.font = `${winnerE > 0.3 ? 800 : 700} ${ls}px system-ui, sans-serif`;
         ctx.textAlign = "right";
         ctx.textBaseline = "middle";
+        if (winnerE > 0) {
+          ctx.shadowColor = bar.color;
+          ctx.shadowBlur = ls * 0.6 * winnerE;
+        }
         ctx.fillText(bar.label, labelRightX, bar.y + barHeight / 2, labelMaxWidth);
         ctx.restore();
       }
@@ -674,19 +804,23 @@ export function createBarRaceAnimation(
       ctx.save();
       if (cinematic) {
         ctx.shadowColor = bar.color;
-        ctx.shadowBlur = isLeader ? bh * 0.55 : bh * 0.18;
+        ctx.shadowBlur = (isLeader ? bh * 0.55 : bh * 0.18) * (1 + 1.3 * winnerE);
         ctx.shadowOffsetY = bh * 0.05;
       }
       const bw = Math.min(Math.max(bar.width, 2), barAreaWidth);
       const bg = ctx.createLinearGradient(x, drawY, x, drawY + bh);
-      bg.addColorStop(0, shadeColor(bar.color, isLeader ? 0.25 : 0.12));
-      bg.addColorStop(1, shadeColor(bar.color, isLeader ? -0.05 : -0.15));
+      bg.addColorStop(0, shadeColor(bar.color, (isLeader ? 0.25 : 0.12) + 0.22 * winnerE));
+      bg.addColorStop(1, shadeColor(bar.color, (isLeader ? -0.05 : -0.15) + 0.28 * winnerE));
       ctx.globalAlpha = dim;
       ctx.fillStyle = bg;
       ctx.beginPath();
       ctx.roundRect(x, drawY, bw, bh, [roundRadius * 0.4, roundRadius, roundRadius, roundRadius * 0.4]);
       ctx.fill();
       ctx.restore();
+
+
+
+
 
       // Soft top highlight for premium feel.
       if (cinematic) {
@@ -744,20 +878,26 @@ export function createBarRaceAnimation(
         const valueText = formatValue(bar.value, settings.valueFormat);
         const valueX = x + bw + Math.round(w * 0.012);
         const valueMaxWidth = Math.max(28, w - rightPadding - valueX);
+        const pop = isWinner && celeT > 1.1 && celeT < 1.7 ? Math.sin(((celeT - 1.1) / 0.6) * Math.PI) : 0;
         const vs = getFittedCanvasFontSize(
           ctx,
           valueText,
-          valueFontSize * (isLeader && cinematic ? 1.12 : 1),
+          valueFontSize * (isLeader && cinematic ? 1.12 : 1) * (1 + 0.14 * winnerE + 0.1 * pop),
           valueMaxWidth,
           800,
           Math.max(11, Math.round(w * 0.014)),
         );
-        ctx.font = `800 ${vs}px system-ui, sans-serif`;
+        ctx.font = `${winnerE > 0.3 ? 900 : 800} ${vs}px system-ui, sans-serif`;
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
+        if (winnerE > 0) {
+          ctx.shadowColor = bar.color;
+          ctx.shadowBlur = vs * 0.7 * winnerE;
+        }
         ctx.fillText(valueText, valueX, bar.y + barHeight / 2, valueMaxWidth);
         ctx.restore();
       }
+
       ctx.restore();
     });
 
