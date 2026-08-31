@@ -754,14 +754,19 @@ export function createBarRaceAnimation(
       const isLeader = bar.label === leaderLabel;
       const spotlightTarget = isLeader ? 1 : 0;
       bar.spotlight += (spotlightTarget - bar.spotlight) * 0.12;
-      const scale = cinematic ? 1 + 0.08 * bar.spotlight : 1;
+      // Final Winner Celebration emphasis (0 outside the celebration window).
+      const isWinner = emphasis > 0 && bar.label === winnerLabel;
+      const winnerE = isWinner ? emphasis : 0;
+      const loserE = emphasis > 0 && !isWinner ? emphasis : 0;
+      const scale = (cinematic ? 1 + 0.08 * bar.spotlight : 1) + 0.09 * winnerE;
       const bh = barHeight * scale;
       const yOffset = (bh - barHeight) / 2;
       const drawY = bar.y - yOffset;
       const x = barStartX;
       const roundRadius = Math.round(bh * 0.22);
       const imgSize = bh - Math.round(bh * 0.12);
-      const dim = cinematic ? 1 - 0.25 * (1 - bar.spotlight) : 1;
+      const dim = (cinematic ? 1 - 0.25 * (1 - bar.spotlight) : 1) * (1 - 0.42 * loserE) + 0.25 * winnerE * (cinematic ? 1 : 0);
+
 
       // Static label on the LEFT (outside the bar), animates Y smoothly with the bar.
       if (settings.showLabels) {
