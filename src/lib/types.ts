@@ -160,6 +160,9 @@ export const DEFAULT_SETTINGS: ProjectSettings = {
   cinematic: true,
   appearOnFirstValue: true,
   appearThreshold: 0,
+  winnerCelebration: true,
+  winnerIntensity: 1,
+  winnerParticleIntensity: 1,
 };
 
 export const VIDEO_TYPES: { type: VideoType; label: string; description: string; available: boolean }[] = [
