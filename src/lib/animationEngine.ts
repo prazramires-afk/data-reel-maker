@@ -723,11 +723,19 @@ export function createBarRaceAnimation(
     const celeT = celebrationTime();
     // 1.0-1.6s: winner expands / others dim.
     const emphasis = celeT < 0 ? 0 : easeInOut(clamp01((celeT - 1.0) / 0.6)) * winnerIntensity;
-    // 1.4s+: particle burst.
+    // 1.4s+: particle burst. Drawn BEFORE the bars/labels so the final
+    // result always stays readable on top of the effect.
     const burstT = celeT < 0 ? -1 : celeT - 1.4;
-    let winnerTipX = 0;
-    let winnerTipY = 0;
-    let winnerColor = "#ffffff";
+    if (burstT > 0 && winnerLabel) {
+      const wb = bars.find((b) => b.label === winnerLabel);
+      if (wb && wb.appearedAt !== undefined) {
+        const tipX = barStartX + Math.min(Math.max(wb.width, 2), barAreaWidth);
+        const tipY = wb.y + barHeight / 2;
+        drawWinnerBurst(w, h, tipX, tipY, wb.color, burstT);
+      }
+    }
+
+
 
     bars.forEach((bar) => {
       // Only draw bars that have appeared. Bars still in their fade-out window keep drawing.
