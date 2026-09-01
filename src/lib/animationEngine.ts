@@ -831,23 +831,19 @@ export function createBarRaceAnimation(
     const labelFontSize = Math.round(barHeight * 0.36);
     const valueFontSize = Math.round(barHeight * 0.34);
     const leaderLabel = visible[0]?.label ?? null;
-    const isFinal = progress >= 0.97;
+    const isFinal = dprog >= 0.97;
 
-    // Final Winner Celebration timings (spec 0-3s timeline).
+    // ---- Final Winner Celebration (finale seconds timeline) --------------
+    //   0.0-0.7s  final ranking settles (no change)
+    //   0.7-1.5s  winner expands / brightens, others dim
+    //   0.9s+     full-frame fireworks, staggered
+    //   last 0.8s everything fades out, winner stays highlighted
     const celeT = celebrationTime();
-    // 1.0-1.6s: winner expands / others dim.
-    const emphasis = celeT < 0 ? 0 : easeInOut(clamp01((celeT - 1.0) / 0.6)) * winnerIntensity;
-    // 1.4s+: particle burst. Drawn BEFORE the bars/labels so the final
-    // result always stays readable on top of the effect.
-    const burstT = celeT < 0 ? -1 : celeT - 1.4;
-    if (burstT > 0 && winnerLabel) {
-      const wb = bars.find((b) => b.label === winnerLabel);
-      if (wb && wb.appearedAt !== undefined) {
-        const tipX = barStartX + Math.min(Math.max(wb.width, 2), barAreaWidth);
-        const tipY = wb.y + barHeight / 2;
-        drawWinnerBurst(w, h, tipX, tipY, wb.color, burstT);
-      }
-    }
+    const emphasis = celeT < 0 ? 0 : easeInOut(clamp01((celeT - 0.7) / 0.8)) * winnerIntensity;
+    // Fireworks live in FULL canvas coordinates and are drawn beneath the bars
+    // and labels so the final result always stays readable.
+    drawFireworks(w, h, celeT);
+
 
 
 
