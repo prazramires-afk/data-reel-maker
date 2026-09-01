@@ -992,11 +992,12 @@ export function createBarRaceAnimation(
         const valueText = formatValue(bar.value, settings.valueFormat);
         const valueX = x + bw + Math.round(w * 0.012);
         const valueMaxWidth = Math.max(28, w - rightPadding - valueX);
-        const pop = isWinner && celeT > 1.1 && celeT < 1.7 ? Math.sin(((celeT - 1.1) / 0.6) * Math.PI) : 0;
+        const pop = isWinner && celeT > 0.8 && celeT < 1.6 ? Math.sin(((celeT - 0.8) / 0.8) * Math.PI) : 0;
         const vs = getFittedCanvasFontSize(
           ctx,
           valueText,
-          valueFontSize * (isLeader && cinematic ? 1.12 : 1) * (1 + 0.14 * winnerE + 0.1 * pop),
+          valueFontSize * (isLeader && cinematic ? 1.12 : 1) * (1 + 0.26 * winnerE + 0.12 * pop),
+
           valueMaxWidth,
           800,
           Math.max(11, Math.round(w * 0.014)),
