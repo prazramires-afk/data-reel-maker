@@ -711,9 +711,13 @@ export function createBarRaceAnimation(
     // Keep the data layer locked inside the export safe area. Backgrounds can move,
     // but scaling foreground content causes MP4/WebM edge clipping on long labels/values.
 
+    // Progress within the DATA phase only (1 during the appended finale), so
+    // intro/data timing is byte-identical to before the celebration existed.
+    const dprog = dataMs > 0 ? Math.min(elapsed / dataMs, 1) : progress;
+
     // Hook text fade out in first 15%
-    if (settings.showIntro && showHook && progress < 0.15) {
-      const hookAlpha = progress < 0.1 ? 1 : 1 - (progress - 0.1) / 0.05;
+    if (settings.showIntro && showHook && dprog < 0.15) {
+      const hookAlpha = dprog < 0.1 ? 1 : 1 - (dprog - 0.1) / 0.05;
       ctx.save();
       ctx.globalAlpha = hookAlpha;
       ctx.fillStyle = theme.text;
@@ -725,14 +729,15 @@ export function createBarRaceAnimation(
         ctx.fillText(line.trim(), w / 2, h / 2 - 10 + i * 28);
       });
       ctx.restore();
-      if (progress < 0.08) {
+      if (dprog < 0.08) {
         return;
       }
     }
 
-    const dataProgress = Math.max(0, (progress - 0.12) / 0.85);
+    const dataProgress = Math.max(0, (dprog - 0.12) / 0.85);
     const yearRange = years[years.length - 1] - years[0];
     const currentYear = years[0] + yearRange * Math.min(dataProgress, 1);
+
 
     // Calculate values
     const barData = labels.map((label) => ({
