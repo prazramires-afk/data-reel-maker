@@ -914,12 +914,14 @@ export function createBarRaceAnimation(
 
       // Bar with gradient + shadow + leader glow.
       ctx.save();
-      if (cinematic) {
+      if (cinematic || winnerE > 0) {
         ctx.shadowColor = bar.color;
-        ctx.shadowBlur = (isLeader ? bh * 0.55 : bh * 0.18) * (1 + 1.3 * winnerE);
+        ctx.shadowBlur = (isLeader ? bh * 0.55 : bh * 0.18) * (1 + 2.4 * winnerE);
         ctx.shadowOffsetY = bh * 0.05;
       }
-      const bw = Math.min(Math.max(bar.width, 2), barAreaWidth);
+      // Winner grows visually (never mathematically) toward its final value.
+      const bw = Math.min(Math.max(bar.width, 2) * (1 + 0.06 * winnerE), barAreaWidth);
+
       const bg = ctx.createLinearGradient(x, drawY, x, drawY + bh);
       bg.addColorStop(0, shadeColor(bar.color, (isLeader ? 0.25 : 0.12) + 0.22 * winnerE));
       bg.addColorStop(1, shadeColor(bar.color, (isLeader ? -0.05 : -0.15) + 0.28 * winnerE));
