@@ -876,7 +876,9 @@ export function createBarRaceAnimation(
       const isWinner = emphasis > 0 && bar.label === winnerLabel;
       const winnerE = isWinner ? emphasis : 0;
       const loserE = emphasis > 0 && !isWinner ? emphasis : 0;
-      const scale = (cinematic ? 1 + 0.08 * bar.spotlight : 1) + 0.09 * winnerE;
+      // Champion reveal: the winning bar visually thickens (data untouched).
+      const scale = (cinematic ? 1 + 0.08 * bar.spotlight : 1) + 0.34 * winnerE;
+
       const bh = barHeight * scale;
       const yOffset = (bh - barHeight) / 2;
       const drawY = bar.y - yOffset;
