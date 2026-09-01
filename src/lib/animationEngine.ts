@@ -792,7 +792,7 @@ export function createBarRaceAnimation(
 
     // NEW KING detection: trigger when the rank-1 target label changes.
     const topLabel = visible[0]?.label ?? null;
-    if (topLabel && prevTopLabel && topLabel !== prevTopLabel && progress > 0.15 && progress < 0.95) {
+    if (topLabel && prevTopLabel && topLabel !== prevTopLabel && dprog > 0.15 && dprog < 0.95) {
       kingFlashAt = elapsed;
       kingFlashLabel = topLabel;
     }
