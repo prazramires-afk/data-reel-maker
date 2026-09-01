@@ -896,7 +896,7 @@ export function createBarRaceAnimation(
         const ls = getFittedCanvasFontSize(
           ctx,
           bar.label,
-          labelFontSize * (isLeader && cinematic ? 1.06 : 1) * (1 + 0.12 * winnerE),
+          labelFontSize * (isLeader && cinematic ? 1.06 : 1) * (1 + 0.24 * winnerE),
           labelMaxWidth,
           700,
           Math.max(13, Math.round(w * 0.016)),
