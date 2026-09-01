@@ -320,7 +320,9 @@ export function createBarRaceAnimation(
 
   const baseDuration = 15; // fixed 15s base
   const speedMultiplier = getSpeedMultiplier(settings.speed);
-  const totalMs = (baseDuration / speedMultiplier) * 1000;
+  /** Duration of the data phase (unchanged behaviour). */
+  const dataMs = (baseDuration / speedMultiplier) * 1000;
+
 
   const maxBars = Math.min(labels.length, 10);
   // TikTok-viral compact layout: labels sit OUTSIDE the bar on the left (static gutter),
@@ -375,7 +377,8 @@ export function createBarRaceAnimation(
   // ---------------------------------------------------------------------
   // Final Winner Celebration (Bar Chart Race only).
   // Purely additive: derives the winner from the real final dataset value,
-  // never touches ranking, data, or the export pipeline.
+  // never touches ranking, data, or the export pipeline. Runs in a dedicated
+  // finale window appended AFTER the data phase.
   // ---------------------------------------------------------------------
   const celebrationOn = settings.winnerCelebration !== false;
   const winnerIntensity = Math.max(0.3, Math.min(settings.winnerIntensity ?? 1, 1.5));
@@ -389,14 +392,18 @@ export function createBarRaceAnimation(
           : best,
       labels[0])
     : null;
-  // Celebration occupies the last ~3s of the timeline (scaled for short videos).
-  const CELEBRATION_MS = Math.min(3000, totalMs * 0.3);
-  /** Position inside the celebration, expressed in the spec's 0-3s timeline. */
+  const celebrationActive = celebrationOn && !!winnerLabel;
+  /** Dedicated finale length in seconds (added on top of the data phase). */
+  const FINALE_S = celebrationActive
+    ? Math.max(2, Math.min(settings.celebrationDuration ?? 4.5, 8))
+    : 0;
+  const totalMs = dataMs + FINALE_S * 1000;
+
+  /** Seconds elapsed inside the finale, or -1 when not celebrating. */
   function celebrationTime(): number {
-    if (!celebrationOn || !cinematic || !winnerLabel) return -1;
-    const start = totalMs - CELEBRATION_MS;
-    if (elapsed < start) return -1;
-    return Math.min(1, (elapsed - start) / CELEBRATION_MS) * 3;
+    if (!celebrationActive) return -1;
+    if (elapsed < dataMs) return -1;
+    return Math.min((elapsed - dataMs) / 1000, FINALE_S);
   }
   const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
   /** Deterministic pseudo-random in [0,1) — identical in preview and export. */
@@ -404,74 +411,176 @@ export function createBarRaceAnimation(
     const x = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453;
     return x - Math.floor(x);
   }
-  const BURST_COUNT = Math.round(34 * particleIntensity);
-  const burstParticles = Array.from({ length: BURST_COUNT }, (_, i) => {
-    const angle = (i / Math.max(1, BURST_COUNT)) * Math.PI * 2 + rand(i, 1) * 0.5;
+
+  // ---- Full-frame fireworks -------------------------------------------
+  // All coordinates are normalised (0-1) against the live canvas, so the
+  // finale fills the whole frame at 9:16, 1:1 and 16:9 without clipping.
+  const FIREWORK_PALETTE = ["#ffd24a", "#ff5f8f", "#5cc8ff", "#a78bfa", "#7dffb2", "#ff9f45"];
+  const fireworkCount = Math.max(
+    0,
+    Math.min(Math.round((settings.fireworkCount ?? 6) * (particleIntensity || 1)), 10),
+  );
+  // Bursts start once the winner expansion is under way and are staggered
+  // across the finale, with the biggest one near the end.
+  const BURST_START = 0.9;
+  const BURST_WINDOW = Math.max(0.8, FINALE_S - 2.0);
+  const fireworks = Array.from({ length: fireworkCount }, (_, i) => {
+    const big = i % 3 !== 1;
+    const count = Math.round((big ? 62 : 34) * (particleIntensity || 1));
+    const color = FIREWORK_PALETTE[Math.floor(rand(i, 41) * FIREWORK_PALETTE.length)];
     return {
-      angle,
-      speed: 0.5 + rand(i, 2) * 0.9,
-      size: 0.35 + rand(i, 3) * 0.9,
-      delay: rand(i, 4) * 0.35,
-      life: 0.75 + rand(i, 5) * 0.5,
-      streak: rand(i, 6) > 0.65,
-      sparkle: rand(i, 7) > 0.75,
+      // Spread across the frame; alternating sides avoids clustering.
+      x: 0.1 + rand(i, 11) * 0.8,
+      y: 0.12 + rand(i, 12) * 0.46,
+      t0: BURST_START + (i / Math.max(1, fireworkCount)) * BURST_WINDOW + rand(i, 13) * 0.18,
+      color,
+      big,
+      radius: (big ? 0.26 : 0.16) + rand(i, 14) * 0.08,
+      particles: Array.from({ length: count }, (_, k) => {
+        const angle = (k / count) * Math.PI * 2 + rand(i * 97 + k, 21) * 0.35;
+        return {
+          angle,
+          speed: 0.35 + rand(i * 97 + k, 22) * 0.85,
+          size: 0.4 + rand(i * 97 + k, 23) * 1.1,
+          life: 0.85 + rand(i * 97 + k, 24) * 0.85,
+          delay: rand(i * 97 + k, 25) * 0.12,
+          white: rand(i * 97 + k, 26) > 0.78,
+          star: rand(i * 97 + k, 27) > 0.86,
+        };
+      }),
+      // Secondary sparkles that pop shortly after the main shell.
+      sparks: Array.from({ length: Math.round(14 * (particleIntensity || 1)) }, (_, k) => ({
+        angle: rand(i * 53 + k, 31) * Math.PI * 2,
+        speed: 0.15 + rand(i * 53 + k, 32) * 0.4,
+        size: 0.3 + rand(i * 53 + k, 33) * 0.5,
+        delay: 0.45 + rand(i * 53 + k, 34) * 0.5,
+        life: 0.5 + rand(i * 53 + k, 35) * 0.5,
+      })),
     };
   });
 
-  function drawWinnerBurst(
-    w: number,
-    h: number,
-    originX: number,
-    originY: number,
-    color: string,
-    burstT: number,
-  ) {
-    if (burstT <= 0 || particleIntensity <= 0) return;
-    const radius = Math.min(w, h) * 0.16;
+  /** Draws every active firework in full canvas coordinates. */
+  function drawFireworks(w: number, h: number, celeT: number) {
+    if (celeT < 0 || particleIntensity <= 0 || !fireworks.length) return;
+    const unit = Math.min(w, h);
+    // Global fade so the finale settles instead of ending abruptly.
+    const globalFade = clamp01((FINALE_S - celeT) / 0.8);
+    if (globalFade <= 0) return;
+    const ROCKET = 0.32;
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
-    burstParticles.forEach((p) => {
-      const t = (burstT - p.delay) / p.life;
-      if (t <= 0 || t >= 1) return;
-      const ease = 1 - Math.pow(1 - t, 3);
-      const dist = radius * p.speed * ease;
-      const x = originX + Math.cos(p.angle) * dist;
-      const y = originY + Math.sin(p.angle) * dist * 0.85 + radius * 0.25 * t * t;
-      const alpha = (1 - t) * (1 - t) * 0.9;
-      const r = Math.max(0.8, Math.min(w, h) * 0.0035 * p.size * (1 - t * 0.4));
-      ctx.globalAlpha = alpha;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = r * 4;
-      if (p.streak) {
-        const tailX = originX + Math.cos(p.angle) * dist * 0.82;
-        const tailY = originY + Math.sin(p.angle) * dist * 0.82 * 0.85;
-        ctx.strokeStyle = p.sparkle ? "#ffffff" : color;
-        ctx.lineWidth = r * 1.1;
-        ctx.lineCap = "round";
+    ctx.lineCap = "round";
+    fireworks.forEach((fw) => {
+      const t = celeT - fw.t0;
+      if (t <= 0) return;
+      const bx = fw.x * w;
+      const by = fw.y * h;
+
+      // 1) Rocket climbs from below the frame to the burst point.
+      if (t < ROCKET) {
+        const rt = t / ROCKET;
+        const ease = 1 - Math.pow(1 - rt, 2);
+        const fromY = h * 1.02;
+        const y = fromY + (by - fromY) * ease;
+        const trail = unit * 0.05 * (1 - rt * 0.5);
+        ctx.globalAlpha = 0.85 * globalFade;
+        ctx.strokeStyle = fw.color;
+        ctx.shadowColor = fw.color;
+        ctx.shadowBlur = unit * 0.02;
+        ctx.lineWidth = Math.max(1, unit * 0.004);
         ctx.beginPath();
-        ctx.moveTo(tailX, tailY);
+        ctx.moveTo(bx, y + trail);
+        ctx.lineTo(bx, y);
+        ctx.stroke();
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(bx, y, Math.max(1, unit * 0.004), 0, Math.PI * 2);
+        ctx.fill();
+        return;
+      }
+
+      const e = t - ROCKET;
+      const R = unit * fw.radius;
+
+      // 2) Ignition flash.
+      const flash = clamp01(1 - e / 0.22);
+      if (flash > 0) {
+        const g = ctx.createRadialGradient(bx, by, 0, bx, by, R * 0.7);
+        g.addColorStop(0, `rgba(255,255,255,${0.55 * flash * globalFade})`);
+        g.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = g;
+        ctx.fillRect(bx - R, by - R, R * 2, R * 2);
+      }
+
+      // 3) Radial shell with drag + gravity + glowing trails.
+      fw.particles.forEach((p) => {
+        const pt = (e - p.delay) / p.life;
+        if (pt <= 0 || pt >= 1) return;
+        const drag = 1 - Math.pow(1 - pt, 3);
+        const dist = R * p.speed * drag;
+        const gravity = R * 0.55 * pt * pt;
+        const x = bx + Math.cos(p.angle) * dist;
+        const y = by + Math.sin(p.angle) * dist + gravity;
+        const prevDrag = 1 - Math.pow(1 - Math.max(0, pt - 0.06), 3);
+        const px = bx + Math.cos(p.angle) * R * p.speed * prevDrag;
+        const py = by + Math.sin(p.angle) * R * p.speed * prevDrag + R * 0.55 * Math.max(0, pt - 0.06) ** 2;
+        const alpha = (1 - pt) * (1 - pt) * globalFade;
+        const r = Math.max(0.7, unit * 0.0032 * p.size * (1 - pt * 0.5));
+        ctx.globalAlpha = alpha;
+        ctx.shadowColor = fw.color;
+        ctx.shadowBlur = r * 4;
+        ctx.strokeStyle = p.white ? "#ffffff" : fw.color;
+        ctx.lineWidth = r * 1.4;
+        ctx.beginPath();
+        ctx.moveTo(px, py);
         ctx.lineTo(x, y);
         ctx.stroke();
-      } else {
-        ctx.fillStyle = p.sparkle ? "#ffffff" : color;
+        if (p.star) {
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          ctx.arc(x, y, r * 1.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      // 4) Secondary sparkles.
+      fw.sparks.forEach((s) => {
+        const st = (e - s.delay) / s.life;
+        if (st <= 0 || st >= 1) return;
+        const dist = R * s.speed * (1 - Math.pow(1 - st, 2));
+        const x = bx + Math.cos(s.angle) * dist;
+        const y = by + Math.sin(s.angle) * dist + R * 0.35 * st * st;
+        const r = Math.max(0.6, unit * 0.0022 * s.size);
+        ctx.globalAlpha = (1 - st) * 0.9 * globalFade * (0.6 + 0.4 * Math.sin(st * 22));
+        ctx.fillStyle = "#ffffff";
+        ctx.shadowColor = fw.color;
+        ctx.shadowBlur = r * 5;
         ctx.beginPath();
         ctx.arc(x, y, r, 0, Math.PI * 2);
         ctx.fill();
+      });
+
+      // 5) Expanding shockwave ring for the big shells.
+      if (fw.big) {
+        const ringT = clamp01(e / 0.6);
+        if (ringT > 0 && ringT < 1) {
+          ctx.globalAlpha = (1 - ringT) * 0.22 * globalFade;
+          ctx.strokeStyle = fw.color;
+          ctx.lineWidth = Math.max(1, unit * 0.0022);
+          ctx.shadowBlur = 0;
+          ctx.beginPath();
+          ctx.arc(bx, by, R * 0.95 * ringT, 0, Math.PI * 2);
+          ctx.stroke();
+        }
       }
     });
-    // Soft expanding shockwave ring — keeps the burst feeling premium, not cartoonish.
-    const ringT = clamp01(burstT / 0.8);
-    if (ringT > 0 && ringT < 1) {
-      ctx.globalAlpha = (1 - ringT) * 0.28;
-      ctx.strokeStyle = color;
-      ctx.lineWidth = Math.max(1, Math.min(w, h) * 0.002);
-      ctx.shadowBlur = 0;
-      ctx.beginPath();
-      ctx.arc(originX, originY, radius * 0.9 * ringT, 0, Math.PI * 2);
-      ctx.stroke();
-    }
     ctx.restore();
+    ctx.globalAlpha = 1;
   }
+
+
 
 
   const hookText = settings.title
@@ -602,9 +711,13 @@ export function createBarRaceAnimation(
     // Keep the data layer locked inside the export safe area. Backgrounds can move,
     // but scaling foreground content causes MP4/WebM edge clipping on long labels/values.
 
+    // Progress within the DATA phase only (1 during the appended finale), so
+    // intro/data timing is byte-identical to before the celebration existed.
+    const dprog = dataMs > 0 ? Math.min(elapsed / dataMs, 1) : progress;
+
     // Hook text fade out in first 15%
-    if (settings.showIntro && showHook && progress < 0.15) {
-      const hookAlpha = progress < 0.1 ? 1 : 1 - (progress - 0.1) / 0.05;
+    if (settings.showIntro && showHook && dprog < 0.15) {
+      const hookAlpha = dprog < 0.1 ? 1 : 1 - (dprog - 0.1) / 0.05;
       ctx.save();
       ctx.globalAlpha = hookAlpha;
       ctx.fillStyle = theme.text;
@@ -616,14 +729,15 @@ export function createBarRaceAnimation(
         ctx.fillText(line.trim(), w / 2, h / 2 - 10 + i * 28);
       });
       ctx.restore();
-      if (progress < 0.08) {
+      if (dprog < 0.08) {
         return;
       }
     }
 
-    const dataProgress = Math.max(0, (progress - 0.12) / 0.85);
+    const dataProgress = Math.max(0, (dprog - 0.12) / 0.85);
     const yearRange = years[years.length - 1] - years[0];
     const currentYear = years[0] + yearRange * Math.min(dataProgress, 1);
+
 
     // Calculate values
     const barData = labels.map((label) => ({
@@ -678,7 +792,7 @@ export function createBarRaceAnimation(
 
     // NEW KING detection: trigger when the rank-1 target label changes.
     const topLabel = visible[0]?.label ?? null;
-    if (topLabel && prevTopLabel && topLabel !== prevTopLabel && progress > 0.15 && progress < 0.95) {
+    if (topLabel && prevTopLabel && topLabel !== prevTopLabel && dprog > 0.15 && dprog < 0.95) {
       kingFlashAt = elapsed;
       kingFlashLabel = topLabel;
     }
@@ -717,23 +831,19 @@ export function createBarRaceAnimation(
     const labelFontSize = Math.round(barHeight * 0.36);
     const valueFontSize = Math.round(barHeight * 0.34);
     const leaderLabel = visible[0]?.label ?? null;
-    const isFinal = progress >= 0.97;
+    const isFinal = dprog >= 0.97;
 
-    // Final Winner Celebration timings (spec 0-3s timeline).
+    // ---- Final Winner Celebration (finale seconds timeline) --------------
+    //   0.0-0.7s  final ranking settles (no change)
+    //   0.7-1.5s  winner expands / brightens, others dim
+    //   0.9s+     full-frame fireworks, staggered
+    //   last 0.8s everything fades out, winner stays highlighted
     const celeT = celebrationTime();
-    // 1.0-1.6s: winner expands / others dim.
-    const emphasis = celeT < 0 ? 0 : easeInOut(clamp01((celeT - 1.0) / 0.6)) * winnerIntensity;
-    // 1.4s+: particle burst. Drawn BEFORE the bars/labels so the final
-    // result always stays readable on top of the effect.
-    const burstT = celeT < 0 ? -1 : celeT - 1.4;
-    if (burstT > 0 && winnerLabel) {
-      const wb = bars.find((b) => b.label === winnerLabel);
-      if (wb && wb.appearedAt !== undefined) {
-        const tipX = barStartX + Math.min(Math.max(wb.width, 2), barAreaWidth);
-        const tipY = wb.y + barHeight / 2;
-        drawWinnerBurst(w, h, tipX, tipY, wb.color, burstT);
-      }
-    }
+    const emphasis = celeT < 0 ? 0 : easeInOut(clamp01((celeT - 0.7) / 0.8)) * winnerIntensity;
+    // Fireworks live in FULL canvas coordinates and are drawn beneath the bars
+    // and labels so the final result always stays readable.
+    drawFireworks(w, h, celeT);
+
 
 
 
@@ -766,7 +876,9 @@ export function createBarRaceAnimation(
       const isWinner = emphasis > 0 && bar.label === winnerLabel;
       const winnerE = isWinner ? emphasis : 0;
       const loserE = emphasis > 0 && !isWinner ? emphasis : 0;
-      const scale = (cinematic ? 1 + 0.08 * bar.spotlight : 1) + 0.09 * winnerE;
+      // Champion reveal: the winning bar visually thickens (data untouched).
+      const scale = (cinematic ? 1 + 0.08 * bar.spotlight : 1) + 0.34 * winnerE;
+
       const bh = barHeight * scale;
       const yOffset = (bh - barHeight) / 2;
       const drawY = bar.y - yOffset;
@@ -784,7 +896,7 @@ export function createBarRaceAnimation(
         const ls = getFittedCanvasFontSize(
           ctx,
           bar.label,
-          labelFontSize * (isLeader && cinematic ? 1.06 : 1) * (1 + 0.12 * winnerE),
+          labelFontSize * (isLeader && cinematic ? 1.06 : 1) * (1 + 0.24 * winnerE),
           labelMaxWidth,
           700,
           Math.max(13, Math.round(w * 0.016)),
@@ -802,12 +914,14 @@ export function createBarRaceAnimation(
 
       // Bar with gradient + shadow + leader glow.
       ctx.save();
-      if (cinematic) {
+      if (cinematic || winnerE > 0) {
         ctx.shadowColor = bar.color;
-        ctx.shadowBlur = (isLeader ? bh * 0.55 : bh * 0.18) * (1 + 1.3 * winnerE);
+        ctx.shadowBlur = (isLeader ? bh * 0.55 : bh * 0.18) * (1 + 2.4 * winnerE);
         ctx.shadowOffsetY = bh * 0.05;
       }
-      const bw = Math.min(Math.max(bar.width, 2), barAreaWidth);
+      // Winner grows visually (never mathematically) toward its final value.
+      const bw = Math.min(Math.max(bar.width, 2) * (1 + 0.06 * winnerE), barAreaWidth);
+
       const bg = ctx.createLinearGradient(x, drawY, x, drawY + bh);
       bg.addColorStop(0, shadeColor(bar.color, (isLeader ? 0.25 : 0.12) + 0.22 * winnerE));
       bg.addColorStop(1, shadeColor(bar.color, (isLeader ? -0.05 : -0.15) + 0.28 * winnerE));
@@ -878,11 +992,12 @@ export function createBarRaceAnimation(
         const valueText = formatValue(bar.value, settings.valueFormat);
         const valueX = x + bw + Math.round(w * 0.012);
         const valueMaxWidth = Math.max(28, w - rightPadding - valueX);
-        const pop = isWinner && celeT > 1.1 && celeT < 1.7 ? Math.sin(((celeT - 1.1) / 0.6) * Math.PI) : 0;
+        const pop = isWinner && celeT > 0.8 && celeT < 1.6 ? Math.sin(((celeT - 0.8) / 0.8) * Math.PI) : 0;
         const vs = getFittedCanvasFontSize(
           ctx,
           valueText,
-          valueFontSize * (isLeader && cinematic ? 1.12 : 1) * (1 + 0.14 * winnerE + 0.1 * pop),
+          valueFontSize * (isLeader && cinematic ? 1.12 : 1) * (1 + 0.26 * winnerE + 0.12 * pop),
+
           valueMaxWidth,
           800,
           Math.max(11, Math.round(w * 0.014)),
