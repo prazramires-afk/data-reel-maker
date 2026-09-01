@@ -320,7 +320,9 @@ export function createBarRaceAnimation(
 
   const baseDuration = 15; // fixed 15s base
   const speedMultiplier = getSpeedMultiplier(settings.speed);
-  const totalMs = (baseDuration / speedMultiplier) * 1000;
+  /** Duration of the data phase (unchanged behaviour). */
+  const dataMs = (baseDuration / speedMultiplier) * 1000;
+
 
   const maxBars = Math.min(labels.length, 10);
   // TikTok-viral compact layout: labels sit OUTSIDE the bar on the left (static gutter),
