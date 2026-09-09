@@ -90,6 +90,10 @@ export interface ProjectSettings {
   winnerIntensity?: number;
   /** 0-1.5 multiplier for the celebration particle burst density. Default 1. */
   winnerParticleIntensity?: number;
+  /** Length of the fireworks finale in seconds (2-8). Default 4.5. */
+  celebrationDuration?: number;
+  /** Number of full-screen firework bursts (1-10). Default 6. */
+  fireworkCount?: number;
 
 }
 
