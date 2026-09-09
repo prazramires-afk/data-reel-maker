@@ -19,6 +19,7 @@ const BlogPost = lazy(() => import("./pages/BlogPost"));
 const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Privacy = lazy(() => import("./pages/Privacy"));
+const Pricing = lazy(() => import("./pages/Pricing"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Watch = lazy(() => import("./pages/Watch"));
 const Datasets = lazy(() => import("./pages/Datasets"));
