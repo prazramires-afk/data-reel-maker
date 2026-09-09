@@ -22,6 +22,7 @@ export const SiteHeader = ({ back }: Props) => {
           <Link to="/templates" className="hover:text-foreground hidden sm:inline">Templates</Link>
           <Link to="/datasets" className="hover:text-foreground hidden sm:inline">Datasets</Link>
           <Link to="/tools" className="hover:text-foreground hidden md:inline">Tools</Link>
+          <Link to="/pricing" className="hover:text-foreground hidden sm:inline">Pricing</Link>
           <Link to="/blog" className="hover:text-foreground hidden md:inline">Blog</Link>
           <Link to="/create?new=1" className="px-3 py-1.5 rounded-full bg-primary text-primary-foreground font-semibold text-xs">
             Create
